@@ -1,0 +1,120 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Commande;
+use App\Models\DetailCommande;
+use App\Models\Produit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
+class CommandeController extends Controller
+{
+    public function index()
+    {
+        return Commande::query()->with('details')->latest()->paginate(20);
+    }
+
+    public function getCommandesEnAttente(){
+        return Commande::query()->where('statut', 'brouillon')->with('details')->latest()->paginate(20);
+    }
+
+    public function getCommandesValidees(){
+        return Commande::query()->where('statut', 'validee')->with('details')->latest()->paginate(20);
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'client_id' => 'nullable|uuid|exists:clients,id',
+            'type_vente' => 'required|in:detail,gros',
+            'tva' => 'nullable|numeric',
+            'items' => 'required|array|min:1',
+            'items.*.produit_id' => 'required|uuid|exists:produits,id',
+            'items.*.quantite' => 'required|integer|min:1',
+            'items.*.prix_unitaire' => 'nullable|numeric',
+        ]);
+
+        $user = $request->user();
+        $tva = $validated['tva'] ?? 0.18; // 18% par défaut
+
+        return DB::transaction(function () use ($validated, $user, $tva) {
+            $commande = Commande::create([
+                'client_id' => $validated['client_id'] ?? null,
+                'vendeur_id' => $user->id,
+                'type_vente' => $validated['type_vente'],
+                'statut' => 'validee',
+                'total' => 0,
+                'date' => now(),
+            ]);
+
+            $totalHt = 0;
+            foreach ($validated['items'] as $item) {
+                $produit = Produit::findOrFail($item['produit_id']);
+                $prix = $item['prix_unitaire'] ?? ($validated['type_vente'] === 'gros' && $produit->prix_gros ? $produit->prix_gros : $produit->prix_vente);
+                $ligneTotal = $prix * $item['quantite'];
+                $totalHt += $ligneTotal;
+
+                DetailCommande::create([
+                    'commande_id' => $commande->id,
+                    'produit_id' => $produit->id,
+                    'quantite' => $item['quantite'],
+                    'prix_unitaire' => $prix,
+                ]);
+            }
+
+            $montantTva = $totalHt * $tva;
+            $commande->update(['total' => $totalHt + $montantTva]);
+
+            return $commande->load('details');
+        });
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(string $id)
+    {
+        return Commande::with('details')->findOrFail($id);
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, string $id)
+    {
+        $commande = Commande::findOrFail($id);
+        $data = $request->validate([
+            'statut' => 'sometimes|in:brouillon,validee,payee,annulee',
+        ]);
+        $commande->update($data);
+        return $commande->load('details');
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(string $id)
+    {
+        $commande = Commande::findOrFail($id);
+        $commande->delete();
+        return response()->noContent();
+    }
+
+    public function valider(string $id)
+    {
+        $commande = Commande::findOrFail($id);
+        $commande->update(['statut' => 'validee']);
+        return $commande->load('details');
+    }
+
+    public function annuler(string $id)
+    {
+        $commande = Commande::findOrFail($id);
+        $commande->update(['statut' => 'annulee']);
+        return $commande->load('details');
+    }
+}
