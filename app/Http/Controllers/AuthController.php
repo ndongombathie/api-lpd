@@ -9,6 +9,11 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    /*
+    |--------------------------------------------------------------------------
+    | INSCRIPTION
+    |--------------------------------------------------------------------------
+    */
     public function register(Request $request)
     {
         $validated = $request->validate([
@@ -40,6 +45,12 @@ class AuthController extends Controller
         return response()->json(['user' => $user, 'token' => $token], 201);
     }
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | CONNEXION
+    |--------------------------------------------------------------------------
+    */
     public function login(Request $request)
     {
         $credentials = $request->validate([
@@ -47,25 +58,57 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
-        
-
         $user = User::where('email', $credentials['email'])->first();
-       
+
         if (! $user || ! Hash::check($credentials['password'], $user->password)) {
             throw ValidationException::withMessages([
                 'email' => ['Identifiants invalides.'],
             ]);
         }
-        
-       
+
         $token = $user->createToken('api')->plainTextToken;
-       
+
         return response()->json(['user' => $user, 'token' => $token]);
     }
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | DÉCONNEXION
+    |--------------------------------------------------------------------------
+    */
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
         return response()->json(['message' => 'Déconnecté']);
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | CHANGER MOT DE PASSE
+    |--------------------------------------------------------------------------
+    */
+    public function changePassword(Request $request)
+    {
+        $request->validate([
+            'old_password' => 'required|string',
+            'new_password' => 'required|string|min:6|confirmed',
+        ]);
+
+        $user = $request->user();
+
+        if (!Hash::check($request->old_password, $user->password)) {
+            return response()->json([
+                'message' => 'L’ancien mot de passe est incorrect.'
+            ], 422);
+        }
+
+        $user->password = Hash::make($request->new_password);
+        $user->save();
+
+        return response()->json([
+            'message' => 'Mot de passe modifié avec succès.'
+        ]);
     }
 }

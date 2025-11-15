@@ -12,6 +12,7 @@ use App\Http\Controllers\CommandeController;
 use App\Http\Controllers\PaiementController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\ProfileController;
 
 /*
 |--------------------------------------------------------------------------
@@ -26,20 +27,24 @@ Route::post('/auth/login', [AuthController::class, 'login']);
 | ROUTES PROTÉGÉES — SANCTUM + ROLE RESPONSABLE
 |--------------------------------------------------------------------------
 |
-|  🔐  Seul un utilisateur connecté ET ayant le rôle "responsable"
-|      pourra accéder à ces routes.
+|  🔐 Accès strictement réservé au Responsable.
 |
 */
 Route::middleware(['auth:sanctum', 'role:responsable'])->group(function () {
 
-    // 🔥 Récupération du profil connecté
+    // 🔥 Profil connecté
     Route::get('/mon-profil', function (Request $request) {
         return $request->user();
     });
 
+    // 🔥 Modifier le profil (nom, prénom, photo)
+    Route::put('/mon-profil', [ProfileController::class, 'update']);
+
+    // 🔥 Changer mot de passe
+    Route::put('/auth/change-password', [AuthController::class, 'changePassword']);
+
     // 🔥 Déconnexion
     Route::post('/auth/logout', [AuthController::class, 'logout']);
-
 
     /*
     |--------------------------------------------------------------------------
@@ -89,8 +94,9 @@ Route::middleware(['auth:sanctum', 'role:responsable'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | UTILISATEURS (Gestion par le Responsable)
+    | UTILISATEURS
     |--------------------------------------------------------------------------
     */
     Route::apiResource('users', UserController::class);
+
 });

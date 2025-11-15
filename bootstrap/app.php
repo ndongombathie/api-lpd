@@ -4,7 +4,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 
-// 👉 Ajout : importer ton middleware de rôle
+// 👉 Import Middleware
 use App\Http\Middleware\RoleMiddleware;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -16,10 +16,11 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
 
-        // 👉 Ajout : Alias pour pouvoir utiliser "role:responsable" dans les routes
+        // 👉 Ajout alias pour pouvoir utiliser "role:responsable" dans api.php
         $middleware->alias([
             'role' => RoleMiddleware::class,
         ]);
+
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
