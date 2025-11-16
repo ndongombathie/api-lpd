@@ -28,3 +28,5 @@ class DetailCommandeFactory extends Factory
 }
 
 
+
+

@@ -29,7 +29,7 @@ class DatabaseSeeder extends Seeder
         User::factory()->create([
             'nom' => 'Admin',
             'prenom' => 'Global',
-            'email' => 'admin@example.com',
+            'email' => 'ndongo@example.com',
             'role' => 'admin',
             'boutique_id' => optional($boutiques->first())->id,
             'adresse' => 'Siège',
@@ -43,12 +43,15 @@ class DatabaseSeeder extends Seeder
         Client::factory()->count(20)->create();
         Fournisseur::factory()->count(5)->create();
 
+        // Stock initial par boutique
+        $this->call(StockBoutiqueSeeder::class);
+
         // Quelques vendeurs rattachés aux boutiques
-       /*  $vendeurs = User::factory()->count(5)->create()->each(function (User $u) use ($boutiques) {
+        $vendeurs = User::factory()->count(5)->create()->each(function (User $u) use ($boutiques) {
             $u->boutique_id = $boutiques->random()->id;
             $u->save();
         });
- */
+ 
         // Commandes avec détails et paiements
         $commandes = Commande::factory()->count(30)->create([
             'vendeur_id' => fn () => ($vendeurs->isNotEmpty() ? $vendeurs->random()->id : User::inRandomOrder()->value('id')),

@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\User;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\UserCredentialsMail;
 
 class UserController extends Controller
 {
@@ -33,7 +36,20 @@ class UserController extends Controller
                 'email' => 'required|email|unique:users,email',
                 'password' => 'required|string|min:6',
             ]);
+            $plainPassword = $data['password'];
             $user = User::create($data);
+
+            // Envoyer les identifiants par email
+            try {
+                Mail::to($user->email)->send(new UserCredentialsMail($user, $plainPassword));
+            } catch (\Throwable $mailEx) {
+                // On n'échoue pas la création de l'utilisateur si l'email ne part pas,
+                // mais on retourne l'info dans la réponse
+                return response()->json([
+                    'user' => $user,
+                    'warning' => 'Utilisateur créé, mais e-mail non envoyé: ' . $mailEx->getMessage(),
+                ], 201);
+            }
             return response()->json($user, 201);
         } catch (\Throwable $th) {
             return response()->json([

@@ -4,6 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Commande;
 use App\Models\Paiement;
+use App\Models\Facture;
+use App\Models\DetailCommande;
+use App\Models\StockBoutique;
+use App\Models\MouvementStock;
+use App\Events\PaiementCree;
+use App\Events\FactureCree;
+use App\Events\StockRupture;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -38,8 +45,47 @@ class PaiementController extends Controller
                 'reste_du' => $reste,
             ]);
 
+            // Diffuser l'événement de paiement
+            event(new PaiementCree($paiement));
+
             if ($reste <= 0) {
                 $commande->update(['statut' => 'payee']);
+
+                // Créer la facture
+                $facture = Facture::create([
+                    'commande_id' => $commande->id,
+                    'total' => $commande->total,
+                    'mode_paiement' => $paiement->type_paiement,
+                    'date' => now(),
+                ]);
+
+                // Mettre à jour le stock de la boutique et enregistrer le mouvement
+                $commande->loadMissing(['details', 'vendeur']);
+                $boutiqueId = optional($commande->vendeur)->boutique_id;
+                foreach ($commande->details as $detail) {
+                    // Décrémenter le stock de la boutique pour chaque produit
+                    $stock = StockBoutique::where('boutique_id', $boutiqueId)
+                        ->where('produit_id', $detail->produit_id)
+                        ->first();
+                    if ($stock) {
+                        $stock->update(['quantite' => max(0, $stock->quantite - $detail->quantite)]);
+                        if ($stock->quantite <= 0) {
+                            event(new StockRupture($stock->fresh()));
+                        }
+                    }
+
+                    MouvementStock::create([
+                        'source' => 'boutique:' . $boutiqueId,
+                        'destination' => null,
+                        'produit_id' => $detail->produit_id,
+                        'quantite' => $detail->quantite,
+                        'type' => 'sortie',
+                        'date' => now(),
+                    ]);
+                }
+
+                // Diffuser l'événement de facture
+                event(new FactureCree($facture));
             }
 
             return $paiement;

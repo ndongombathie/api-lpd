@@ -19,7 +19,6 @@ return new class extends Migration
             $table->timestamp('date')->useCurrent();
             $table->integer('reste_du')->default(0);
             $table->timestamps();
-
             $table->foreign('commande_id')->references('id')->on('commandes')->cascadeOnDelete();
         });
     }

@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Produit;
+use App\Models\StockBoutique;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ProduitController extends Controller
 {
@@ -24,6 +26,11 @@ class ProduitController extends Controller
             'stock_global' => 'nullable|integer',
         ]);
         $produit = Produit::create($data);
+        StockBoutique::create([
+            'boutique_id' => Auth::user()->boutique_id,
+            'produit_id' => $produit->id,
+            'quantite' => $produit->stock_global,
+        ]);
         return response()->json($produit, 201);
     }
 

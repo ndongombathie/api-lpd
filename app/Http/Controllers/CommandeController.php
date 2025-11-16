@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Commande;
 use App\Models\DetailCommande;
 use App\Models\Produit;
+use App\Events\CommandeValidee;
+use App\Events\CommandeAnnulee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -16,7 +18,7 @@ class CommandeController extends Controller
     }
 
     public function getCommandesEnAttente(){
-        return Commande::query()->where('statut', 'brouillon')->with('details')->latest()->paginate(20);
+        return Commande::query()->where('statut', 'attente')->with('details')->latest()->paginate(20);
     }
 
     public function getCommandesValidees(){
@@ -46,7 +48,7 @@ class CommandeController extends Controller
                 'client_id' => $validated['client_id'] ?? null,
                 'vendeur_id' => $user->id,
                 'type_vente' => $validated['type_vente'],
-                'statut' => 'validee',
+                'statut' => 'attente',
                 'total' => 0,
                 'date' => now(),
             ]);
@@ -68,8 +70,9 @@ class CommandeController extends Controller
 
             $montantTva = $totalHt * $tva;
             $commande->update(['total' => $totalHt + $montantTva]);
-
-            return $commande->load('details');
+            $commande->load('details', 'vendeur');
+            event(new CommandeValidee($commande));
+            return $commande;
         });
     }
 
@@ -108,13 +111,17 @@ class CommandeController extends Controller
     {
         $commande = Commande::findOrFail($id);
         $commande->update(['statut' => 'validee']);
-        return $commande->load('details');
+        $commande->load('details', 'vendeur');
+        event(new CommandeValidee($commande));
+        return $commande;
     }
 
     public function annuler(string $id)
     {
         $commande = Commande::findOrFail($id);
         $commande->update(['statut' => 'annulee']);
-        return $commande->load('details');
+        $commande->load('details', 'vendeur');
+        event(new CommandeAnnulee($commande));
+        return $commande;
     }
 }
