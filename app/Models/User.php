@@ -34,6 +34,9 @@ class User extends Authenticatable
         'boutique_id',
         'email',
         'password',
+        'photo',         // photo de profil éventuelle
+        'is_online',     // présence temps réel
+        'last_login_at', // dernière connexion
     ];
 
     /**
@@ -55,10 +58,15 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'password'          => 'hashed',
+            'last_login_at'     => 'datetime',
+            'is_online'         => 'boolean',
         ];
-
     }
+
+    // ============================
+    // Relations
+    // ============================
 
     public function boutique(): BelongsTo
     {
@@ -67,7 +75,34 @@ class User extends Authenticatable
 
     public function ventes(): HasMany
     {
+        // si ton modèle de vente s'appelle Commande et a vendeur_id
         return $this->hasMany(Commande::class, 'vendeur_id');
     }
-}
 
+    // 🔔 Relation vers les notifications (cloche)
+    public function notifications(): HasMany
+    {
+        return $this->hasMany(Notification::class);
+    }
+
+    /**
+     * Helper pratique pour pousser une notification pour ce user.
+     */
+    public function pushNotification(
+        string $module,
+        string $type,
+        string $title,
+        ?string $message = null,
+        ?string $url = null,
+        array $data = []
+    ): void {
+        $this->notifications()->create([
+            'module'  => $module,
+            'type'    => $type,
+            'title'   => $title,
+            'message' => $message,
+            'url'     => $url,
+            'data'    => $data,
+        ]);
+    }
+}

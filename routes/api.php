@@ -13,6 +13,7 @@ use App\Http\Controllers\PaiementController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Api\NotificationController; // 🔔 Cloche notifications
 
 /*
 |--------------------------------------------------------------------------
@@ -31,6 +32,12 @@ Route::post('/auth/login', [AuthController::class, 'login']);
 |
 */
 Route::middleware(['auth:sanctum', 'role:responsable'])->group(function () {
+
+    /*
+    |--------------------------------------------------------------------------
+    | PROFIL & AUTH
+    |--------------------------------------------------------------------------
+    */
 
     // 🔥 Profil connecté
     Route::get('/mon-profil', function (Request $request) {
@@ -99,4 +106,18 @@ Route::middleware(['auth:sanctum', 'role:responsable'])->group(function () {
     */
     Route::apiResource('users', UserController::class);
 
+    /*
+    |--------------------------------------------------------------------------
+    | NOTIFICATIONS (cloche du responsable)
+    |--------------------------------------------------------------------------
+    |
+    | GET  /api/notifications                → liste + per_page + unread_total
+    | POST /api/notifications/mark-all-read → tout marquer comme lu
+    | POST /api/notifications/{id}/read     → une notification précise
+    |
+    */
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllRead']);
+    Route::post('/notifications/mark-module', [NotificationController::class, 'markByModule']);
+    Route::post('/notifications/{notification}/read', [NotificationController::class, 'markOneRead']);
 });

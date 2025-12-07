@@ -15,7 +15,15 @@ class Client extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'nom','prenom','adresse','numero_cni','telephone','type_client','solde','contact'
+        'nom',
+        'prenom',
+        'entreprise',
+        'adresse',
+        'numero_cni',
+        'telephone',
+        'type_client',
+        'solde',
+        'contact',
     ];
 
     public function commandes(): HasMany
@@ -23,3 +31,4 @@ class Client extends Model
         return $this->hasMany(Commande::class);
     }
 }
+

@@ -2,9 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Fournisseur extends Model
 {
@@ -13,7 +14,24 @@ class Fournisseur extends Model
     public $incrementing = false;
     protected $keyType = 'string';
 
+    protected $table = 'fournisseurs';
+
     protected $fillable = [
-        'nom','contact','adresse','total_achats'
+        'boutique_id',
+        'nom',
+        'contact',
+        'adresse',
+        'type_produit',
+        'derniere_livraison',
+        'total_achats',
     ];
+
+    protected $casts = [
+        'derniere_livraison' => 'date',
+    ];
+
+    public function boutique(): BelongsTo
+    {
+        return $this->belongsTo(Boutique::class);
+    }
 }
