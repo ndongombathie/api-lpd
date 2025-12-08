@@ -37,6 +37,36 @@ class CommandeController extends Controller
     }
 
     /**
+     * Récrédite le stock des produits d'une commande
+     * en utilisant la colonne `quantite_unites` de detail_commandes.
+     */
+    protected function restituerStock(Commande $commande): void
+    {
+        // On s'assure d'avoir les produits chargés
+        $commande->loadMissing('details.produit');
+
+        foreach ($commande->details as $detail) {
+            if (!$detail->produit) {
+                continue;
+            }
+
+            $produit = $detail->produit;
+
+            // On ajoute les unités réellement consommées par cette commande
+            $produit->stock_global = (int) $produit->stock_global + (int) $detail->quantite_unites;
+
+            if (!empty($produit->unites_par_carton) && $produit->unites_par_carton > 0) {
+                $produit->nombre_cartons = intdiv(
+                    (int) $produit->stock_global,
+                    (int) $produit->unites_par_carton
+                );
+            }
+
+            $produit->save();
+        }
+    }
+
+    /**
      * Store a newly created resource in storage.
      *
      * On accepte 2 formats :
@@ -311,14 +341,32 @@ class CommandeController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Suppression d'une commande.
+     * On récrédite le stock si la commande n'a jamais été encaissée.
      */
     public function destroy(string $id)
     {
-        $commande = Commande::findOrFail($id);
-        $commande->delete();
+        return DB::transaction(function () use ($id) {
+            $commande = Commande::with('details.produit')->findOrFail($id);
 
-        return response()->noContent();
+            // On n'autorise la suppression que des commandes non encaissées
+            if (!in_array($commande->statut, ['brouillon', 'en_attente_caisse', 'annulee'])) {
+                return response()->json([
+                    'message' => 'Impossible de supprimer une commande déjà encaissée.',
+                ], 422);
+            }
+
+            // Si la commande était encore en attente, on restitue le stock
+            if (in_array($commande->statut, ['brouillon', 'en_attente_caisse'])) {
+                $this->restituerStock($commande);
+            }
+
+            // On supprime les détails pour rester propre
+            $commande->details()->delete();
+            $commande->delete();
+
+            return response()->noContent();
+        });
     }
 
     public function valider(string $id)
@@ -329,11 +377,47 @@ class CommandeController extends Controller
         return $commande->load(['details.produit']);
     }
 
+    /**
+     * Annulation d'une commande.
+     * On ne permet que l'annulation des commandes non encaissées,
+     * et on restitue le stock.
+     */
     public function annuler(string $id)
     {
-        $commande = Commande::findOrFail($id);
-        $commande->update(['statut' => 'annulee']);
+        return DB::transaction(function () use ($id) {
+            $commande = Commande::with('details.produit')->findOrFail($id);
 
-        return $commande->load(['details.produit']);
+            // Seules les commandes en attente / brouillon peuvent être annulées
+            if (!in_array($commande->statut, ['en_attente_caisse', 'brouillon'])) {
+                return response()->json([
+                    'message' => 'Seules les commandes en attente caisse ou brouillon peuvent être annulées.',
+                ], 422);
+            }
+
+            // Si tu utilises montant_paye, on bloque si > 0
+            if (isset($commande->montant_paye) && $commande->montant_paye > 0) {
+                return response()->json([
+                    'message' => 'Cette commande a déjà des paiements enregistrés en caisse.',
+                ], 422);
+            }
+
+            // Récréditer le stock
+            $this->restituerStock($commande);
+
+            // Mettre à jour le statut + champs paiements si présents
+            $commande->statut = 'annulee';
+
+            if (isset($commande->montant_paye)) {
+                $commande->montant_paye = 0;
+            }
+
+            if (isset($commande->reste_a_payer)) {
+                $commande->reste_a_payer = $commande->total;
+            }
+
+            $commande->save();
+
+            return $commande->load(['details.produit']);
+        });
     }
 }
