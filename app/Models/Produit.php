@@ -15,7 +15,17 @@ class Produit extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'nom', 'code', 'categorie', 'prix_vente', 'prix_gros', 'prix_seuil', 'stock_global'
+        'nom',
+        'code_barre',
+        'categorie',
+        'nombre_cartons',
+        'unites_par_carton',
+        'prix_basique_detail',
+        'prix_seuil_detail',
+        'prix_basique_gros',
+        'prix_seuil_gros',
+        'quantite_seuil',
+        'stock_global',
     ];
 
     public function details(): HasMany

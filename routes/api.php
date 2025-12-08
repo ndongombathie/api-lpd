@@ -58,6 +58,11 @@ Route::middleware(['auth:sanctum', 'role:responsable'])->group(function () {
     | PRODUITS
     |--------------------------------------------------------------------------
     */
+
+    // 📦 Catalogue light pour le front (Commandes, etc.)
+    Route::get('produits/catalogue', [ProduitController::class, 'catalogue']);
+
+    // CRUD complet
     Route::apiResource('produits', ProduitController::class);
 
     /*
