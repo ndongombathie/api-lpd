@@ -7,14 +7,20 @@ use App\Models\Produit;
 use App\Models\MouvementStock;
 use App\Events\StockBoutiqueMisAJour;
 use App\Events\StockRupture;
+use App\Models\Transfer;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class StockController extends Controller
 {
     public function index()
     {
-        return StockBoutique::with('produit')->paginate(50);
+        try {
+            return StockBoutique::with('produit')->paginate(50);
+        } catch (\Throwable $th) {
+            return response()->json(['error' => $th->getMessage()], 500);
+        }
     }
 
     public function ruptures(Request $request)
@@ -28,32 +34,38 @@ class StockController extends Controller
 
     public function transfer(Request $request)
     {
+       try {
         $validated = $request->validate([
-            'source_boutique_id' => 'nullable|uuid|exists:boutiques,id',
-            'destination_boutique_id' => 'required|uuid|exists:boutiques,id',
             'produit_id' => 'required|uuid|exists:produits,id',
             'quantite' => 'required|integer|min:1',
         ]);
-
-        return DB::transaction(function () use ($validated) {
             $produitId = $validated['produit_id'];
             $qte = $validated['quantite'];
             $sourceLabel = 'depot';
 
-            if (! empty($validated['source_boutique_id'])) {
+            if (! empty(Auth::user()->boutique_id)) {
                 $src = StockBoutique::firstOrCreate([
-                    'boutique_id' => $validated['source_boutique_id'],
+                    'boutique_id' => Auth::user()->boutique_id,
                     'produit_id' => $produitId,
                 ]);
+
+                $transfer = Transfer::firstOrNew([
+                'boutique_id' => Auth::user()->boutique_id,
+                'produit_id'  => $produitId,
+                ]);
+                $transfer->increment('quantite', $qte);
+                $transfer->updated_at = now();
+                $transfer->save();
+
                 if ($src->quantite < $qte) {
                     abort(422, 'Stock source insuffisant');
                 }
-                $src->decrement('quantite', $qte);
-                $sourceLabel = 'boutique:' . $validated['source_boutique_id'];
 
+                $src->decrement('quantite', $qte);
+                $sourceLabel = 'boutique:' . Auth::user()->boutique_id;
                 MouvementStock::create([
                     'source' => $sourceLabel,
-                    'destination' => 'boutique:' . $validated['destination_boutique_id'],
+                    'destination' => 'boutique:' . Auth::user()->boutique_id,
                     'produit_id' => $produitId,
                     'quantite' => $qte,
                     'type' => 'sortie',
@@ -63,44 +75,13 @@ class StockController extends Controller
                 if ($src->quantite <= 0) {
                     event(new StockRupture($src->fresh()));
                 }
-            } else {
-                // depuis dépôt central
-                $produit = Produit::findOrFail($produitId);
-                if ($produit->stock_global < $qte) {
-                    abort(422, 'Stock global insuffisant');
-                }
-                $produit->decrement('stock_global', $qte);
-
-                MouvementStock::create([
-                    'source' => $sourceLabel,
-                    'destination' => 'boutique:' . $validated['destination_boutique_id'],
-                    'produit_id' => $produitId,
-                    'quantite' => $qte,
-                    'type' => 'sortie',
-                    'date' => now(),
-                ]);
             }
-
-            $dest = StockBoutique::firstOrCreate([
-                'boutique_id' => $validated['destination_boutique_id'],
-                'produit_id' => $produitId,
-            ]);
-            $dest->increment('quantite', $qte);
-
-            MouvementStock::create([
-                'source' => $sourceLabel,
-                'destination' => 'boutique:' . $validated['destination_boutique_id'],
-                'produit_id' => $produitId,
-                'quantite' => $qte,
-                'type' => 'entree',
-                'date' => now(),
-            ]);
-
-            // Diffuser la mise à jour de stock vers la boutique de destination
-            event(new StockBoutiqueMisAJour($dest->fresh()));
-
             return response()->json(['message' => 'Transfert effectué']);
-        });
+        }
+        catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
     }
 
     /**
@@ -125,7 +106,7 @@ class StockController extends Controller
         return DB::transaction(function () use ($validated) {
             $produit = Produit::findOrFail($validated['produit_id']);
             $dest = StockBoutique::firstOrCreate([
-                'boutique_id' => $validated['destination_boutique_id'],
+                'boutique_id' => Auth::user()->boutique_id,
                 'produit_id' => $validated['produit_id'],
             ]);
 
@@ -150,7 +131,7 @@ class StockController extends Controller
             $produit->decrement('stock_global', $qte);
             MouvementStock::create([
                 'source' => 'depot',
-                'destination' => 'boutique:' . $validated['destination_boutique_id'],
+                'destination' => 'boutique:' . Auth::user()->boutique_id,
                 'produit_id' => $validated['produit_id'],
                 'quantite' => $qte,
                 'type' => 'sortie',
@@ -161,7 +142,7 @@ class StockController extends Controller
             $dest->increment('quantite', $qte);
             MouvementStock::create([
                 'source' => 'depot',
-                'destination' => 'boutique:' . $validated['destination_boutique_id'],
+                'destination' => 'boutique:' . Auth::user()->boutique_id,
                 'produit_id' => $validated['produit_id'],
                 'quantite' => $qte,
                 'type' => 'entree',

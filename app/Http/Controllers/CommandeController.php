@@ -14,15 +14,47 @@ class CommandeController extends Controller
 {
     public function index()
     {
-        return Commande::query()->with('details')->latest()->paginate(20);
+        try {
+            return response()->json( Commande::query()->with('details')->latest()->paginate(20));
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Erreur lors de la récupération des commandes',
+                'error' => $th->getMessage(),
+            ], 500);
+        }
     }
 
     public function getCommandesEnAttente(){
-        return Commande::query()->where('statut', 'attente')->with('details')->latest()->paginate(20);
+        try {
+            return response()->json(Commande::query()->where('statut', 'attente')->with('details','client')->latest()->paginate(20));
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Erreur lors de la récupération des commandes en attente',
+                'error' => $th->getMessage(),
+            ], 500);
+        }
     }
 
     public function getCommandesValidees(){
-        return Commande::query()->where('statut', 'validee')->with('details')->latest()->paginate(20);
+        try {
+            return response()->json(Commande::query()->where('statut', 'payee')->with('details','client','vendeur')->latest()->paginate(20));
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Erreur lors de la récupération des commandes validées',
+                'error' => $th->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function getCommandesAnnulees(){
+        try {
+            return response()->json(Commande::query()->where('statut', 'annulee')->where('created_at','>=',now()->subMonth())->with('details','client','vendeur')->latest()->paginate(20));
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Erreur lors de la récupération des commandes annulées',
+                'error' => $th->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -70,7 +102,7 @@ class CommandeController extends Controller
 
             $montantTva = $totalHt * $tva;
             $commande->update(['total' => $totalHt + $montantTva]);
-            $commande->load('details', 'vendeur');
+            $commande->load('details', 'vendeur','client');
             event(new CommandeValidee($commande));
             return $commande;
         });

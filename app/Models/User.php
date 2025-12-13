@@ -60,6 +60,7 @@ class User extends Authenticatable
 
     }
 
+
     public function boutique(): BelongsTo
     {
         return $this->belongsTo(Boutique::class);

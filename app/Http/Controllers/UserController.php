@@ -19,7 +19,7 @@ class UserController extends Controller
                 'error' => $th->getMessage()
             ], 500);
         }
-        
+
     }
 
     public function store(Request $request)
@@ -36,7 +36,9 @@ class UserController extends Controller
                 'email' => 'required|email|unique:users,email',
                 'password' => 'required|string|min:6',
             ]);
+
             $plainPassword = $data['password'];
+            //$data['boutique_id']=Auth::user();
             $user = User::create($data);
 
             // Envoyer les identifiants par email
@@ -91,7 +93,7 @@ class UserController extends Controller
             $user = User::findOrFail($id);
             $user->delete();
             return response()->noContent();
-  
+
         return response()->json([
             'message' => 'Utilisateur supprimé avec succès'
         ], 200);

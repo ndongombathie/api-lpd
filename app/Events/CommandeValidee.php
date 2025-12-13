@@ -15,7 +15,7 @@ class CommandeValidee implements ShouldBroadcastNow
 
     public function __construct(public Commande $commande)
     {
-        $this->commande->loadMissing(['details', 'vendeur']);
+        $this->commande->loadMissing(['details', 'vendeur','client']);
     }
 
     public function broadcastOn(): array
@@ -31,24 +31,6 @@ class CommandeValidee implements ShouldBroadcastNow
 
     public function broadcastWith(): array
     {
-        return [
-            'commande' => [
-                'id' => $this->commande->id,
-                'total' => $this->commande->total,
-                'statut' => $this->commande->statut,
-                'type_vente' => $this->commande->type_vente,
-                'date' => $this->commande->date,
-                'vendeur' => [
-                    'id' => $this->commande->vendeur->id,
-                    'nom' => $this->commande->vendeur->nom ?? null,
-                    'boutique_id' => $this->commande->vendeur->boutique_id ?? null,
-                ],
-                'details' => $this->commande->details->map(fn($d) => [
-                    'produit_id' => Produit::find($d->produit_id),
-                    'quantite' => $d->quantite,
-                    'prix_unitaire' => $d->prix_unitaire,
-                ])->toArray(),
-            ],
-        ];
+        return $this->commande->toArray();
     }
 }

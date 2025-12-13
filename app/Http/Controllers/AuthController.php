@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
@@ -47,19 +48,19 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
-        
+
 
         $user = User::where('email', $credentials['email'])->first();
-       
+
         if (! $user || ! Hash::check($credentials['password'], $user->password)) {
             throw ValidationException::withMessages([
                 'email' => ['Identifiants invalides.'],
             ]);
         }
-        
-       
+
+
         $token = $user->createToken('api')->plainTextToken;
-       
+
         return response()->json(['user' => $user, 'token' => $token]);
     }
 
@@ -71,7 +72,7 @@ class AuthController extends Controller
 
     public function monProfil(Request $request)
     {
-        return response()->json($request->user());
+        return response()->json(Auth::user());
     }
 
     public function updateProfil(Request $request)

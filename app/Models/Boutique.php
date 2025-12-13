@@ -18,11 +18,11 @@ class Boutique extends Model
         'nom','adresse','telephone'
     ];
 
-    public function users(): HasMany
+    
+public function users(): HasMany
     {
         return $this->hasMany(User::class);
     }
-
     public function stocks(): HasMany
     {
         return $this->hasMany(StockBoutique::class);

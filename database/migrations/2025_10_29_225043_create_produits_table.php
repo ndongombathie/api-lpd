@@ -16,11 +16,13 @@ return new class extends Migration
             $table->string('nom');
             $table->string('code')->unique();
             $table->string('categorie')->nullable();
-            $table->integer('prix_vente');
+            $table->integer('prix_vente_detail');
+            $table->integer('prix_vente_gros');
             $table->integer('prix_achat')->nullabble();
-            $table->integer('prix_gros')->nullable();
-            $table->integer('prix_seuil')->nullable();
-            $table->integer('stock_global')->default(0);
+            $table->integer('prix_seuil_detail')->nullable();
+            $table->integer('prix_seuil_gros')->nullable();
+            $table->bigInteger('quantite')->default(0);
+            $table->bigInteger('stock_global')->default(0);
             $table->timestamps();
         });
     }

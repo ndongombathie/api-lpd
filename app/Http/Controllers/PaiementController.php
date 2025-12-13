@@ -13,6 +13,7 @@ use App\Events\FactureCree;
 use App\Events\StockRupture;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Models\Transfer;
 
 class PaiementController extends Controller
 {
@@ -64,7 +65,7 @@ class PaiementController extends Controller
                 $boutiqueId = optional($commande->vendeur)->boutique_id;
                 foreach ($commande->details as $detail) {
                     // Décrémenter le stock de la boutique pour chaque produit
-                    $stock = StockBoutique::where('boutique_id', $boutiqueId)
+                    $stock = Transfer::where('boutique_id', $boutiqueId)
                         ->where('produit_id', $detail->produit_id)
                         ->first();
                     if ($stock) {

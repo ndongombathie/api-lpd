@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('destination')->nullable();
             $table->uuid('produit_id');
             $table->integer('quantite');
-            $table->enum('type', ['entree', 'sortie', 'transfert']);
+            $table->enum('type', ['ndongo','entree', 'sortie', 'transfert']);
             $table->timestamp('date')->useCurrent();
             $table->timestamps();
 

@@ -21,10 +21,12 @@ class ProduitFactory extends Factory
             'nom' => $this->faker->words(2, true),
             'code' => strtoupper($this->faker->bothify('MAT-####')),
             'categorie' => $this->faker->randomElement($categories),
-            'prix_vente' => $this->faker->randomFloat(2, 1000, 50000),
+            'prix_vente_detail' => $this->faker->randomFloat(2, 1000, 50000),
+            'prix_vente_gros' => $this->faker->randomFloat(2, 800, 40000),
             'prix_achat'=>$this->faker->randomFloat(800,2000),
-            'prix_gros' => $this->faker->randomFloat(2, 800, 40000),
-            'prix_seuil' => $this->faker->randomFloat(2, 500, 30000),
+            'prix_seuil_detail' => $this->faker->randomFloat(2, 500, 30000),
+            'prix_seuil_gros' => $this->faker->randomFloat(2, 500, 30000),
+            'quantite' => $this->faker->numberBetween(10, 1000),
             'stock_global' => $this->faker->numberBetween(10, 1000),
         ];
     }
