@@ -15,12 +15,12 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('nom');
             $table->string('code')->unique();
-            $table->string('categorie')->nullable();
-            $table->integer('prix_vente_detail');
-            $table->integer('prix_vente_gros');
-            $table->integer('prix_achat')->nullabble();
-            $table->integer('prix_seuil_detail')->nullable();
-            $table->integer('prix_seuil_gros')->nullable();
+            $table->string('categorie')->default('autre');
+            $table->integer('prix_vente_detail')->default(0);
+            $table->integer('prix_vente_gros')->default(0);
+            $table->integer('prix_achat')->nullable()->default(0);
+            $table->integer('prix_seuil_detail')->nullable()->default(0);
+            $table->integer('prix_seuil_gros')->nullable()->default(0);
             $table->bigInteger('quantite')->default(0);
             $table->bigInteger('stock_global')->default(0);
             $table->timestamps();

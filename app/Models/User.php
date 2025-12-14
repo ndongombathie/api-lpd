@@ -56,6 +56,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'last_seen_at' => 'datetime',
         ];
 
     }
@@ -70,5 +71,19 @@ class User extends Authenticatable
     {
         return $this->hasMany(Commande::class, 'vendeur_id');
     }
-}
 
+    protected $appends = ['is_online'];
+
+    public function getIsOnlineAttribute(): bool
+    {
+        if (!$this->last_seen_at) {
+            return false;
+        }
+        return now()->diffInMinutes($this->last_seen_at) < 5;
+    }
+
+    public function setIsOnlineAttribute(bool $value): void
+    {
+        $this->is_online = $value ;
+    }
+}

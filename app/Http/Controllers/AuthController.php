@@ -60,13 +60,16 @@ class AuthController extends Controller
 
 
         $token = $user->createToken('api')->plainTextToken;
+        $user->setIsOnlineAttribute(true);
 
         return response()->json(['user' => $user, 'token' => $token]);
     }
 
     public function logout(Request $request)
     {
+        $request->user()->setIsOnlineAttribute(false);
         $request->user()->currentAccessToken()->delete();
+
         return response()->json(['message' => 'Déconnecté']);
     }
 

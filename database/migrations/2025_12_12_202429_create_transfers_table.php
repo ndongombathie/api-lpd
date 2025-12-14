@@ -15,7 +15,8 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->foreignUuid('boutique_id')->constrained()->cascadeOnDelete();
             $table->foreignUuid('produit_id')->constrained()->cascadeOnDelete();
-            $table->bigInteger('quantite');
+            $table->bigInteger('quantite')->default(0);
+            $table->enum('status', ['en_attente', 'valide'])->default('en_attente');
             $table->timestamps();
         });
     }

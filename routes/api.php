@@ -55,6 +55,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('transfers/boutique/{boutique_id}', [TransferController::class, 'produitsByBoutique']);
     Route::apiResource('transfers', TransferController::class);
+    Route::get('transfers/valide', [TransferController::class, 'getTransferValide']);
+    Route::post('transfers/valide', [TransferController::class, 'valideTransfer']);
 
 
 
