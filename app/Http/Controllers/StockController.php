@@ -34,6 +34,7 @@ class StockController extends Controller
 
     public function transfer(Request $request)
     {
+        //dd($request->all());
        try {
         $validated = $request->validate([
             'produit_id' => 'required|uuid|exists:produits,id',
@@ -43,16 +44,18 @@ class StockController extends Controller
             $qte = $validated['quantite'];
             $sourceLabel = 'depot';
 
-            if (! empty(Auth::user()->boutique_id)) {
+            if (!empty(Auth::user()->boutique_id)) {
                 $src = StockBoutique::firstOrCreate([
                     'boutique_id' => Auth::user()->boutique_id,
                     'produit_id' => $produitId,
                 ]);
-
-                $transfer = Transfer::firstOrNew([
-                'boutique_id' => Auth::user()->boutique_id,
-                'produit_id'  => $produitId,
+                $transfer = Transfer::firstOrCreate([
+                    'boutique_id' => Auth::user()->boutique_id,
+                    'produit_id'  => $produitId,
+                ], [
+                    'quantite' => 0, // provide a default value for the NOT NULL column
                 ]);
+
                 $transfer->increment('quantite', $qte);
                 $transfer->updated_at = now();
                 $transfer->save();
