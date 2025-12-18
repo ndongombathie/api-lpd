@@ -100,9 +100,20 @@ Route::middleware(['auth:sanctum', 'role:responsable'])->group(function () {
     |--------------------------------------------------------------------------
     | PAIEMENTS
     |--------------------------------------------------------------------------
+    |
+    |  - Création / liste des paiements d'une commande
+    |  - Mise à jour / suppression d'un paiement (tranche, etc.)
+    |
     */
+    // Création + liste des paiements pour une commande donnée
     Route::post('commandes/{commande}/paiements', [PaiementController::class, 'store']);
     Route::get('commandes/{commande}/paiements', [PaiementController::class, 'index']);
+
+    // ✅ Mise à jour / suppression d'un paiement (utilisé par ClientsSpeciaux / VoirDetailClient)
+    Route::put('paiements/{paiement}', [PaiementController::class, 'update']);
+    Route::delete('paiements/{paiement}', [PaiementController::class, 'destroy']);
+    Route::post('/paiements/{paiement}/encaisser', [PaiementController::class, 'encaisser']);
+    // (équivalent à: Route::apiResource('paiements', PaiementController::class)->only(['update', 'destroy']);)
 
     /*
     |--------------------------------------------------------------------------
@@ -118,6 +129,7 @@ Route::middleware(['auth:sanctum', 'role:responsable'])->group(function () {
     |
     | GET  /api/notifications                → liste + per_page + unread_total
     | POST /api/notifications/mark-all-read → tout marquer comme lu
+    | POST /api/notifications/mark-module   → marquer tout lu pour un module
     | POST /api/notifications/{id}/read     → une notification précise
     |
     */

@@ -15,7 +15,14 @@ class Paiement extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'commande_id','montant','type_paiement','date','reste_du'
+        'commande_id',
+        'montant',
+        'type_paiement',
+        'mode_paiement',
+        'statut_paiement',
+        'commentaire',
+        'date',
+        'reste_du',
     ];
 
     public function commande(): BelongsTo
