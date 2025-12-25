@@ -14,6 +14,7 @@ use App\Http\Controllers\StockController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Api\NotificationController; // 🔔 Cloche notifications
+use App\Http\Controllers\Api\DecaissementController; // 💸 Décaissements
 
 /*
 |--------------------------------------------------------------------------
@@ -109,11 +110,24 @@ Route::middleware(['auth:sanctum', 'role:responsable'])->group(function () {
     Route::post('commandes/{commande}/paiements', [PaiementController::class, 'store']);
     Route::get('commandes/{commande}/paiements', [PaiementController::class, 'index']);
 
-    // ✅ Mise à jour / suppression d'un paiement (utilisé par ClientsSpeciaux / VoirDetailClient)
+    // ✅ Mise à jour / suppression d'un paiement
     Route::put('paiements/{paiement}', [PaiementController::class, 'update']);
     Route::delete('paiements/{paiement}', [PaiementController::class, 'destroy']);
-    Route::post('/paiements/{paiement}/encaisser', [PaiementController::class, 'encaisser']);
-    // (équivalent à: Route::apiResource('paiements', PaiementController::class)->only(['update', 'destroy']);)
+    Route::post('paiements/{paiement}/encaisser', [PaiementController::class, 'encaisser']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | DÉCAISSEMENTS (Responsable)
+    |--------------------------------------------------------------------------
+    |
+    |  GET   /api/decaissements                 → liste + lignes
+    |  POST  /api/decaissements                 → création d’une demande
+    |  PATCH /api/decaissements/{id}/statut     → changer le statut
+    |
+    */
+    Route::get('decaissements', [DecaissementController::class, 'index']);
+    Route::post('decaissements', [DecaissementController::class, 'store']);
+    Route::patch('decaissements/{decaissement}/statut', [DecaissementController::class, 'updateStatut']);
 
     /*
     |--------------------------------------------------------------------------
@@ -133,8 +147,8 @@ Route::middleware(['auth:sanctum', 'role:responsable'])->group(function () {
     | POST /api/notifications/{id}/read     → une notification précise
     |
     */
-    Route::get('/notifications', [NotificationController::class, 'index']);
-    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllRead']);
-    Route::post('/notifications/mark-module', [NotificationController::class, 'markByModule']);
-    Route::post('/notifications/{notification}/read', [NotificationController::class, 'markOneRead']);
+    Route::get('notifications', [NotificationController::class, 'index']);
+    Route::post('notifications/mark-all-read', [NotificationController::class, 'markAllRead']);
+    Route::post('notifications/mark-module', [NotificationController::class, 'markByModule']);
+    Route::post('notifications/{notification}/read', [NotificationController::class, 'markOneRead']);
 });

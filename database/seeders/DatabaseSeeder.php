@@ -94,5 +94,6 @@ class DatabaseSeeder extends Seeder
 
         // Mouvements de stock
         MouvementStock::factory()->count(80)->create();
+        $this->call(DecaissementSeeder::class);
     }
 }
