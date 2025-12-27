@@ -75,12 +75,21 @@ class PaiementController extends Controller
                         }
                     }
 
+                    // Enregistrer la vente dans l'historique
+                    \App\Models\HistoriqueVente::create([
+                        'vendeur_id' => $commande->vendeur_id,
+                        'produit_id' => $detail->produit_id,
+                        'quantite' => $detail->quantite,
+                        'prix_unitaire' => $detail->prix_unitaire,
+                        'montant' => $commande->total,
+                    ]);
+
                     MouvementStock::create([
                         'source' => 'boutique:' . $boutiqueId,
                         'destination' => null,
                         'produit_id' => $detail->produit_id,
                         'quantite' => $detail->quantite,
-                        'type' => 'sortie',
+                        'type' => 'vente',
                         'date' => now(),
                     ]);
                 }

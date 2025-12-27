@@ -25,7 +25,7 @@ class UserFactory extends Factory
     public function definition(): array
     {
         $boutiques = Boutique::all();
-        $roles = ['vendeur','caissier','gestionnaire_boutique','gestionnaire_depot','responsable'];
+        $roles = ['vendeur','caissier','gestionnaire_boutique','gestionnaire_depot','responsable','comptable'];
         return [
             'boutique_id' => fake()->randomElement($boutiques)->id,
             'nom' => fake()->lastName(),
