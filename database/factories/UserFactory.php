@@ -33,7 +33,7 @@ class UserFactory extends Factory
             'adresse' => fake()->address(),
             'numero_cni' => strtoupper(fake()->bothify('CNI########')),
             'telephone' => fake()->phoneNumber(),
-            'role' => fake()->randomElement($roles),
+            'role' => $roles[array_rand($roles)],
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
