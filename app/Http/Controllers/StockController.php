@@ -27,7 +27,7 @@ class StockController extends Controller
     {
         $boutiqueId = $request->query('boutique_id');
         return StockBoutique::with('produit')
-            ->where('quantite', '<=', 10)
+            ->where('quantite', '<=', 'stock_seuil')
             ->when($boutiqueId, fn($q) => $q->where('boutique_id', $boutiqueId))
             ->paginate(50);
     }
@@ -55,7 +55,12 @@ class StockController extends Controller
                 ], [
                     'quantite' => 0, // provide a default value for the NOT NULL column
                 ]);
+                $produit = Produit::findOrFail($produitId);
+                $produit->decrement('nombre_carton', $qte);
+                $produit->decrement('stock_disponible', $qte*$produit->unite_carton);
+                $produit->save();
 
+                $transfer->increment('quantite', $qte*$produit->unite_carton);
                 $transfer->increment('quantite', $qte);
                 $transfer->updated_at = now();
                 $transfer->save();
@@ -65,6 +70,8 @@ class StockController extends Controller
                 }
 
                 $src->decrement('quantite', $qte);
+
+
                 $sourceLabel = 'boutique:' . Auth::user()->boutique_id;
                 MouvementStock::create([
                     'source' => $sourceLabel,

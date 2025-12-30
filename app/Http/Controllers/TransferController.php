@@ -16,12 +16,23 @@ class TransferController extends Controller
     public function index()
     {
         try {
-            $transfers = Transfer::with(['produit', 'boutique'])->get();
+            $transfers = Transfer::with(['produit'])->where('status', 'en_attente')->paginate(20);
             return response()->json($transfers);
         } catch (\Throwable $th) {
             return response()->json(['error' => $th->getMessage()], 500);
         }
     }
+
+    public function produitsDisponibles()
+    {
+        try {
+            $transfers = Transfer::with(['produit'])->where('status', 'valide')->paginate(20);
+            return response()->json($transfers);
+        } catch (\Throwable $th) {
+            return response()->json(['error' => $th->getMessage()], 500);
+        }
+    }
+
 
     public function produitsByBoutique($boutique_id){
       try {
@@ -37,7 +48,7 @@ class TransferController extends Controller
 
     public function getTransferValide(){
       try {
-        $transfers = Transfer::with(['produit', 'boutique'])->where('status', 'valide')->get();
+        $transfers = Transfer::with(['produit'])->where('status', 'valide')->get();
         return response()->json($transfers);
       } catch (\Throwable $th) {
         return response()->json(['error' => $th->getMessage()], 500);
@@ -47,16 +58,16 @@ class TransferController extends Controller
 
     public function valideTransfer(Request $request){
       try {
+        //dd($request->all());
         $transfer = Transfer::findOrFail($request->id);
-        $transfer->update(['status' => 'valide']);
+        $transfer->status = 'valide';
         $produit = Produit::where('id', $transfer->produit_id)->get()->first();
-        $produit->update([
-          'prix_vente_detail' => $request->prix_unitaire,
-          'prix_vente_gros' => $request->prix_gros,
-          'prix_seuil_detail' => $request->prix_seuil_detail,
-          'prix_seuil_gros' => $request->prix_seuil_gros,
-        ]);
+        $produit->prix_vente_detail = $request->prix_unitaire;
+        $produit->prix_vente_gros = $request->prix_gros;
+        $produit->prix_seuil_detail = $request->prix_seuil_detail;
+        $produit->prix_seuil_gros = $request->prix_seuil_gros;
         $produit->save();
+        $transfer->save();
         return response()->json($transfer);
       } catch (\Throwable $th) {
         return response()->json(['error' => $th->getMessage()], 500);

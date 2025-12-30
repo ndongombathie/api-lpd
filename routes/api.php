@@ -14,7 +14,9 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\UserCredentialsMail;
+use App\Http\Controllers\HistoriqueVenteController;
 use App\Http\Controllers\TransferController;
+use App\Http\Controllers\DecaissementController;
 
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
@@ -54,15 +56,22 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('fournisseurs', FournisseurController::class);
 
     Route::get('transfers/boutique/{boutique_id}', [TransferController::class, 'produitsByBoutique']);
-    Route::apiResource('transfers', TransferController::class);
     Route::get('transfers/valide', [TransferController::class, 'getTransferValide']);
-    Route::post('transfers/valide', [TransferController::class, 'valideTransfer']);
+    Route::get('produits-transfer', [TransferController::class, 'index']);
+    Route::put('valider-produits-transfer', [TransferController::class, 'valideTransfer']);
+    Route::get('produits-disponibles-boutique', [TransferController::class, 'produitsDisponibles']);
 
 
+    # Gestion des historiques de vente
+    Route::apiResource('historique-ventes', HistoriqueVenteController::class);
 
     Route::get('stocks', [StockController::class, 'index']);
+    Route::apiResource('decaissements', DecaissementController::class);
+    Route::put('decaissements/{decaissement}/statut', [DecaissementController::class, 'updateStatusDecaissement']);
     Route::get('stocks/ruptures', [StockController::class, 'ruptures']);
+    Route::get('produits-ruptures', [ProduitController::class, 'produits_en_rupture']);
     Route::post('stocks/transfer', [StockController::class, 'transfer']);
+
     Route::post('stocks/reapprovisionner', [StockController::class, 'reapprovisionner']);
 
     Route::apiResource('commandes', CommandeController::class);
@@ -74,7 +83,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('commandes/{commande}/paiements', [PaiementController::class, 'store']);
     Route::get('commandes/{commande}/paiements', [PaiementController::class, 'index']);
-    Route::apiResource('uilisateurs', UserController::class);
+    Route::apiResource('utilisateurs', UserController::class);
 });
 
 

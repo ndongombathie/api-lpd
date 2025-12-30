@@ -12,7 +12,12 @@ class HistoriqueVenteController extends Controller
      */
     public function index()
     {
-        //
+        try {
+            $historiqueVentes = HistoriqueVente::with(['vendeur', 'produit'])->paginate(10);
+            return response()->json($historiqueVentes);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
     /**

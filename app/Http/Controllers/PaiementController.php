@@ -14,6 +14,7 @@ use App\Events\StockRupture;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Transfer;
+use App\Models\HistoriqueVente;
 
 class PaiementController extends Controller
 {
@@ -34,7 +35,7 @@ class PaiementController extends Controller
             'type_paiement' => 'required|string',
         ]);
 
-        return DB::transaction(function () use ($commande, $data) {
+
             $totalPaye = Paiement::where('commande_id', $commande->id)->sum('montant');
             $reste = max(0, $commande->total - $totalPaye - $data['montant']);
 
@@ -76,7 +77,7 @@ class PaiementController extends Controller
                     }
 
                     // Enregistrer la vente dans l'historique
-                    \App\Models\HistoriqueVente::create([
+                    HistoriqueVente::create([
                         'vendeur_id' => $commande->vendeur_id,
                         'produit_id' => $detail->produit_id,
                         'quantite' => $detail->quantite,
@@ -97,9 +98,7 @@ class PaiementController extends Controller
                 // Diffuser l'événement de facture
                 event(new FactureCree($facture));
             }
-
             return $paiement;
-        });
     }
 
     /**

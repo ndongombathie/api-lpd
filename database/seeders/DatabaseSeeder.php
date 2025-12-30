@@ -13,6 +13,7 @@ use App\Models\Paiement;
 use App\Models\MouvementStock;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use App\Models\Decaissement;
 
 class DatabaseSeeder extends Seeder
 {
@@ -51,7 +52,7 @@ class DatabaseSeeder extends Seeder
             $u->boutique_id = $boutiques->random()->id;
             $u->save();
         });
- 
+
         // Commandes avec détails et paiements
         $commandes = Commande::factory()->count(30)->create([
             'vendeur_id' => fn () => ($vendeurs->isNotEmpty() ? $vendeurs->random()->id : User::inRandomOrder()->value('id')),
@@ -97,5 +98,8 @@ class DatabaseSeeder extends Seeder
 
         // Mouvements de stock
         MouvementStock::factory()->count(80)->create();
+
+        // Décaisements
+        Decaissement::factory()->count(10)->create();
     }
 }

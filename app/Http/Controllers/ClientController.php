@@ -6,6 +6,7 @@ use App\Models\Client;
 use App\Models\Commande;
 use App\Models\Paiement;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ClientController extends Controller
 {
@@ -29,6 +30,16 @@ class ClientController extends Controller
             'solde' => 'nullable|numeric',
             'contact' => 'nullable|string',
         ]);
+
+        if(Auth::user()->role=='reponsable')
+        {
+            $data['type_client'] = 'special';
+        }
+        else
+        {
+            $data['type_client'] = 'normal';
+        }
+        
         $client = Client::create($data);
         return response()->json($client, 201);
     }

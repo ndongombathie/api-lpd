@@ -113,7 +113,7 @@ class CommandeController extends Controller
      */
     public function show(string $id)
     {
-        return Commande::with('details')->findOrFail($id);
+        return Commande::with(['details','client'])->findOrFail($id);
     }
 
     /**

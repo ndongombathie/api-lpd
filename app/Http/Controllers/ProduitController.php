@@ -26,27 +26,34 @@ class ProduitController extends Controller
         }
     }
 
+    public function produits_en_rupture()
+    {
+        try {
+            return Produit::whereColumn('nombre_carton', '<=', 'stock_seuil')->paginate(50);
+        } catch (\Throwable $th) {
+            return response()->json(['message' => $th->getMessage()], 500);
+        }
+    }
+
     public function store(Request $request)
     {
         $data = $request->validate([
             'nom' => 'required|string',
             'code' => 'required|string|unique:produits,code',
             'categorie' => 'nullable|string',
-            'prix_vente_detail' => 'required|numeric',
-            'prix_vente_gros' => 'nullable|numeric',
-            'prix_achat' => 'nullable|numeric',
-            'prix_gros' => 'nullable|numeric',
-            'prix_seuil_detail' => 'nullable|numeric',
-            'prix_seuil_gros' => 'nullable|numeric',
-            'quantite' => 'nullable|integer',
-            'stock_global' => 'nullable|integer',
+            'unite_carton' => 'nullable|string',
+            'prix_unite_carton' => 'nullable|numeric',
+            'nombre_carton' => 'nullable|integer',
+            'stock_seuil' => 'nullable|integer',
+
         ]);
-        $data['stock_global'] = $data['stock_global']*$data['quantite'];
+        $data['stock_global'] = $data['unite_carton']*$data['nombre_carton'];
+        $data['prix_total'] = $data['prix_unite_carton']*($data['nombre_carton']*$data['unite_carton']);
         $produit = Produit::create($data);
         StockBoutique::create([
             'boutique_id' => Auth::user()->boutique_id,
             'produit_id' => $produit->id,
-            'quantite' => $produit->stock_global*$produit->quantite,
+            'quantite' => $produit->unite_carton*$produit->nombre_carton,
         ]);
         return response()->json($produit, 201);
     }
@@ -61,22 +68,21 @@ class ProduitController extends Controller
     {
         $produit = Produit::findOrFail($id);
         $data = $request->validate([
-            'nom' => 'sometimes|string',
-            'code' => 'sometimes|string|unique:produits,code,' . $produit->id . ',id',
+            'nom' => 'required|string',
+            'code' => 'required|string|unique:produits,code',
             'categorie' => 'nullable|string',
-            'prix_vente_detail' => 'sometimes|numeric',
-            'prix_vente_gros' => 'nullable|numeric',
-            'prix_achat' => 'nullable|numeric',
-            'prix_gros' => 'nullable|numeric',
-            'prix_seuil_detail' => 'nullable|numeric',
-            'prix_seuil_gros' => 'nullable|numeric',
-            'quantite' => 'nullable|integer',
-            'stock_global' => 'nullable|integer',
+            'unite_carton' => 'nullable|string',
+            'prix_unite_carton' => 'nullable|numeric',
+            'nombre_carton' => 'nullable|integer',
+            'stock_seuil' => 'nullable|integer',
         ]);
-        $data['stock_global'] = $data['stock_global']*$data['quantite'];
+        $data['stock_global'] = $data['unite_carton']*$data['nombre_carton'];
+        $data['prix_total'] = $data['prix_unite_carton']*($data['nombre_carton']*$data['unite_carton']);
         $produit->update($data);
-        return $produit;
+        return response()->json($produit);
     }
+
+
 
     public function destroy(string $id)
     {

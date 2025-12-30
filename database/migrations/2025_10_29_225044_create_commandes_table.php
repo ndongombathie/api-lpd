@@ -20,8 +20,7 @@ return new class extends Migration
             $table->enum('type_vente', ['detail', 'gros'])->default('detail');
             $table->timestamp('date')->useCurrent();
             $table->timestamps();
-
-            $table->foreign('client_id')->references('id')->on('clients')->nullOnDelete();
+            $table->foreign('client_id')->references('id')->on('clients')->cascadeOnDelete();
             $table->foreign('vendeur_id')->references('id')->on('users')->cascadeOnDelete();
         });
     }
