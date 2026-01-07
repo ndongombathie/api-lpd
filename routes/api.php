@@ -15,6 +15,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Api\NotificationController; // 🔔 Cloche notifications
 use App\Http\Controllers\Api\DecaissementController; // 💸 Décaissements
+use App\Http\Controllers\Api\InventaireController;   // 📊 Inventaire
 
 /*
 |--------------------------------------------------------------------------
@@ -106,6 +107,7 @@ Route::middleware(['auth:sanctum', 'role:responsable'])->group(function () {
     |  - Mise à jour / suppression d'un paiement (tranche, etc.)
     |
     */
+
     // Création + liste des paiements pour une commande donnée
     Route::post('commandes/{commande}/paiements', [PaiementController::class, 'store']);
     Route::get('commandes/{commande}/paiements', [PaiementController::class, 'index']);
@@ -151,4 +153,18 @@ Route::middleware(['auth:sanctum', 'role:responsable'])->group(function () {
     Route::post('notifications/mark-all-read', [NotificationController::class, 'markAllRead']);
     Route::post('notifications/mark-module', [NotificationController::class, 'markByModule']);
     Route::post('notifications/{notification}/read', [NotificationController::class, 'markOneRead']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | INVENTAIRE
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('inventaire')->group(function () {
+        Route::get('kpi', [InventaireController::class, 'kpi']);
+        Route::get('ajustements', [InventaireController::class, 'index']);
+        Route::post('ajustements', [InventaireController::class, 'store']);
+        Route::get('ecarts-par-categorie', [InventaireController::class, 'ecartsParCategorie']);
+        Route::get('repartition-ecarts', [InventaireController::class, 'repartitionEcarts']);
+        Route::get('evolution-valeur-ecarts', [InventaireController::class, 'evolutionValeurEcarts']);
+    });
 });
