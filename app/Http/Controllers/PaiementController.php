@@ -18,11 +18,19 @@ use App\Models\HistoriqueVente;
 
 class PaiementController extends Controller
 {
+    protected $historique;
+    public function __construct(HistoriqueVenteController $historique) {
+      $this->historique=$historique;
+    }
+
     public function index(string $commandeId)
     {
         $commande = Commande::findOrFail($commandeId);
         return Paiement::where('commande_id', $commande->id)->orderBy('date')->get();
     }
+
+
+
 
     /**
      * Store a newly created resource in storage.
@@ -77,13 +85,14 @@ class PaiementController extends Controller
                     }
 
                     // Enregistrer la vente dans l'historique
-                    HistoriqueVente::create([
-                        'vendeur_id' => $commande->vendeur_id,
-                        'produit_id' => $detail->produit_id,
-                        'quantite' => $detail->quantite,
-                        'prix_unitaire' => $detail->prix_unitaire,
-                        'montant' => $commande->total,
-                    ]);
+                    $this->historique->store(
+                        new Request([
+                            'vendeur_id' => $commande->vendeur_id,
+                            'produit_id' => $detail->produit_id,
+                            'quantite' => $detail->quantite,
+                            'montant' => $detail->montant,
+                        ])
+                    );
 
                     MouvementStock::create([
                         'source' => 'boutique:' . $boutiqueId,
@@ -100,6 +109,8 @@ class PaiementController extends Controller
             }
             return $paiement;
     }
+
+
 
     /**
      * Display the specified resource.

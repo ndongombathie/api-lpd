@@ -21,11 +21,45 @@ class HistoriqueVenteController extends Controller
     }
 
     /**
+     * Get the total sales for a given day.
+     */
+    public function totalParJour(Request $request)
+    {
+        $request->validate([
+            'date' => 'required|date_format:Y-m-d',
+        ]);
+
+        $date = $request->input('date');
+
+        try {
+            $total = HistoriqueVente::whereDate('created_at', $date)->sum('montant');
+            return response()->json(['date' => $date, 'total' => $total]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    
+    /**
      * Store a newly created resource in storage.
      */
+
+
     public function store(Request $request)
     {
-        //
+        try {
+            $request->validate([
+                'vendeur_id' => 'required|exists:users,id',
+                'produit_id' => 'required|exists:produits,id',
+                'quantite' => 'required|integer|min:1',
+                'montant' => 'required|numeric|min:0',
+            ]);
+
+            $historiqueVente = HistoriqueVente::create($request->all());
+            return response()->json($historiqueVente, 201);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
     /**

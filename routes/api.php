@@ -67,7 +67,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
     # Gestion des historiques de vente
-    Route::apiResource('historique-ventes', HistoriqueVenteController::class);
+    Route::get('index', [HistoriqueVenteController::class, 'index']);
+    Route::get('total-vente-par-jour', [HistoriqueVenteController::class, 'totalParJour']);
 
     Route::get('stocks', [StockController::class, 'index']);
     Route::apiResource('decaissements', DecaissementController::class);

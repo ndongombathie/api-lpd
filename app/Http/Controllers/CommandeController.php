@@ -8,6 +8,7 @@ use App\Models\Produit;
 use App\Events\CommandeValidee;
 use App\Events\CommandeAnnulee;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class CommandeController extends Controller
@@ -15,7 +16,7 @@ class CommandeController extends Controller
     public function index()
     {
         try {
-            return response()->json( Commande::query()->with(['details','client','vendeur'])->latest()->paginate(20));
+            return response()->json( Commande::with('details','client','vendeur')->where('vendeur_id',Auth::user()->id)->paginate(20));
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la récupération des commandes',
@@ -57,7 +58,7 @@ class CommandeController extends Controller
         }
     }
 
-    /**
+    /*
      * Store a newly created resource in storage.
      */
     public function store(Request $request)

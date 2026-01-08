@@ -102,18 +102,17 @@ class TransferController extends Controller
 
     public function valideTransfer(Request $request){
       try {
-        //dd($request->all());
-        $transfer = Transfer::findOrFail($request->id);
-        $transfer->status = 'valide';
-        $transfer->seuil = $request->seuil;
-        $produit = Produit::where('id', $transfer->produit_id)->get()->first();
-        $produit->prix_vente_detail = $request->prix_unitaire;
-        $produit->prix_vente_gros = $request->prix_gros;
-        $produit->prix_seuil_detail = $request->prix_seuil_detail;
-        $produit->prix_seuil_gros = $request->prix_seuil_gros;
-        $produit->save();
-        $transfer->save();
-        return response()->json($transfer);
+            $transfer = Transfer::findOrFail($request->id);
+            $transfer->status = 'valide';
+            $transfer->seuil = $request->seuil;
+            $produit = Produit::where('id', $transfer->produit_id)->get()->first();
+            $produit->prix_vente_detail = $request->prix_unitaire;
+            $produit->prix_vente_gros = $request->prix_gros;
+            $produit->prix_seuil_detail = $request->prix_seuil_detail;
+            $produit->prix_seuil_gros = $request->prix_seuil_gros;
+            $produit->save();
+            $transfer->save();
+            return response()->json($transfer);
       } catch (\Throwable $th) {
         return response()->json(['error' => $th->getMessage()], 500);
       }
