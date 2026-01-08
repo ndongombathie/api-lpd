@@ -23,6 +23,33 @@ class TransferController extends Controller
         }
     }
 
+
+    /**
+     * Get the total count of products in transfers.
+     */
+    public function nombreProduits()
+    {
+        try {
+            $count = Transfer::count();
+            return response()->json(['total' => $count]);
+        } catch (\Throwable $th) {
+            return response()->json(['error' => $th->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Get the total quantity of products in transfers.
+     */
+    public function quantiteTotaleProduit()
+    {
+        try {
+            $totalQuantity = Transfer::sum('quantite');
+            return response()->json(['total_quantity' => $totalQuantity]);
+        } catch (\Throwable $th) {
+            return response()->json(['error' => $th->getMessage()], 500);
+        }
+    }
+
     public function produitsDisponibles()
     {
         try {
@@ -56,11 +83,29 @@ class TransferController extends Controller
     }
 
 
+    /**
+     * Get products below stock threshold
+     */
+    public function produitsSousSeuil()
+    {
+        try {
+            $transfers = Transfer::with(['produit'])
+                ->where('status', 'valide')
+                ->whereRaw('quantite <= seuil')
+                ->paginate(20);
+            return response()->json($transfers);
+        } catch (\Throwable $th) {
+            return response()->json(['error' => $th->getMessage()], 500);
+        }
+    }
+
+
     public function valideTransfer(Request $request){
       try {
         //dd($request->all());
         $transfer = Transfer::findOrFail($request->id);
         $transfer->status = 'valide';
+        $transfer->seuil = $request->seuil;
         $produit = Produit::where('id', $transfer->produit_id)->get()->first();
         $produit->prix_vente_detail = $request->prix_unitaire;
         $produit->prix_vente_gros = $request->prix_gros;

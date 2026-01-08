@@ -15,7 +15,7 @@ class CommandeController extends Controller
     public function index()
     {
         try {
-            return response()->json( Commande::query()->with('details')->latest()->paginate(20));
+            return response()->json( Commande::query()->with(['details','client','vendeur'])->latest()->paginate(20));
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la récupération des commandes',
@@ -143,7 +143,7 @@ class CommandeController extends Controller
     {
         $commande = Commande::findOrFail($id);
         $commande->update(['statut' => 'validee']);
-        $commande->load('details', 'vendeur');
+        $commande->load('details', 'vendeur','client');
         event(new CommandeValidee($commande));
         return $commande;
     }
@@ -152,7 +152,7 @@ class CommandeController extends Controller
     {
         $commande = Commande::findOrFail($id);
         $commande->update(['statut' => 'annulee']);
-        $commande->load('details', 'vendeur');
+        $commande->load('details', 'vendeur','client');
         event(new CommandeAnnulee($commande));
         return $commande;
     }

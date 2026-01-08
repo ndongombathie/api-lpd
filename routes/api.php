@@ -60,6 +60,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('produits-transfer', [TransferController::class, 'index']);
     Route::put('valider-produits-transfer', [TransferController::class, 'valideTransfer']);
     Route::get('produits-disponibles-boutique', [TransferController::class, 'produitsDisponibles']);
+    Route::get('nombre-produits-transfer', [TransferController::class, 'nombreProduits']);
+    Route::get('quantite-totale-produit-transfer', [TransferController::class, 'quantiteTotaleProduit']);
+    Route::get('produits-sous-seuil', [TransferController::class, 'produitsSousSeuil']);
+
 
 
     # Gestion des historiques de vente
