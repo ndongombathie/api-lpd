@@ -106,12 +106,20 @@ class DecaissementController extends Controller
     public function updateStatusDecaissement(Request $request, Decaissement $decaissement)
     {
         try {
-            // Utiliser l'heure exacte actuelle pour la validation
-            $decaissement->update([
+            $payload = [
                 'statut' => $request->statut,
                 'caissier_id' => Auth::user()->id,
-                'date' => now(), // Mettre à jour la date avec l'heure exacte de validation
-            ]);
+                // Utiliser l'heure exacte actuelle pour la validation
+                'date' => now(),
+            ];
+
+            // Optionnel: permettre au caissier de choisir le compte/méthode utilisée
+            if ($request->filled('methode_paiement')) {
+                $payload['methode_paiement'] = $request->methode_paiement;
+            }
+
+            // Utiliser l'heure exacte actuelle pour la validation
+            $decaissement->update($payload);
             return response()->json($decaissement);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
