@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('historique_ventes', function (Blueprint $table) {
-            $table->uuid()->primary();
+            $table->uuid('id')->primary();
             $table->foreignUuid('vendeur_id')->references('id')->on('users');
             $table->foreignUuid('produit_id')->references('id')->on('produits');
             $table->unsignedInteger('quantite');

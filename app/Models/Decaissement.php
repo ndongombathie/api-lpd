@@ -22,14 +22,14 @@ class Decaissement extends Model
     ];
     protected $casts = [
         'montant' => 'integer',
+        'date' => 'date',
     ];
     
-    protected $appends = [
-        'statut',
-        'methode_paiement',
-        'date',
-        'montant',
-    ];
+    // Ne pas utiliser $appends pour éviter les transformations automatiques
+    // Les accesseurs seront utilisés seulement quand nécessaire (pour l'affichage)
+
+    // Désactiver les accesseurs pour l'API - retourner les valeurs brutes
+    protected $hidden = [];
 
     public function caissier()
     {
@@ -40,38 +40,18 @@ class Decaissement extends Model
     {
         return $this->belongsTo(User::class);
     }
-    public function getStatutAttribute($value)
-    {
-        return ucfirst($value);
-    }
     public function setStatutAttribute($value)
     {
         $this->attributes['statut'] = strtolower($value);
-    }
-    public function getMethodePaiementAttribute($value)
-    {
-        return ucfirst($value);
     }
     public function setMethodePaiementAttribute($value)
     {
         $this->attributes['methode_paiement'] = strtolower($value);
     }
-    public function getDateAttribute($value)
-    {
-        return date('d/m/Y', strtotime($value));
-    }
-    public function setDateAttribute($value)
-    {
-        $this->attributes['date'] = date('Y-m-d', strtotime($value));
-    }
-    public function getMontantAttribute($value)
-    {
-        return number_format($value, 2, ',', ' ');
-    }
-    public function setMontantAttribute($value)
-    {
-        $this->attributes['montant'] = str_replace(',', '', $value);
-    }
+    // Ne pas transformer la date automatiquement - garder le format ISO
+    // Le formatage sera fait côté frontend si nécessaire
+    // Ne pas formater le montant automatiquement - garder la valeur numérique
+    // Le formatage sera fait côté frontend si nécessaire
     public function getLibelleAttribute($value)
     {
         return ucfirst($value);

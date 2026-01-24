@@ -27,7 +27,11 @@ class CommandeController extends Controller
 
     public function getCommandesEnAttente(){
         try {
-            return response()->json(Commande::query()->where('statut', 'attente')->with('details','client')->latest()->paginate(20));
+            return response()->json(Commande::query()
+                ->where('statut', 'attente')
+                ->with(['details.produit', 'client', 'vendeur', 'paiements'])
+                ->latest()
+                ->paginate(20));
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la récupération des commandes en attente',
@@ -38,7 +42,13 @@ class CommandeController extends Controller
 
     public function getCommandesValidees(){
         try {
-            return response()->json(Commande::query()->where('statut', 'payee')->with('details','client','vendeur')->latest()->paginate(20));
+            return response()->json(Commande::query()
+                ->where('statut', 'payee')
+                ->with(['details','client','vendeur', 'paiements' => function($q) {
+                    $q->orderBy('date', 'desc'); // Trier les paiements par date décroissante
+                }])
+                ->latest()
+                ->paginate(20));
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la récupération des commandes validées',
@@ -49,7 +59,12 @@ class CommandeController extends Controller
 
     public function getCommandesAnnulees(){
         try {
-            return response()->json(Commande::query()->where('statut', 'annulee')->where('created_at','>=',now()->subMonth())->with('details','client','vendeur')->latest()->paginate(20));
+            return response()->json(Commande::query()
+                ->where('statut', 'annulee')
+                ->where('created_at','>=',now()->subMonth())
+                ->with(['details.produit', 'client', 'vendeur'])
+                ->latest()
+                ->paginate(20));
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la récupération des commandes annulées',
@@ -153,8 +168,15 @@ class CommandeController extends Controller
     {
         $commande = Commande::findOrFail($id);
         $commande->update(['statut' => 'annulee']);
-        $commande->load('details', 'vendeur','client');
-        event(new CommandeAnnulee($commande));
+        $commande->load('details', 'vendeur', 'client');
+
+        // Diffuser l'événement (sans bloquer si Reverb n'est pas disponible)
+        try {
+            event(new CommandeAnnulee($commande));
+        } catch (\Exception $e) {
+            // Log l'erreur mais ne bloque pas l'opération
+            \Log::warning('Erreur lors de la diffusion de l\'annulation: ' . $e->getMessage());
+        }
         return $commande;
     }
 }

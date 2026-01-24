@@ -17,6 +17,8 @@ use App\Mail\UserCredentialsMail;
 use App\Http\Controllers\HistoriqueVenteController;
 use App\Http\Controllers\TransferController;
 use App\Http\Controllers\DecaissementController;
+use App\Http\Controllers\CaissierDashboardController;
+use App\Http\Controllers\CaissierCaisseJournalController;
 
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
@@ -72,7 +74,18 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('stocks', [StockController::class, 'index']);
     Route::apiResource('decaissements', DecaissementController::class);
+    Route::get('decaissements-attente', [DecaissementController::class, 'getDecaissementsEnAttente']);
     Route::put('decaissements/{decaissement}/statut', [DecaissementController::class, 'updateStatusDecaissement']);
+
+    // Dashboard caissier (optimisé côté backend)
+    Route::get('caissier/dashboard/stats', [CaissierDashboardController::class, 'stats']);
+    Route::get('caissier/dashboard/ventes-par-moyen', [CaissierDashboardController::class, 'ventesParMoyen']);
+    Route::get('caissier/dashboard/ventes-par-heure', [CaissierDashboardController::class, 'ventesParHeure']);
+
+    // Rapports journaliers de caisse (caissier)
+    Route::get('caissier/caisses-journal/{date}', [CaissierCaisseJournalController::class, 'show']);
+    Route::post('caissier/caisses-journal', [CaissierCaisseJournalController::class, 'store']);
+    Route::put('caissier/caisses-journal/{date}/cloture', [CaissierCaisseJournalController::class, 'cloture']);
     Route::get('stocks/ruptures', [StockController::class, 'ruptures']);
     Route::get('produits-ruptures', [ProduitController::class, 'produits_en_rupture']);
     Route::post('stocks/transfer', [StockController::class, 'transfer']);
