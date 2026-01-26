@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\UserCredentialsMail;
+use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
@@ -26,7 +27,6 @@ class UserController extends Controller
     {
         try {
             $data = $request->validate([
-                'boutique_id' => 'required|uuid|exists:boutiques,id',
                 'nom' => 'required|string',
                 'prenom' => 'required|string',
                 'adresse' => 'nullable|string',
@@ -38,12 +38,13 @@ class UserController extends Controller
             ]);
 
             $plainPassword = $data['password'];
-            //$data['boutique_id']=Auth::user();
+            $data['boutique_id']=Auth::user()->id;
             $user = User::create($data);
 
             // Envoyer les identifiants par email
             try {
                 Mail::to($user->email)->send(new UserCredentialsMail($user, $plainPassword));
+                logger()->info('Identifiants de connexion envoyés par e-mail à l\'utilisateur ' . $user->email);
             } catch (\Throwable $mailEx) {
                 // On n'échoue pas la création de l'utilisateur si l'email ne part pas,
                 // mais on retourne l'info dans la réponse

@@ -103,10 +103,8 @@ class StockController extends Controller
     public function reapprovisionner(Request $request)
     {
         $validated = $request->validate([
-            'destination_boutique_id' => 'required|uuid|exists:boutiques,id',
             'produit_id' => 'required|uuid|exists:produits,id',
             'quantite' => 'nullable|integer|min:1',
-            'stock_cible' => 'nullable|integer|min:1',
         ]);
 
         if (empty($validated['quantite']) && empty($validated['stock_cible'])) {
@@ -121,32 +119,15 @@ class StockController extends Controller
             ]);
 
             $qte = $validated['quantite'] ?? null;
-            if ($qte === null) {
-                $current = $dest->quantite;
-                $target = $validated['stock_cible'];
-                $qte = max(0, $target - $current);
-                if ($qte <= 0) {
-                    return response()->json([
-                        'message' => 'Stock déjà supérieur ou égal au stock cible',
-                        'quantite' => 0,
-                    ], 200);
-                }
+            if ($qte !== null) {
+              $dest->increment('quantite', $qte);
+              $produit->increment('stock_global', $qte*$produit->unite_carton);
             }
 
             if ($produit->stock_global < $qte) {
                 abort(422, 'Stock global insuffisant');
             }
 
-            // Sortie du dépôt
-            $produit->decrement('stock_global', $qte);
-            MouvementStock::create([
-                'source' => 'depot',
-                'destination' => 'boutique:' . Auth::user()->boutique_id,
-                'produit_id' => $validated['produit_id'],
-                'quantite' => $qte,
-                'type' => 'sortie',
-                'date' => now(),
-            ]);
 
             // Entrée en boutique
             $dest->increment('quantite', $qte);

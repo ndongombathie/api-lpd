@@ -56,13 +56,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('fournisseurs', FournisseurController::class);
 
     Route::get('transfers/boutique/{boutique_id}', [TransferController::class, 'produitsByBoutique']);
+
     Route::get('transfers/valide', [TransferController::class, 'getTransferValide']);
     Route::get('produits-transfer', [TransferController::class, 'index']);
     Route::put('valider-produits-transfer', [TransferController::class, 'valideTransfer']);
     Route::get('produits-disponibles-boutique', [TransferController::class, 'produitsDisponibles']);
-    Route::get('nombre-produits-transfer', [TransferController::class, 'nombreProduits']);
-    Route::get('quantite-totale-produit-transfer', [TransferController::class, 'quantiteTotaleProduit']);
+    Route::get('nombre-produits-total', [TransferController::class, 'nombreProduits']);
+    Route::get('quantite-totale-produit', [TransferController::class, 'quantiteTotaleProduit']);
     Route::get('produits-sous-seuil', [TransferController::class, 'produitsSousSeuil']);
+    Route::get('montant-total-stock', [TransferController::class, 'MontantTotalStock']);
 
 
 

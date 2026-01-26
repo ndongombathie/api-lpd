@@ -16,12 +16,13 @@ class DecaissementController extends Controller
     public function index()
     {
         try {
-            $decaissements = Decaissement::with(['user', 'caissier'])->paginate(10);
+            $decaissements = Decaissement::with(['user', 'caissier'])->paginate(10) ;
             return response()->json($decaissements);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
+
 
     /**
      * Store a newly created resource in storage.
@@ -86,4 +87,6 @@ class DecaissementController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
+
+
 }
