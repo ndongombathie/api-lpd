@@ -10,18 +10,40 @@ use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         try {
-            return User::query()->latest()->paginate(20);
+            $query = User::query()->latest();
+            // Filter by role if provided
+            if ($request->filled('role')) {
+                $query->where('role', $request->input('role'));
+            }
+
+            // Filter by boutique_id if provided
+            if ($request->filled('boutique_id')) {
+                $query->where('boutique_id', $request->input('boutique_id'));
+            }
+
+            // Filter by search term if provided
+            if ($request->filled('search')) {
+                $search = $request->input('search');
+                $query->where(function ($q) use ($search) {
+                    $q->where('nom', 'like', "%{$search}%")
+                      ->orWhere('prenom', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%");
+                });
+            }
+            return $query->paginate(20);
+
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la récupération des utilisateurs',
                 'error' => $th->getMessage()
             ], 500);
         }
-
     }
+
+
 
     public function store(Request $request)
     {

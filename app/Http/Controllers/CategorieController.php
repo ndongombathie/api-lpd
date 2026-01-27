@@ -15,7 +15,7 @@ class CategorieController extends Controller
     public function index()
     {
         try {
-            return response()->json(Categorie::all());
+            return response()->json(Categorie::query()->latest()->paginate(20));
         } catch (\Throwable $th) {
             //throw $th;
         }
@@ -39,7 +39,11 @@ class CategorieController extends Controller
      */
     public function show(Categorie $categorie)
     {
-        //
+        try {
+            return response()->json($categorie);
+        } catch (\Throwable $th) {
+            //throw $th;
+        }
     }
 
     /**
@@ -63,6 +67,11 @@ class CategorieController extends Controller
      */
     public function destroy(Categorie $categorie)
     {
-        //
+        try {
+            $categorie->delete();
+            return response()->json(null,Response::HTTP_NO_CONTENT);
+        } catch (\Throwable $th) {
+            //throw $th;
+        }
     }
 }
