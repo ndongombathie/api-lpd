@@ -14,6 +14,7 @@ use App\Models\MouvementStock;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\Decaissement;
+use App\Models\Transfer;
 
 class DatabaseSeeder extends Seeder
 {
@@ -43,6 +44,7 @@ class DatabaseSeeder extends Seeder
         Produit::factory()->count(50)->create();
         Client::factory()->count(20)->create();
         Fournisseur::factory()->count(5)->create();
+        Transfer::factory()->count(10)->create();
 
         // Stock initial par boutique
         $this->call(StockBoutiqueSeeder::class);
@@ -97,7 +99,7 @@ class DatabaseSeeder extends Seeder
         });
 
         // Mouvements de stock
-        MouvementStock::factory()->count(80)->create();
+       // MouvementStock::factory()->count(80)->create();
 
         // Décaisements
         Decaissement::factory()->count(10)->create();
