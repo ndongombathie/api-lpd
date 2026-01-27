@@ -15,7 +15,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('nom');
             $table->string('code')->unique();
-            $table->string('categorie')->default('autre');
+            $table->foreignUuid('categorie_id');
             $table->bigInteger('unite_carton')->default(0);
             $table->bigInteger('prix_unite_carton')->default(0);
             $table->bigInteger('prix_vente_detail')->default(0);

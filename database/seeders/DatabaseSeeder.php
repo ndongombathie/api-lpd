@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use App\Models\Boutique;
+use App\Models\Categorie;
 use App\Models\Produit;
 use App\Models\Client;
 use App\Models\Fournisseur;
@@ -41,6 +42,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // Données de base
+        Categorie::factory()->count(50)->create();
         Produit::factory()->count(50)->create();
         Client::factory()->count(20)->create();
         Fournisseur::factory()->count(5)->create();

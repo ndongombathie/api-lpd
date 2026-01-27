@@ -70,7 +70,7 @@ class ProduitController extends Controller
         $data = $request->validate([
             'nom' => 'required|string',
             'code' => 'required|string|unique:produits,code',
-            'categorie' => 'nullable|string',
+            'categorie_id' => 'nullable|string',
             'unite_carton' => 'nullable|string',
             'prix_unite_carton' => 'nullable|numeric',
             'nombre_carton' => 'nullable|integer',
