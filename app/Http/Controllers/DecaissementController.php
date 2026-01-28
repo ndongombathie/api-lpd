@@ -17,28 +17,28 @@ class DecaissementController extends Controller
     public function index(Request $request)
     {
         try {
-            $validated = $request->validate([
-                'statut' => 'nullable|string',
-                'date' => 'nullable|date',
-                'date_debut' => 'nullable|date',
-                'date_fin' => 'nullable|date',
-                'per_page' => 'nullable|integer|min:1|max:200',
-            ]);
+            $query = Decaissement::query()->latest();
+            // Filter by role if provided
+            if ($request->filled('motif')) {
+                $query->where('motif', $request->input('motif'));
+            }
 
-            $perPage = $validated['per_page'] ?? 10;
-            $statut = isset($validated['statut']) ? strtolower($validated['statut']) : null;
-            $date = isset($validated['date']) ? Carbon::parse($validated['date'])->toDateString() : null;
-            $dateDebut = isset($validated['date_debut']) ? Carbon::parse($validated['date_debut'])->toDateString() : null;
-            $dateFin = isset($validated['date_fin']) ? Carbon::parse($validated['date_fin'])->toDateString() : null;
+            // Filter by boutique_id if provided
+            if ($request->filled('cassier_id')) {
+                $query->where('cassier_id', $request->input('cassier_id'));
+            }
 
-            $decaissements = Decaissement::with(['user', 'caissier'])
-                ->when($statut, fn($q) => $q->where('statut', $statut))
-                ->when($date, fn($q) => $q->whereDate('date', $date))
-                ->when($dateDebut, fn($q) => $q->whereDate('date', '>=', $dateDebut))
-                ->when($dateFin, fn($q) => $q->whereDate('date', '<=', $dateFin))
-                ->latest()
-                ->paginate($perPage);
-            return response()->json($decaissements);
+            // Filter by search term if provided
+            if ($request->filled('search')) {
+                $search = $request->input('search');
+                $query->where(function ($q) use ($search) {
+                    $q->where('methode_paiement', 'like', "%{$search}%")
+                      ->orWhere('date', 'like', "%{$search}%")
+                      ->orWhere('status', 'like', "%{$search}%");
+                });
+            }
+
+            return response()->json($query->paginate(10));
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
@@ -51,10 +51,10 @@ class DecaissementController extends Controller
     public function store(StoreDecaissementRequest $request)
     {
         try {
-            $request->merge([
-                'user_id' => Auth::user()->id,
-            ]);
-            $decaissement = Decaissement::create($request->validated());
+            $data=$request->validated();
+            $data['user_id'] = Auth::user()->id;
+            $decaissement = Decaissement::create($data);
+            dd($decaissement);
             return response()->json($decaissement, 201);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);

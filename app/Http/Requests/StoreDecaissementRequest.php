@@ -25,7 +25,6 @@ class StoreDecaissementRequest extends FormRequest
             'motif' => 'required|string|max:255',
             'libelle'=> 'required|string|max:255',
             'date' => 'required|date',
-            'statut' => 'required|string|max:255',
             'montant' => 'required|numeric|min:0',
             'methode_paiement' => 'required|string|max:255',
         ];

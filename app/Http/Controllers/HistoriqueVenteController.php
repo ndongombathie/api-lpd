@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\HistoriqueVente;
+use App\Models\Produit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
@@ -36,11 +37,12 @@ class HistoriqueVenteController extends Controller
                     DB::raw('SUM(historique_ventes.quantite) as quantite_vendue')
                 )
                // ->whereDate('historique_ventes.created_at', $date)
-                ->groupBy('transfers.produit_id', 'transfers.quantite') // Added GROUP BY to fix SQL mode only_full_group_by error
+                ->groupBy('transfers.produit_id', 'transfers.quantite')
                 ->get();
             // Ajouter la colonne écart (stock_initial - quantite_vendue)
             $produitsVendus->map(function ($produit) {
                 $produit->ecart = $produit->stock_initial - $produit->quantite_vendue;
+                $produit->produit=Produit::find($produit->produit_id);
                 return $produit;
             });
 
@@ -50,6 +52,37 @@ class HistoriqueVenteController extends Controller
         }
 
     }
+
+     public function inventaireDepot(Request $request)
+    {
+
+        $date=$request->input('date') ?? Carbon::now()->format('Y-m-d');
+        try {
+            // Récupérer les produits vendus à la date donnée avec la quantité totale vendue
+            $produitsVendus = DB::table('historique_ventes')
+                ->join('transfers', 'historique_ventes.produit_id', '=', 'transfers.produit_id')
+                ->select(
+                    'transfers.produit_id',
+                    'transfers.quantite as stock_initial',
+                    DB::raw('SUM(historique_ventes.quantite) as quantite_vendue')
+                )
+               // ->whereDate('historique_ventes.created_at', $date)
+                ->groupBy('transfers.produit_id', 'transfers.quantite')
+                ->get();
+            // Ajouter la colonne écart (stock_initial - quantite_vendue)
+            $produitsVendus->map(function ($produit) {
+                $produit->ecart = $produit->stock_initial - $produit->quantite_vendue;
+                $produit->produit=Produit::find($produit->produit_id);
+                return $produit;
+            });
+
+            return response()->json(['date' => $date, 'produits' => $produitsVendus]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+
+    }
+
 
 
     /**
