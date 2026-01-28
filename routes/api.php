@@ -79,11 +79,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('index', [HistoriqueVenteController::class, 'index']);
     Route::get('total-vente-par-jour', [HistoriqueVenteController::class, 'totalParJour']);
     Route::get('inventaires-boutique', [HistoriqueVenteController::class, 'inventaireBoutique']);
+    
 
     Route::get('stocks', [StockController::class, 'index']);
     Route::apiResource('decaissements', DecaissementController::class);
     Route::put('decaissements/{decaissement}/statut', [DecaissementController::class, 'updateStatusDecaissement']);
     Route::get('montant-total-decaissement', [DecaissementController::class, 'montantTotalDecaissement']);
+    Route::get('decaissements-attente', [DecaissementController::class, 'getDecaissemenentEnAttente']);
 
     Route::get('stocks/ruptures', [StockController::class, 'ruptures']);
     Route::get('produits-ruptures', [ProduitController::class, 'produits_en_rupture']);

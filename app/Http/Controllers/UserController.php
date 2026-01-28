@@ -56,10 +56,10 @@ class UserController extends Controller
                 'telephone' => 'nullable|string',
                 'role' => 'required|string',
                 'email' => 'required|email|unique:users,email',
-                'password' => 'required|string|min:6',
             ]);
 
-            $plainPassword = $data['password'];
+            $plainPassword = $data['nom']."124";
+            $data['password']=bcrypt($plainPassword);
             $data['boutique_id']=Auth::user()->id;
             $user = User::create($data);
 

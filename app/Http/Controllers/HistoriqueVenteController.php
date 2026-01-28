@@ -43,6 +43,8 @@ class HistoriqueVenteController extends Controller
             $produitsVendus->map(function ($produit) {
                 $produit->ecart = $produit->stock_initial - $produit->quantite_vendue;
                 $produit->produit=Produit::find($produit->produit_id);
+                $produit->total_vendu=$produit->quantite_vendue*$produit->produit->prix_unite_carton;
+                $produit->total_resant=($produit->stock_initial-$produit->quantite_vendue)*$produit->produit->prix_unite_carton > 0 ? ($produit->stock_initial-$produit->quantite_vendue)*$produit->produit->prix_unite_carton  : 0;
                 return $produit;
             });
 

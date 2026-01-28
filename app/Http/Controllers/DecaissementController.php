@@ -18,7 +18,7 @@ class DecaissementController extends Controller
     {
         try {
             $query = Decaissement::query()->latest();
-            // Filter by role if provided
+            // Filter by motif if provided
             if ($request->filled('motif')) {
                 $query->where('motif', $request->input('motif'));
             }
@@ -41,6 +41,17 @@ class DecaissementController extends Controller
             return response()->json($query->paginate(10));
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function getDecaissemenentEnAttente(){
+        try {
+            return response()->json(Decaissement::query()->where('statut', 'en_attente')->with('user')->latest()->paginate(20));
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Erreur lors de la récupération des décaissements en attente',
+                'error' => $th->getMessage(),
+            ], 500);
         }
     }
 
