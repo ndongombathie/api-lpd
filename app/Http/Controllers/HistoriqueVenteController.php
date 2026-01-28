@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\HistoriqueVente;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Carbon;
 
 class HistoriqueVenteController extends Controller
 {
@@ -20,16 +22,43 @@ class HistoriqueVenteController extends Controller
         }
     }
 
+    public function inventaireBoutique(Request $request)
+    {
+
+        $date=$request->input('date') ?? Carbon::now()->format('Y-m-d');
+        try {
+            // Récupérer les produits vendus à la date donnée avec la quantité totale vendue
+            $produitsVendus = DB::table('historique_ventes')
+                ->join('transfers', 'historique_ventes.produit_id', '=', 'transfers.produit_id')
+                ->select(
+                    'transfers.produit_id',
+                    'transfers.quantite as stock_initial',
+                    DB::raw('SUM(historique_ventes.quantite) as quantite_vendue')
+                )
+               // ->whereDate('historique_ventes.created_at', $date)
+                ->groupBy('transfers.produit_id', 'transfers.quantite') // Added GROUP BY to fix SQL mode only_full_group_by error
+                ->get();
+            // Ajouter la colonne écart (stock_initial - quantite_vendue)
+            $produitsVendus->map(function ($produit) {
+                $produit->ecart = $produit->stock_initial - $produit->quantite_vendue;
+                return $produit;
+            });
+
+            return response()->json(['date' => $date, 'produits' => $produitsVendus]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+
+    }
+
+
     /**
      * Get the total sales for a given day.
      */
     public function totalParJour(Request $request)
     {
-        $request->validate([
-            'date' => 'required|date_format:Y-m-d',
-        ]);
 
-        $date = $request->input('date');
+        $date = $request->input('date') ?? Carbon::now()->format('Y-m-d');
 
         try {
             $total = HistoriqueVente::whereDate('created_at', $date)->sum('montant');
@@ -39,7 +68,7 @@ class HistoriqueVenteController extends Controller
         }
     }
 
-    
+
     /**
      * Store a newly created resource in storage.
      */

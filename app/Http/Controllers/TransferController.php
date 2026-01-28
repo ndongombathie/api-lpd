@@ -106,8 +106,8 @@ class TransferController extends Controller
             $transfer->status = 'valide';
             $transfer->seuil = $request->seuil;
             $produit = Produit::where('id', $transfer->produit_id)->get()->first();
-            $produit->prix_vente_detail = $request->prix_unitaire;
-            $produit->prix_vente_gros = $request->prix_gros;
+            $produit->prix_vente_detail = $request->prix_vente_detail;
+            $produit->prix_vente_gros = $request->prix_vente_gros;
             $produit->prix_seuil_detail = $request->prix_seuil_detail;
             $produit->prix_seuil_gros = $request->prix_seuil_gros;
             $produit->save();
