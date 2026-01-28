@@ -44,6 +44,15 @@ class DecaissementController extends Controller
         }
     }
 
+    public function montantTotalDecaissement(){
+        try {
+            $montantTotal =Decaissement::sum('montant');
+            return response()->json(['montant_total' => $montantTotal], 200);
+        } catch (\Throwable $th) {
+            //throw $th;
+        }
+    }
+
 
     /**
      * Store a newly created resource in storage.
@@ -54,7 +63,6 @@ class DecaissementController extends Controller
             $data=$request->validated();
             $data['user_id'] = Auth::user()->id;
             $decaissement = Decaissement::create($data);
-            dd($decaissement);
             return response()->json($decaissement, 201);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);

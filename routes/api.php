@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BoutiqueController;
 use App\Http\Controllers\CategorieController;
 use App\Http\Controllers\ProduitController;
 use App\Http\Controllers\ClientController;
@@ -47,6 +48,10 @@ Route::middleware('auth:sanctum')->post('/broadcasting/auth', function (Request 
 });
 
 Route::middleware('auth:sanctum')->group(function () {
+
+    Route::get('montant-total-boutique', [BoutiqueController::class, 'montantTotalBoutique']);
+    Route::get('benefice-boutique', [BoutiqueController::class, 'BeneficeBoutique']);
+
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('mon-profil', [AuthController::class, 'monProfil']);
     Route::put('mon-profil', [AuthController::class, 'updateProfil']);
@@ -78,6 +83,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('stocks', [StockController::class, 'index']);
     Route::apiResource('decaissements', DecaissementController::class);
     Route::put('decaissements/{decaissement}/statut', [DecaissementController::class, 'updateStatusDecaissement']);
+    Route::get('montant-total-decaissement', [DecaissementController::class, 'montantTotalDecaissement']);
+
     Route::get('stocks/ruptures', [StockController::class, 'ruptures']);
     Route::get('produits-ruptures', [ProduitController::class, 'produits_en_rupture']);
     Route::post('stocks/transfer', [StockController::class, 'transfer']);
