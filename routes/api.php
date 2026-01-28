@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BoutiqueController;
+use App\Http\Controllers\CategorieController;
 use App\Http\Controllers\ProduitController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\FournisseurController;
@@ -48,29 +50,37 @@ Route::middleware('auth:sanctum')->post('/broadcasting/auth', function (Request 
 });
 
 Route::middleware('auth:sanctum')->group(function () {
+
+    Route::get('montant-total-boutique', [BoutiqueController::class, 'montantTotalBoutique']);
+    Route::get('benefice-boutique', [BoutiqueController::class, 'BeneficeBoutique']);
+
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('mon-profil', [AuthController::class, 'monProfil']);
     Route::put('mon-profil', [AuthController::class, 'updateProfil']);
 
+    Route::apiResource('categories',CategorieController::class);
     Route::apiResource('produits', ProduitController::class);
     Route::apiResource('clients', ClientController::class);
     Route::get('clients/{client}/paiements-tranches', [ClientController::class, 'paiementsTranches']);
     Route::apiResource('fournisseurs', FournisseurController::class);
 
     Route::get('transfers/boutique/{boutique_id}', [TransferController::class, 'produitsByBoutique']);
+
     Route::get('transfers/valide', [TransferController::class, 'getTransferValide']);
     Route::get('produits-transfer', [TransferController::class, 'index']);
     Route::put('valider-produits-transfer', [TransferController::class, 'valideTransfer']);
     Route::get('produits-disponibles-boutique', [TransferController::class, 'produitsDisponibles']);
-    Route::get('nombre-produits-transfer', [TransferController::class, 'nombreProduits']);
-    Route::get('quantite-totale-produit-transfer', [TransferController::class, 'quantiteTotaleProduit']);
+    Route::get('nombre-produits-total', [TransferController::class, 'nombreProduits']);
+    Route::get('quantite-totale-produit', [TransferController::class, 'quantiteTotaleProduit']);
     Route::get('produits-sous-seuil', [TransferController::class, 'produitsSousSeuil']);
+    Route::get('montant-total-stock', [TransferController::class, 'MontantTotalStock']);
 
 
 
     # Gestion des historiques de vente
     Route::get('index', [HistoriqueVenteController::class, 'index']);
     Route::get('total-vente-par-jour', [HistoriqueVenteController::class, 'totalParJour']);
+    Route::get('inventaires-boutique', [HistoriqueVenteController::class, 'inventaireBoutique']);
 
     Route::get('stocks', [StockController::class, 'index']);
     Route::apiResource('decaissements', DecaissementController::class);
@@ -86,6 +96,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('caissier/caisses-journal/{date}', [CaissierCaisseJournalController::class, 'show']);
     Route::post('caissier/caisses-journal', [CaissierCaisseJournalController::class, 'store']);
     Route::put('caissier/caisses-journal/{date}/cloture', [CaissierCaisseJournalController::class, 'cloture']);
+    Route::get('montant-total-decaissement', [DecaissementController::class, 'montantTotalDecaissement']);
+
     Route::get('stocks/ruptures', [StockController::class, 'ruptures']);
     Route::get('produits-ruptures', [ProduitController::class, 'produits_en_rupture']);
     Route::post('stocks/transfer', [StockController::class, 'transfer']);
@@ -103,5 +115,3 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('commandes/{commande}/paiements', [PaiementController::class, 'index']);
     Route::apiResource('utilisateurs', UserController::class);
 });
-
-

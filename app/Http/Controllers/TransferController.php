@@ -106,8 +106,8 @@ class TransferController extends Controller
             $transfer->status = 'valide';
             $transfer->seuil = $request->seuil;
             $produit = Produit::where('id', $transfer->produit_id)->get()->first();
-            $produit->prix_vente_detail = $request->prix_unitaire;
-            $produit->prix_vente_gros = $request->prix_gros;
+            $produit->prix_vente_detail = $request->prix_vente_detail;
+            $produit->prix_vente_gros = $request->prix_vente_gros;
             $produit->prix_seuil_detail = $request->prix_seuil_detail;
             $produit->prix_seuil_gros = $request->prix_seuil_gros;
             $produit->save();
@@ -116,6 +116,21 @@ class TransferController extends Controller
       } catch (\Throwable $th) {
         return response()->json(['error' => $th->getMessage()], 500);
       }
+    }
+
+
+     public function MontantTotalStock()
+    {
+        try {
+           $total = 0;
+           foreach (Transfer::where('status', 'valide')->get() as $transfer) {
+            $produit = Produit::where('id', $transfer->produit_id)->get()->first();
+            $total += $transfer->quantite * $produit->prix_vente_detail;
+           }
+        } catch (\Throwable $th) {
+
+        }
+        return response()->json(['total' => $total]);
     }
 
 

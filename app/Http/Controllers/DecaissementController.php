@@ -7,21 +7,52 @@ use App\Http\Requests\StoreDecaissementRequest;
 use Illuminate\Http\Request;
 use App\Http\Requests\UpdateDecaissementRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Carbon;
 
 class DecaissementController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         try {
-            $decaissements = Decaissement::with(['user', 'caissier'])->paginate(10);
-            return response()->json($decaissements);
+            $query = Decaissement::query()->latest();
+            // Filter by role if provided
+            if ($request->filled('motif')) {
+                $query->where('motif', $request->input('motif'));
+            }
+
+            // Filter by boutique_id if provided
+            if ($request->filled('cassier_id')) {
+                $query->where('cassier_id', $request->input('cassier_id'));
+            }
+
+            // Filter by search term if provided
+            if ($request->filled('search')) {
+                $search = $request->input('search');
+                $query->where(function ($q) use ($search) {
+                    $q->where('methode_paiement', 'like', "%{$search}%")
+                      ->orWhere('date', 'like', "%{$search}%")
+                      ->orWhere('status', 'like', "%{$search}%");
+                });
+            }
+
+            return response()->json($query->paginate(10));
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
+
+    public function montantTotalDecaissement(){
+        try {
+            $montantTotal =Decaissement::sum('montant');
+            return response()->json(['montant_total' => $montantTotal], 200);
+        } catch (\Throwable $th) {
+            //throw $th;
+        }
+    }
+
 
     /**
      * Récupère les décaissements en attente
@@ -81,10 +112,9 @@ class DecaissementController extends Controller
     public function store(StoreDecaissementRequest $request)
     {
         try {
-            $request->merge([
-                'user_id' => Auth::user()->id,
-            ]);
-            $decaissement = Decaissement::create($request->validated());
+            $data=$request->validated();
+            $data['user_id'] = Auth::user()->id;
+            $decaissement = Decaissement::create($data);
             return response()->json($decaissement, 201);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
@@ -150,4 +180,6 @@ class DecaissementController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
+
+
 }

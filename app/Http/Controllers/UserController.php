@@ -6,27 +6,49 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\UserCredentialsMail;
+use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         try {
-            return User::query()->latest()->paginate(20);
+            $query = User::query()->latest();
+            // Filter by role if provided
+            if ($request->filled('role')) {
+                $query->where('role', $request->input('role'));
+            }
+
+            // Filter by boutique_id if provided
+            if ($request->filled('boutique_id')) {
+                $query->where('boutique_id', $request->input('boutique_id'));
+            }
+
+            // Filter by search term if provided
+            if ($request->filled('search')) {
+                $search = $request->input('search');
+                $query->where(function ($q) use ($search) {
+                    $q->where('nom', 'like', "%{$search}%")
+                      ->orWhere('prenom', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%");
+                });
+            }
+            return $query->paginate(20);
+
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la récupération des utilisateurs',
                 'error' => $th->getMessage()
             ], 500);
         }
-
     }
+
+
 
     public function store(Request $request)
     {
         try {
             $data = $request->validate([
-                'boutique_id' => 'required|uuid|exists:boutiques,id',
                 'nom' => 'required|string',
                 'prenom' => 'required|string',
                 'adresse' => 'nullable|string',
@@ -38,12 +60,13 @@ class UserController extends Controller
             ]);
 
             $plainPassword = $data['password'];
-            //$data['boutique_id']=Auth::user();
+            $data['boutique_id']=Auth::user()->id;
             $user = User::create($data);
 
             // Envoyer les identifiants par email
             try {
                 Mail::to($user->email)->send(new UserCredentialsMail($user, $plainPassword));
+                logger()->info('Identifiants de connexion envoyés par e-mail à l\'utilisateur ' . $user->email);
             } catch (\Throwable $mailEx) {
                 // On n'échoue pas la création de l'utilisateur si l'email ne part pas,
                 // mais on retourne l'info dans la réponse

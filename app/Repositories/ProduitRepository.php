@@ -40,6 +40,6 @@ class ProduitRepository extends BaseRepository
     }
 
     function index() {
-        return Produit::query()->latest()->paginate(20);
+        return Produit::query()->with('categorie')->latest()->paginate(20);
     }
 }

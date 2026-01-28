@@ -34,7 +34,6 @@ class StockController extends Controller
 
     public function transfer(Request $request)
     {
-        //dd($request->all());
        try {
         $validated = $request->validate([
             'produit_id' => 'required|uuid|exists:produits,id',
@@ -70,8 +69,6 @@ class StockController extends Controller
                 }
 
                 $src->decrement('quantite', $qte);
-
-
                 $sourceLabel = 'boutique:' . Auth::user()->boutique_id;
                 MouvementStock::create([
                     'source' => $sourceLabel,
@@ -102,69 +99,44 @@ class StockController extends Controller
      */
     public function reapprovisionner(Request $request)
     {
-        $validated = $request->validate([
-            'destination_boutique_id' => 'required|uuid|exists:boutiques,id',
-            'produit_id' => 'required|uuid|exists:produits,id',
-            'quantite' => 'nullable|integer|min:1',
-            'stock_cible' => 'nullable|integer|min:1',
-        ]);
 
-        if (empty($validated['quantite']) && empty($validated['stock_cible'])) {
-            abort(422, 'Spécifiez soit quantite soit stock_cible');
-        }
+        try {
+                $validated = $request->validate([
+                    'produit_id' => 'required|uuid|exists:produits,id',
+                    'quantite' => 'nullable|integer|min:1',
+                ]);
 
-        return DB::transaction(function () use ($validated) {
-            $produit = Produit::findOrFail($validated['produit_id']);
-            $dest = StockBoutique::firstOrCreate([
-                'boutique_id' => Auth::user()->boutique_id,
-                'produit_id' => $validated['produit_id'],
-            ]);
-
-            $qte = $validated['quantite'] ?? null;
-            if ($qte === null) {
-                $current = $dest->quantite;
-                $target = $validated['stock_cible'];
-                $qte = max(0, $target - $current);
-                if ($qte <= 0) {
-                    return response()->json([
-                        'message' => 'Stock déjà supérieur ou égal au stock cible',
-                        'quantite' => 0,
-                    ], 200);
+                if (empty($validated['quantite'])) {
+                    abort(422, 'Spécifiez soit quantite soit stock_cible');
                 }
+
+                    $produit = Produit::findOrFail($validated['produit_id']);
+                    $dest = StockBoutique::firstOrCreate([
+                        'boutique_id' => Auth::user()->boutique_id,
+                        'produit_id' => $validated['produit_id'],
+                    ]);
+
+                    $qte = $validated['quantite'] ?? null;
+                    if ($qte !== null) {
+                    $dest->increment('quantite', $qte);
+                    $produit->increment('stock_global', $qte*$produit->unite_carton);
+                    }
+                    MouvementStock::create([
+                        'source' => 'depot',
+                        'destination' => 'boutique:' . Auth::user()->boutique_id,
+                        'produit_id' => $validated['produit_id'],
+                        'quantite' => $qte,
+                        'type' => 'Approvisionnement',
+                        'date' => now(),
+                    ]);
+                    event(new StockBoutiqueMisAJour($dest->fresh()));
+                    return response()->json([
+                        'message' => 'Réapprovisionnement effectué',
+                        'quantite' => $qte,
+                    ]);
+
+                } catch (\Throwable $th) {
+                //throw $th;
             }
-
-            if ($produit->stock_global < $qte) {
-                abort(422, 'Stock global insuffisant');
-            }
-
-            // Sortie du dépôt
-            $produit->decrement('stock_global', $qte);
-            MouvementStock::create([
-                'source' => 'depot',
-                'destination' => 'boutique:' . Auth::user()->boutique_id,
-                'produit_id' => $validated['produit_id'],
-                'quantite' => $qte,
-                'type' => 'sortie',
-                'date' => now(),
-            ]);
-
-            // Entrée en boutique
-            $dest->increment('quantite', $qte);
-            MouvementStock::create([
-                'source' => 'depot',
-                'destination' => 'boutique:' . Auth::user()->boutique_id,
-                'produit_id' => $validated['produit_id'],
-                'quantite' => $qte,
-                'type' => 'entree',
-                'date' => now(),
-            ]);
-
-            event(new StockBoutiqueMisAJour($dest->fresh()));
-
-            return response()->json([
-                'message' => 'Réapprovisionnement effectué',
-                'quantite' => $qte,
-            ]);
-        });
     }
 }
