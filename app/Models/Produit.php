@@ -37,4 +37,9 @@ class Produit extends Model
     public function categorie():BelongsTo{
       return $this->belongsTo(categorie::class);
     }
+
+    public function entreees_sorties(): HasMany
+    {
+        return $this->hasMany(StockBoutique::class);
+    }
 }
