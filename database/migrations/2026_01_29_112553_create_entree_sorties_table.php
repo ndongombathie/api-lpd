@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignUuid('produit_id')->constrained('produits');
             $table->integer('quantite_avant');
             $table->integer('quantite_apres');
+            $table->integer('nombre_fois');
             $table->timestamps();
         });
     }

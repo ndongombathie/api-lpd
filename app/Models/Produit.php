@@ -40,6 +40,6 @@ class Produit extends Model
 
     public function entreees_sorties(): HasMany
     {
-        return $this->hasMany(StockBoutique::class);
+        return $this->hasMany(EntreeSortie::class);
     }
 }

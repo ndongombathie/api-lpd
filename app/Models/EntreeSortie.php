@@ -13,7 +13,7 @@ class EntreeSortie extends Model
     use HasFactory;
     use HasUlids;
 
-    protected $fillable = ['produit_id','quantite_avant','quantite_apres'];
+    protected $fillable = ['produit_id','quantite_avant','quantite_apres','nombre_fois'];
 
     public function produit()
     {

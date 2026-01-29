@@ -45,7 +45,6 @@ class ProduitController extends Controller
             'prix_unite_carton' => 'nullable|numeric',
             'nombre_carton' => 'nullable|integer',
             'stock_seuil' => 'nullable|integer',
-
         ]);
         $data['stock_global'] = $data['unite_carton']*$data['nombre_carton'];
         $data['prix_total'] = $data['prix_unite_carton']*($data['nombre_carton']*$data['unite_carton']);
@@ -53,6 +52,7 @@ class ProduitController extends Controller
         StockBoutique::create([
             'boutique_id' => Auth::user()->boutique_id,
             'produit_id' => $produit->id,
+            'nombre_carton' => $produit->nombre_carton,
             'quantite' => $produit->unite_carton*$produit->nombre_carton,
         ]);
         return response()->json($produit, 201);

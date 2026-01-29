@@ -28,6 +28,7 @@ class StockBoutiqueSeeder extends Seeder
                     ],
                     [
                         'quantite' => fake()->numberBetween(0, 120),
+                        'nombre_carton' => fake()->numberBetween(0, 120),
                     ]
                 );
             }

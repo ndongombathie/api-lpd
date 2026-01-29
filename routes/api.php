@@ -19,6 +19,7 @@ use App\Mail\UserCredentialsMail;
 use App\Http\Controllers\HistoriqueVenteController;
 use App\Http\Controllers\TransferController;
 use App\Http\Controllers\DecaissementController;
+use App\Http\Controllers\MouvementSockController;
 
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
@@ -82,6 +83,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('inventaires-boutique', [HistoriqueVenteController::class, 'inventaireBoutique']);
 
 
+
     Route::get('stocks', [StockController::class, 'index']);
     Route::apiResource('decaissements', DecaissementController::class);
     Route::put('decaissements/{decaissement}/statut', [DecaissementController::class, 'updateStatusDecaissement']);
@@ -104,5 +106,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('commandes/{commande}/paiements', [PaiementController::class, 'store']);
     Route::get('commandes/{commande}/paiements', [PaiementController::class, 'index']);
     Route::apiResource('utilisateurs', UserController::class);
+
+    Route::apiResource('mouvements-stock', MouvementSockController::class);
 });
 
