@@ -10,36 +10,7 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    public function register(Request $request)
-    {
-        $validated = $request->validate([
-            'nom' => 'required|string',
-            'prenom' => 'required|string',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:6',
-            'role' => 'required|string',
-            'boutique_id' => 'nullable|uuid',
-            'adresse' => 'nullable|string',
-            'numero_cni' => 'nullable|string',
-            'telephone' => 'nullable|string',
-        ]);
-
-        $user = User::create([
-            'nom' => $validated['nom'],
-            'prenom' => $validated['prenom'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'role' => $validated['role'],
-            'boutique_id' => $validated['boutique_id'] ?? null,
-            'adresse' => $validated['adresse'] ?? null,
-            'numero_cni' => $validated['numero_cni'] ?? null,
-            'telephone' => $validated['telephone'] ?? null,
-        ]);
-
-        $token = $user->createToken('api')->plainTextToken;
-
-        return response()->json(['user' => $user, 'token' => $token], 201);
-    }
+    
 
     public function login(Request $request)
     {
@@ -82,5 +53,13 @@ class AuthController extends Controller
     {
         $request->user()->update($request->all());
         return response()->json($request->user());
+    }
+
+    public function changePassword(Request $request)
+    {
+        $request->user()->update([
+            'password' => Hash::make($request->input('password')),
+        ]);
+        return response()->json(['message' => 'Mot de passe changé']);
     }
 }

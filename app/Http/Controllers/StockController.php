@@ -121,6 +121,7 @@ class StockController extends Controller
                     $dest->increment('quantite', $qte);
                     $produit->increment('stock_global', $qte*$produit->unite_carton);
                     }
+                    
                     MouvementStock::create([
                         'source' => 'depot',
                         'destination' => 'boutique:' . Auth::user()->boutique_id,

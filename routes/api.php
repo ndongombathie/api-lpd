@@ -55,6 +55,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('mon-profil', [AuthController::class, 'monProfil']);
     Route::put('mon-profil', [AuthController::class, 'updateProfil']);
+    Route::put('change-password', [AuthController::class, 'changePassword']);
 
     Route::apiResource('categories',CategorieController::class);
     Route::apiResource('produits', ProduitController::class);
@@ -79,7 +80,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('index', [HistoriqueVenteController::class, 'index']);
     Route::get('total-vente-par-jour', [HistoriqueVenteController::class, 'totalParJour']);
     Route::get('inventaires-boutique', [HistoriqueVenteController::class, 'inventaireBoutique']);
-    
+
 
     Route::get('stocks', [StockController::class, 'index']);
     Route::apiResource('decaissements', DecaissementController::class);
