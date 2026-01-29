@@ -76,13 +76,14 @@ class StockController extends Controller
 
                 $src->decrement('quantite', $qte);
                 $sourceLabel = 'boutique:' . Auth::user()->boutique_id;
-                MouvementStock::updateOrCreate([
+                MouvementStock::firstOrCreate([
                     'source' => $sourceLabel,
                     'destination' => 'boutique:' . Auth::user()->boutique_id,
                     'produit_id' => $produitId,
                     'quantite' => $qte,
                     'type' => 'sortie',
-                    'date' => now(),
+                ],[
+                     'date' => now(),
                 ]);
 
                 if ($src->quantite <= 0) {
@@ -144,14 +145,16 @@ class StockController extends Controller
                     $produit->increment('stock_global', $qte*$produit->unite_carton);
                     }
 
-                    MouvementStock::create([
+                    MouvementStock::firstOrCreate([
                         'source' => 'depot',
                         'destination' => 'boutique:' . Auth::user()->boutique_id,
                         'produit_id' => $validated['produit_id'],
                         'quantite' => $qte,
                         'type' => 'Approvisionnement',
+                    ],[
                         'date' => now(),
                     ]);
+
                     $this->EntreeSorties($validated['produit_id'],$validated['quantite']);
                     event(new StockBoutiqueMisAJour($dest->fresh()));
                     return response()->json([

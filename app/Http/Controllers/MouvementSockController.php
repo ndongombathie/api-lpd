@@ -14,7 +14,7 @@ class MouvementSockController extends Controller
     public function index()
     {
         try {
-            $mouvements = MouvementStock::query()->paginate(10);
+            $mouvements = MouvementStock::query()->with('produit')->paginate(10);
             $mouvements->getCollection()->transform(function ($mouvement) {
                 $mouvement->entree_sortie = EntreeSortie::where('produit_id', $mouvement->produit_id)->first();
                 return $mouvement;
