@@ -13,10 +13,30 @@ class HistoriqueVenteController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         try {
-            $historiqueVentes = HistoriqueVente::with(['vendeur', 'produit'])->paginate(10);
+            $query = HistoriqueVente::query()->latest();
+            // Filter by role if provided
+            if ($request->filled('vendeur_id')) {
+                $query->where('vendeur_id', $request->input('vendeur_id'));
+            }
+
+            // Filter by boutique_id if provided
+            if ($request->filled('produit_id')) {
+                $query->where('produit_id', $request->input('produit_id'));
+            }
+
+            // Filter by search term if provided
+            if ($request->filled('search')) {
+                $search = $request->input('search');
+                $query->where(function ($q) use ($search) {
+                    $q->where('montant', 'like', "%{$search}%")
+                      ->orWhere('quantite', 'like', "%{$search}%")
+                      ->orWhere('prix_unitaire', 'like', "%{$search}%");
+                });
+            }
+            $historiqueVentes = $query->with(['vendeur', 'produit'])->paginate(10);
             return response()->json($historiqueVentes);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
