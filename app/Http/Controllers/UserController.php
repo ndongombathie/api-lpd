@@ -127,4 +127,24 @@ class UserController extends Controller
         ], 500);
     }
 }
+
+ public function resetPassword(string $id)
+    {
+        try {
+            $user = User::findOrFail($id);
+            $user->update([
+                'password' => bcrypt($user->nom."124")
+            ]);
+            $plainPassword = $user->nom."124";
+            Mail::to($user->email)->send(new UserCredentialsMail($user, $plainPassword));
+            return response()->json([
+                'message' => 'Mot de passe réinitialisé avec succès'
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Erreur lors de la réinitialisation du mot de passe',
+                'error' => $th->getMessage()
+            ], 500);
+        }
+    }
 }

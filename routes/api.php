@@ -74,6 +74,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('quantite-totale-produit', [TransferController::class, 'quantiteTotaleProduit']);
     Route::get('produits-sous-seuil', [TransferController::class, 'produitsSousSeuil']);
     Route::get('montant-total-stock', [TransferController::class, 'MontantTotalStock']);
+    Route::get('produits-controle', [TransferController::class, 'produitsControle']);
 
 
 
@@ -106,6 +107,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('commandes/{commande}/paiements', [PaiementController::class, 'store']);
     Route::get('commandes/{commande}/paiements', [PaiementController::class, 'index']);
     Route::apiResource('utilisateurs', UserController::class);
+    Route::post('utilisateurs/{utilisateur}/reset-password', [UserController::class, 'resetPassword']);
 
     Route::apiResource('mouvements-stock', MouvementSockController::class);
 });
