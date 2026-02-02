@@ -11,17 +11,36 @@ class MouvementSockController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         try {
-            $mouvements = MouvementStock::query()->with('produit')->paginate(10);
+            $query = MouvementStock::query()->with('produit');
+
+            if ($request->filled('date_debut')) {
+                $query->whereDate('date', '>=', $request->date_debut);
+            }
+
+            if ($request->filled('date_fin')) {
+                $query->whereDate('date', '<=', $request->date_fin);
+            }
+
+            #filtred by type
+            if ($request->filled('type')) {
+                $query->where('type', $request->type);
+            }
+            #filtred by produit_id
+            if ($request->filled('produit_id')) {
+                $query->where('produit_id', $request->produit_id);
+            }
+            
+            $mouvements = $query->latest()->paginate(10);
             $mouvements->getCollection()->transform(function ($mouvement) {
                 $mouvement->entree_sortie = EntreeSortie::where('produit_id', $mouvement->produit_id)->first();
                 return $mouvement;
             });
             return response()->json($mouvements);
         } catch (\Throwable $th) {
-            //throw $th;
+            return response()->json(['error' => $th->getMessage()], 500);
         }
     }
 
