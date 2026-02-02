@@ -47,4 +47,9 @@ class Produit extends Model
     {
         return $this->hasMany(entree_sortie_boutique::class);
     }
+
+    public function historique_actions(): HasMany
+    {
+        return $this->hasMany(HistoriqueAction::class);
+    }
 }
