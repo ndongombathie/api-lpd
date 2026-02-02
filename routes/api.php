@@ -74,7 +74,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('quantite-totale-produit', [TransferController::class, 'quantiteTotaleProduit']);
     Route::get('produits-sous-seuil', [TransferController::class, 'produitsSousSeuil']);
     Route::get('montant-total-stock', [TransferController::class, 'MontantTotalStock']);
-    Route::get('produits-controle', [TransferController::class, 'produitsControle']);
+    Route::get('produits-controle-boutique', [TransferController::class, 'produitsControleBoutique']);
+    Route::get('produits-controle-depots', [TransferController::class, 'produitsControleDepots']);
 
 
 

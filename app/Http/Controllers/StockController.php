@@ -7,6 +7,7 @@ use App\Models\Produit;
 use App\Models\MouvementStock;
 use App\Events\StockBoutiqueMisAJour;
 use App\Events\StockRupture;
+use App\Models\entree_sortie_boutique;
 use App\Models\EntreeSortie;
 use App\Models\Transfer;
 use Illuminate\Http\Request;
@@ -70,10 +71,8 @@ class StockController extends Controller
                 $transfer->increment('nombre_carton', $qte);
                 $transfer->updated_at = now();
                 $transfer->save();
-                $this->EntreeSorties($produitId,$qte);
 
-
-
+                $this->EntreeSortiesBoutique($produitId,$qte);
                 $src->decrement('quantite', $qte);
                 $sourceLabel = 'boutique:' . Auth::user()->boutique_id;
                 MouvementStock::firstOrCreate([
@@ -101,6 +100,22 @@ class StockController extends Controller
     public function EntreeSorties($produitId,$qte)
     {
         $entree_sortie=EntreeSortie::firstOrCreate([
+            'produit_id'  => $produitId,
+        ], [
+            'quantite_avant' => 0,
+            'quantite_apres' => 0,
+            'nombre_fois'=>0
+        ]);
+        $entree_sortie->quantite_avant=$entree_sortie->quantite_apres;
+        $entree_sortie->increment('quantite_apres',$qte);
+        $entree_sortie->increment('nombre_fois',1);
+        $entree_sortie->save();
+
+    }
+
+    public function EntreeSortiesBoutique($produitId,$qte)
+    {
+        $entree_sortie=entree_sortie_boutique::firstOrCreate([
             'produit_id'  => $produitId,
         ], [
             'quantite_avant' => 0,

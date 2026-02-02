@@ -42,4 +42,9 @@ class Produit extends Model
     {
         return $this->hasMany(EntreeSortie::class);
     }
+
+    public function entreees_sorties_boutique(): HasMany
+    {
+        return $this->hasMany(entree_sortie_boutique::class);
+    }
 }
