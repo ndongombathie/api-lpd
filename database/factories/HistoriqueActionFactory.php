@@ -2,6 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Models\Produit;
+use App\Models\User;
+use GuzzleHttp\Handler\Proxy;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -17,7 +20,9 @@ class HistoriqueActionFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'user_id' => $this->faker->randomElement(User::pluck('id')->toArray()),
+            'produit_id' => $this->faker->randomElement(Produit::pluck('id')->toArray()),
+            'action' => $this->faker->randomElement(['Création de produit', 'Modification de produit', 'Suppression de produit']),
         ];
     }
 }

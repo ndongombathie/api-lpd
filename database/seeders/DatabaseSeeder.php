@@ -15,6 +15,7 @@ use App\Models\MouvementStock;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\Decaissement;
+use App\Models\HistoriqueAction;
 use App\Models\HistoriqueVente;
 use App\Models\Transfer;
 
@@ -108,5 +109,7 @@ class DatabaseSeeder extends Seeder
         // Décaisements
         Decaissement::factory()->count(10)->create();
         HistoriqueVente::factory()->count(50)->create();
+        HistoriqueAction::factory()->count(50)->create();
     }
+
 }

@@ -11,7 +11,7 @@ class StoreHistoriqueActionRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,9 @@ class StoreHistoriqueActionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'user_id' => 'required|integer',
+            'produit_id' => 'required|integer',
+            'action' => 'required|string',
         ];
     }
 }

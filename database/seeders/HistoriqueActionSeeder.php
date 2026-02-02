@@ -12,6 +12,6 @@ class HistoriqueActionSeeder extends Seeder
      */
     public function run(): void
     {
-        //
+        \App\Models\HistoriqueAction::factory()->count(10)->create();
     }
 }

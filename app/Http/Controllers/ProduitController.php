@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\EntreeSortie;
+use App\Models\HistoriqueAction;
 use App\Models\MouvementStock;
 use App\Models\Produit;
 use App\Models\StockBoutique;
@@ -13,6 +14,7 @@ use App\Repositories\ProduitRepository;
 class ProduitController extends Controller
 {
     protected $repository;
+
 
     public function __construct(ProduitRepository $repository)
     {
@@ -67,6 +69,13 @@ class ProduitController extends Controller
                         ],[
                             'date' => now(),
                         ]);
+            //create historique action
+            HistoriqueAction::create([
+                'user_id' => Auth::user()->id,
+                'produit_id' => $produit->id,
+                'action' => 'Création de produit',
+            ]);
+
             $this->EntreeSorties($produit->id,$produit->nombre_carton);
             return response()->json($produit, 201);
         }
@@ -93,8 +102,12 @@ class ProduitController extends Controller
 
     public function show(string $id)
     {
-        $produit = Produit::findOrFail($id);
-        return $produit;
+        try {
+            $produit = Produit::findOrFail($id);
+            return $produit;
+        } catch (\Throwable $th) {
+            return response()->json(['message' => $th->getMessage()], 500);
+        }
     }
 
     public function update(Request $request, string $id)
@@ -112,6 +125,12 @@ class ProduitController extends Controller
         $data['stock_global'] = $data['unite_carton']*$data['nombre_carton'];
         $data['prix_total'] = $data['prix_unite_carton']*($data['nombre_carton']*$data['unite_carton']);
         $produit->update($data);
+        //create historique action
+        HistoriqueAction::create([
+            'user_id' => Auth::user()->id,
+            'produit_id' => $produit->id,
+            'action' => 'Modification de produit',
+        ]);
         return response()->json($produit);
     }
 
@@ -119,8 +138,18 @@ class ProduitController extends Controller
 
     public function destroy(string $id)
     {
-        $produit = Produit::findOrFail($id);
-        $produit->delete();
-        return response()->noContent();
+        try {
+            $produit = Produit::findOrFail($id);
+            $produit->delete();
+            //create historique action
+            HistoriqueAction::create([
+                'user_id' => Auth::user()->id,
+                'produit_id' => $produit->id,
+                'action' => 'Suppression de produit',
+            ]);
+            return response()->noContent();
+        } catch (\Throwable $th) {
+            return response()->json(['message' => $th->getMessage()], 500);
+        }
     }
 }

@@ -13,7 +13,11 @@ class HistoriqueActionController extends Controller
      */
     public function index()
     {
-        //
+        try {
+            return HistoriqueAction::with('user','produit')->paginate(50);
+        } catch (\Throwable $th) {
+            return response()->json(['message' => $th->getMessage()], 500);
+        }
     }
 
     /**
@@ -21,7 +25,13 @@ class HistoriqueActionController extends Controller
      */
     public function store(StoreHistoriqueActionRequest $request)
     {
-        //
+        try {
+            $data = $request->validated();
+            $historiqueAction = HistoriqueAction::create($data);
+            return response()->json($historiqueAction, 201);
+        } catch (\Throwable $th) {
+            return response()->json(['message' => $th->getMessage()], 500);
+        }
     }
 
     /**
@@ -45,6 +55,11 @@ class HistoriqueActionController extends Controller
      */
     public function destroy(HistoriqueAction $historiqueAction)
     {
-        //
+        try {
+            $historiqueAction->delete();
+            return response()->json(null, 204);
+        } catch (\Throwable $th) {
+            return response()->json(['message' => $th->getMessage()], 500);
+        }
     }
 }

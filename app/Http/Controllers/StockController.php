@@ -9,6 +9,7 @@ use App\Events\StockBoutiqueMisAJour;
 use App\Events\StockRupture;
 use App\Models\entree_sortie_boutique;
 use App\Models\EntreeSortie;
+use App\Models\HistoriqueAction;
 use App\Models\Transfer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -75,6 +76,7 @@ class StockController extends Controller
                 $this->EntreeSortiesBoutique($produitId,$qte);
                 $src->decrement('quantite', $qte);
                 $sourceLabel = 'boutique:' . Auth::user()->boutique_id;
+                
                 MouvementStock::firstOrCreate([
                     'source' => $sourceLabel,
                     'destination' => 'boutique:' . Auth::user()->boutique_id,
@@ -83,6 +85,12 @@ class StockController extends Controller
                     'type' => 'sortie',
                 ],[
                      'date' => now(),
+                ]);
+
+                HistoriqueAction::create([
+                    'user_id' => Auth::user()->id,
+                    'produit_id' => $produitId,
+                    'action' => 'Transfert de produit',
                 ]);
 
                 if ($src->quantite <= 0) {
@@ -168,6 +176,13 @@ class StockController extends Controller
                         'type' => 'Approvisionnement',
                     ],[
                         'date' => now(),
+                    ]);
+
+                    //create historique action
+                    HistoriqueAction::create([
+                        'user_id' => Auth::user()->id,
+                        'produit_id' => $validated['produit_id'],
+                        'action' => 'Approvisionnement de produit',
                     ]);
 
                     $this->EntreeSorties($validated['produit_id'],$validated['quantite']);

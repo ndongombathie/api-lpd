@@ -19,6 +19,7 @@ use App\Mail\UserCredentialsMail;
 use App\Http\Controllers\HistoriqueVenteController;
 use App\Http\Controllers\TransferController;
 use App\Http\Controllers\DecaissementController;
+use App\Http\Controllers\HistoriqueActionController;
 use App\Http\Controllers\MouvementSockController;
 
 Route::post('/auth/register', [AuthController::class, 'register']);
@@ -79,6 +80,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
 
+
     # Gestion des historiques de vente
     Route::get('historique-ventes', [HistoriqueVenteController::class, 'index']);
     Route::get('total-vente-par-jour', [HistoriqueVenteController::class, 'totalParJour']);
@@ -111,5 +113,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('utilisateurs/{utilisateur}/reset-password', [UserController::class, 'resetPassword']);
 
     Route::apiResource('mouvements-stock', MouvementSockController::class);
+
+    Route::apiResource('historique-actions', HistoriqueActionController::class);
 });
 
