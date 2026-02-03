@@ -15,6 +15,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Transfer;
 use App\Models\HistoriqueVente;
+use Illuminate\Support\Facades\Log;
+
+
 
 class PaiementController extends Controller
 {
@@ -38,35 +41,35 @@ class PaiementController extends Controller
     public function store(Request $request, string $commandeId)
     {
         $commande = Commande::findOrFail($commandeId);
-        
+
         // Pour les clients spéciaux, vérifier si un paiement existe déjà avec un type_paiement
         $commande->loadMissing('client');
         $isClientSpecial = optional($commande->client)->type_client === 'special';
-        
+
         // Récupérer tous les paiements existants pour cette commande
         $paiementsExistants = Paiement::where('commande_id', $commande->id)->get();
-        
+
         // Si client spécial et paiements existants, utiliser le type_paiement du premier paiement
         $typePaiementParDefaut = null;
         if ($isClientSpecial && $paiementsExistants->isNotEmpty()) {
             // Prendre le type_paiement du premier paiement (créé par le responsable)
             $typePaiementParDefaut = $paiementsExistants->first()->type_paiement;
         }
-        
+
         $data = $request->validate([
             'montant' => 'required|numeric|min:0.01',
-            'type_paiement' => $isClientSpecial && $typePaiementParDefaut 
-                ? 'nullable|string' 
+            'type_paiement' => $isClientSpecial && $typePaiementParDefaut
+                ? 'nullable|string'
                 : 'required|string',
         ]);
-        
+
         // Utiliser le type_paiement du paiement existant pour les clients spéciaux si non fourni ou vide
         if ($isClientSpecial && $typePaiementParDefaut) {
             if (empty($data['type_paiement']) || $data['type_paiement'] === '' || $data['type_paiement'] === null) {
                 $data['type_paiement'] = $typePaiementParDefaut;
             }
         }
-        
+
         // Validation finale : le type_paiement doit être présent
         if (empty($data['type_paiement']) || $data['type_paiement'] === null) {
             return response()->json([
@@ -92,7 +95,7 @@ class PaiementController extends Controller
             event(new PaiementCree($paiement));
             } catch (\Exception $e) {
                 // Log l'erreur mais ne bloque pas l'opération
-                \Log::warning('Erreur lors de la diffusion du paiement: ' . $e->getMessage());
+                Log::warning('Erreur lors de la diffusion du paiement: ' . $e->getMessage());
             }
 
             // Traiter la finalisation de la commande (mise à jour du statut, stock, etc.)
@@ -111,7 +114,7 @@ class PaiementController extends Controller
                 // Mettre à jour le stock de la boutique et enregistrer le mouvement
                 $commande->loadMissing(['details', 'vendeur']);
                 $boutiqueId = optional($commande->vendeur)->boutique_id;
-                
+
                 // Traiter chaque détail avec gestion d'erreur individuelle
                 foreach ($commande->details as $detail) {
                     try {
@@ -125,7 +128,7 @@ class PaiementController extends Controller
                                 try {
                             event(new StockRupture($stock->fresh()));
                                 } catch (\Exception $e) {
-                                    \Log::warning('Erreur lors de la diffusion de la rupture de stock: ' . $e->getMessage());
+                                    Log::warning('Erreur lors de la diffusion de la rupture de stock: ' . $e->getMessage());
                                 }
                         }
                     }
@@ -150,7 +153,7 @@ class PaiementController extends Controller
                     ]);
                     } catch (\Exception $e) {
                         // Log l'erreur pour ce produit mais continue avec les autres
-                        \Log::error('Erreur lors de la mise à jour du stock pour le produit ' . $detail->produit_id . ': ' . $e->getMessage());
+                        Log::error('Erreur lors de la mise à jour du stock pour le produit ' . $detail->produit_id . ': ' . $e->getMessage());
                         // On continue avec les autres produits
                     }
                 }
@@ -159,7 +162,7 @@ class PaiementController extends Controller
                 try {
                 event(new FactureCree($facture));
                 } catch (\Exception $e) {
-                    \Log::warning('Erreur lors de la diffusion de la facture: ' . $e->getMessage());
+                    Log::warning('Erreur lors de la diffusion de la facture: ' . $e->getMessage());
                 }
             }
             return $paiement;
