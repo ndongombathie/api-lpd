@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Commande;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -19,7 +20,8 @@ class PaiementFactory extends Factory
     {
         $types = ['cash', 'mobile', 'carte', 'virement'];
         return [
-            'commande_id' => fn () => Commande::inRandomOrder()->value('id') ?? Commande::factory(),
+            'commande_id' => fn () => Commande::inRandomOrder()->value('id') ?? Commande::factory()->create()->id,
+            'caissier_id' => User::where('role', 'caissier')->inRandomOrder()->value('id') ?? User::factory()->create()->id,
             'montant' => $this->faker->numberBetween(1000, 150000),
             'type_paiement' => $this->faker->randomElement($types),
             'date' => $this->faker->dateTimeBetween('-2 months', 'now'),
