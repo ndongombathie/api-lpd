@@ -112,6 +112,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('utilisateurs', UserController::class);
     Route::post('utilisateurs/{utilisateur}/reset-password', [UserController::class, 'resetPassword']);
 
+    Route::get('mouvements-stock/inventaire-depot', [MouvementSockController::class, 'inventaireDepot']);
     Route::apiResource('mouvements-stock', MouvementSockController::class);
 
     Route::apiResource('historique-actions', HistoriqueActionController::class);

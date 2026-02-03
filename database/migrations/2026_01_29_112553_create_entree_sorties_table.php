@@ -14,9 +14,9 @@ return new class extends Migration
         Schema::create('entree_sorties', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('produit_id')->constrained('produits');
-            $table->integer('quantite_avant');
-            $table->integer('quantite_apres');
-            $table->integer('nombre_fois');
+            $table->integer('quantite_avant')->default(0);
+            $table->integer('quantite_apres')->default(0);
+            $table->integer('nombre_fois')->default(0);
             $table->timestamps();
         });
     }

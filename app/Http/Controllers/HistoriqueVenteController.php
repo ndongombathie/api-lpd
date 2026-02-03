@@ -67,7 +67,7 @@ class HistoriqueVenteController extends Controller
             // Ajouter la colonne écart (stock_initial - quantite_vendue)
             $produitsVendus->getCollection()->transform(function ($produit) {
                 $produit->ecart = $produit->stock_initial - $produit->quantite_vendue;
-                $produit->produit=Produit::query()->with('entreees_sorties')->where('id',$produit->produit_id)->get()->first();
+                $produit->produit=Produit::query()->with('entreees_sorties_boutique')->where('id',$produit->produit_id)->get()->first();
                 $produit->total_vendu=$produit->quantite_vendue*$produit->produit->prix_unite_carton;
                 $produit->total_resant=($produit->stock_initial-$produit->quantite_vendue)*$produit->produit->prix_unite_carton > 0 ? ($produit->stock_initial-$produit->quantite_vendue)*$produit->produit->prix_unite_carton  : 0;
                 return $produit;
