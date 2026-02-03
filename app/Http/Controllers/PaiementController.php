@@ -51,7 +51,7 @@ class PaiementController extends Controller
                     DB::raw('COUNT(paiements.id) as nombre_paiement'),
                     DB::raw('SUM(paiements.montant) as valeur_total_paiement')
                 )
-                //->whereDate('paiements.date', $date)
+                ->whereDate('paiements.date', $date)
                 ->groupBy('users.id', 'users.nom', 'users.prenom')
                 ->get();
 
