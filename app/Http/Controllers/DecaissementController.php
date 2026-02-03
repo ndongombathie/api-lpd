@@ -66,6 +66,58 @@ class DecaissementController extends Controller
 
 
     /**
+     * Récupère les décaissements en attente
+     */
+    public function getDecaissementsEnAttente()
+    {
+        try {
+            // Le statut peut être stocké avec une majuscule, donc on utilise whereRaw ou LOWER
+            $decaissements = Decaissement::with(['user', 'caissier'])
+                ->whereRaw('LOWER(statut) = ?', ['en_attente'])
+                ->orderBy('created_at', 'asc')
+                ->get();
+            
+            // Retourner les valeurs brutes directement depuis la base de données
+            $decaissementsArray = $decaissements->map(function ($dec) {
+                // Utiliser getAttributes() pour obtenir les valeurs brutes
+                $attributes = $dec->getAttributes();
+                
+                return [
+                    'id' => $attributes['id'] ?? $dec->id,
+                    'user_id' => $attributes['user_id'] ?? $dec->user_id,
+                    'caissier_id' => $attributes['caissier_id'] ?? $dec->caissier_id,
+                    'motif' => $attributes['motif'] ?? $dec->motif ?? 'Non spécifié',
+                    'libelle' => $attributes['libelle'] ?? $dec->libelle ?? 'Non spécifié',
+                    'montant' => (int)($attributes['montant'] ?? $dec->montant ?? 0),
+                    'methode_paiement' => $attributes['methode_paiement'] ?? $dec->methode_paiement ?? 'caisse',
+                    'date' => $attributes['date'] ?? ($dec->date ? $dec->date->format('Y-m-d') : null),
+                    'statut' => strtolower($attributes['statut'] ?? $dec->statut ?? 'en_attente'),
+                    'created_at' => $dec->created_at ? $dec->created_at->toISOString() : null,
+                    'updated_at' => $dec->updated_at ? $dec->updated_at->toISOString() : null,
+                    'user' => $dec->user ? [
+                        'id' => $dec->user->id,
+                        'nom' => $dec->user->nom,
+                        'prenom' => $dec->user->prenom,
+                        'email' => $dec->user->email,
+                    ] : null,
+                    'caissier' => $dec->caissier ? [
+                        'id' => $dec->caissier->id,
+                        'nom' => $dec->caissier->nom,
+                        'prenom' => $dec->caissier->prenom,
+                        'email' => $dec->caissier->email,
+                    ] : null,
+                ];
+            });
+            
+            return response()->json(['data' => $decaissementsArray->values()]);
+        } catch (\Exception $e) {
+            \Log::error('Erreur getDecaissementsEnAttente: ' . $e->getMessage());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
      * Store a newly created resource in storage.
      */
     public function store(StoreDecaissementRequest $request)
@@ -95,8 +147,20 @@ class DecaissementController extends Controller
     public function updateStatusDecaissement(Request $request, Decaissement $decaissement)
     {
         try {
-            $decaissement->update(['statut' => $request->statut]);
-            $decaissement->update(['caissier_id' => Auth::user()->id]);
+            $payload = [
+                'statut' => $request->statut,
+                'caissier_id' => Auth::user()->id,
+                // Utiliser l'heure exacte actuelle pour la validation
+                'date' => now(),
+            ];
+
+            // Optionnel: permettre au caissier de choisir le compte/méthode utilisée
+            if ($request->filled('methode_paiement')) {
+                $payload['methode_paiement'] = $request->methode_paiement;
+            }
+
+            // Utiliser l'heure exacte actuelle pour la validation
+            $decaissement->update($payload);
             return response()->json($decaissement);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
