@@ -18,7 +18,6 @@ class ProduitFactory extends Factory
      */
     public function definition(): array
     {
-        $categories = Categorie::all();
         return [
             'nom' => $this->faker->words(2, true),
             'code' => strtoupper($this->faker->bothify('MAT-####')),

@@ -15,8 +15,8 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('nom');
             $table->string('code')->unique();
-            $table->foreignUuid('categorie_id')->constrained('categories')->onDelete('cascade');
-            $table->foreignUuid('fournisseur_id')->constrained('fournisseurs')->onDelete('cascade');
+            $table->foreignUuid('categorie_id')->nullable()->constrained('categories')->onDelete('cascade');
+            $table->foreignUuid('fournisseur_id')->nullable()->constrained('fournisseurs')->onDelete('cascade');
             $table->bigInteger('unite_carton')->default(0);
             $table->bigInteger('prix_unite_carton')->default(0);
             $table->bigInteger('prix_vente_detail')->default(0);

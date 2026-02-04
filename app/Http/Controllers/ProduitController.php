@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\EntreeSortie;
+use App\Models\Fournisseur;
 use App\Models\HistoriqueAction;
 use App\Models\MouvementStock;
 use App\Models\Produit;
@@ -47,14 +48,22 @@ class ProduitController extends Controller
             'code' => 'required|string|unique:produits,code',
             'categorie_id' => 'nullable|string',
             'fournisseur_id' => 'nullable|string',
-            'unite_carton' => 'nullable|string',
+            'unite_carton' => 'nullable|integer',
             'prix_unite_carton' => 'nullable|numeric',
             'nombre_carton' => 'nullable|integer',
             'stock_seuil' => 'nullable|integer',
             ]);
+
             $data['stock_global'] = $data['unite_carton']*$data['nombre_carton'];
             $data['prix_total'] = $data['prix_unite_carton']*($data['nombre_carton']*$data['unite_carton']);
+            //dd($data);
             $produit = Produit::create($data);
+
+            $fournisseur = Fournisseur::findOrFail($data['fournisseur_id']);
+            $fournisseur->increment('total_achats',$produit->prix_total);
+            $fournisseur->date_dernier_livraison = now();
+            $fournisseur->save();
+
             StockBoutique::create([
                 'boutique_id' => Auth::user()->boutique_id,
                 'produit_id' => $produit->id,
