@@ -38,6 +38,10 @@ class Produit extends Model
       return $this->belongsTo(categorie::class);
     }
 
+    public function fournisseur():BelongsTo{
+      return $this->belongsTo(Fournisseur::class);
+    }
+
     public function entreees_sorties(): HasMany
     {
         return $this->hasMany(EntreeSortie::class);
