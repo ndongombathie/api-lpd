@@ -16,7 +16,23 @@ class Produit extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'nom', 'code', 'categorie', 'prix_vente', 'prix_gros', 'prix_seuil', 'stock_global'
+        'nom',
+        'code',
+        'categorie_id',
+        'fournisseur_id',
+        'unite_carton',
+        'prix_unite_carton',
+        'prix_vente_detail',
+        'prix_vente_gros',
+        'prix_total',
+        'prix_achat',
+        'prix_seuil_detail',
+        'prix_seuil_gros',
+        'nombre_carton',
+        'stock_global',
+        'stock_seuil',
+        'created_at',
+        'updated_at',
     ];
 
     public function details(): HasMany
@@ -36,6 +52,10 @@ class Produit extends Model
 
     public function categorie():BelongsTo{
       return $this->belongsTo(categorie::class);
+    }
+
+    public function fournisseur():BelongsTo{
+      return $this->belongsTo(Fournisseur::class);
     }
 
     public function entreees_sorties(): HasMany

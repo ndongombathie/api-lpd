@@ -66,7 +66,6 @@ class TransferController extends Controller
     {
         try {
             $transfers = Transfer::with(['produit'])->where('status', 'valide')->paginate(20);
-
             $transfers->each(function($transfer) {
                 $transfer->produit->etat_stock = $transfer->quantite < $transfer->seuil ? true : false;
                 $transfer->produit->entree_sortie = entree_sortie_boutique::where('produit_id', $transfer->produit_id)->get()->first();

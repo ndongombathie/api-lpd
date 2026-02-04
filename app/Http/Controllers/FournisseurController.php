@@ -7,9 +7,24 @@ use Illuminate\Http\Request;
 
 class FournisseurController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return Fournisseur::query()->latest()->paginate(20);
+        try {
+            $query = Fournisseur::query()->latest();
+
+            if ($request->filled('search')) {
+                $search = $request->input('search');
+                $query->where(function ($q) use ($search) {
+                    $q->where('nom', 'like', "%{$search}%")
+                      ->orWhere('contact', 'like', "%{$search}%")
+                      ->orWhere('adresse', 'like', "%{$search}%");
+                });
+            }
+
+            return response()->json($query->paginate(20));
+        } catch (\Throwable $th) {
+            return response()->json(['error' => $th->getMessage()], 500);
+        }
     }
 
     public function store(Request $request)
@@ -26,7 +41,11 @@ class FournisseurController extends Controller
 
     public function show(string $id)
     {
-        return Fournisseur::findOrFail($id);
+        try {
+            return response()->json(Fournisseur::with('produits')->findOrFail($id));
+        } catch (\Throwable $th) {
+            return response()->json(['error' => $th->getMessage()], 500);
+        }
     }
 
     public function update(Request $request, string $id)

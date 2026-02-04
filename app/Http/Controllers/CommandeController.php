@@ -13,10 +13,25 @@ use Illuminate\Support\Facades\DB;
 
 class CommandeController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         try {
-            return response()->json( Commande::with('details','client','vendeur')->where('vendeur_id',Auth::user()->id)->paginate(20));
+            $query = Commande::with('details', 'client', 'vendeur')
+                ->where('vendeur_id', Auth::user()->id);
+
+            if ($request->filled('date')) {
+                $query->whereDate('date', $request->date);
+            }
+
+            if ($request->filled('status')) {
+                $query->where('statut', $request->status);
+            }
+
+            if ($request->filled('type')) {
+                $query->where('type_vente', $request->type);
+            }
+
+            return response()->json($query->paginate(20));
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la récupération des commandes',
@@ -78,50 +93,66 @@ class CommandeController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'client_id' => 'nullable|uuid|exists:clients,id',
-            'type_vente' => 'required|in:detail,gros',
-            'tva' => 'nullable|numeric',
-            'items' => 'required|array|min:1',
-            'items.*.produit_id' => 'required|uuid|exists:produits,id',
-            'items.*.quantite' => 'required|integer|min:1',
-            'items.*.prix_unitaire' => 'nullable|numeric',
-        ]);
 
-        $user = $request->user();
-        $tva = $validated['tva'] ?? 0.18; // 18% par défaut
-
-        return DB::transaction(function () use ($validated, $user, $tva) {
-            $commande = Commande::create([
-                'client_id' => $validated['client_id'] ?? null,
-                'vendeur_id' => $user->id,
-                'type_vente' => $validated['type_vente'],
-                'statut' => 'attente',
-                'total' => 0,
-                'date' => now(),
+        try {
+            $validated = $request->validate([
+                'client_id' => 'nullable|uuid|exists:clients,id',
+                'type_vente' => 'required|in:detail,gros',
+                'tva' => 'nullable|numeric',
+                'items' => 'required|array|min:1',
+                'items.*.produit_id' => 'required|uuid|exists:produits,id',
+                'items.*.quantite' => 'required|integer|min:1',
+                'items.*.prix_unitaire' => 'nullable|numeric',
             ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Erreur lors de la validation des données',
+                'error' => $th->getMessage(),
+            ], 400);
+        }
 
-            $totalHt = 0;
-            foreach ($validated['items'] as $item) {
-                $produit = Produit::findOrFail($item['produit_id']);
-                $prix = $item['prix_unitaire'] ?? ($validated['type_vente'] === 'gros' && $produit->prix_gros ? $produit->prix_gros : $produit->prix_vente);
-                $ligneTotal = $prix * $item['quantite'];
-                $totalHt += $ligneTotal;
+        try {
+                $user = $request->user();
+                $tva = $validated['tva'] ?? 0.18; // 18% par défaut
 
-                DetailCommande::create([
-                    'commande_id' => $commande->id,
-                    'produit_id' => $produit->id,
-                    'quantite' => $item['quantite'],
-                    'prix_unitaire' => $prix,
-                ]);
-            }
+                return DB::transaction(function () use ($validated, $user, $tva) {
+                    $commande = Commande::create([
+                        'client_id' => $validated['client_id'] ?? null,
+                        'vendeur_id' => $user->id,
+                        'type_vente' => $validated['type_vente'],
+                        'statut' => 'attente',
+                        'total' => 0,
+                        'date' => now(),
+                    ]);
 
-            $montantTva = $totalHt * $tva;
-            $commande->update(['total' => $totalHt + $montantTva]);
-            $commande->load('details', 'vendeur','client');
-            event(new CommandeValidee($commande));
-            return $commande;
-        });
+                    $totalHt = 0;
+                    foreach ($validated['items'] as $item) {
+                        $produit = Produit::findOrFail($item['produit_id']);
+                        $prix = $item['prix_unitaire'] ?? ($validated['type_vente'] === 'gros' && $produit->prix_gros ? $produit->prix_gros : $produit->prix_vente);
+                        $ligneTotal = $prix * $item['quantite'];
+                        $totalHt += $ligneTotal;
+
+                        DetailCommande::create([
+                            'commande_id' => $commande->id,
+                            'produit_id' => $produit->id,
+                            'quantite' => $item['quantite'],
+                            'prix_unitaire' => $prix,
+                        ]);
+                    }
+
+                    $montantTva = $totalHt * $tva;
+                    $commande->update(['total' => $totalHt + $montantTva]);
+                    $commande->load('details', 'vendeur','client');
+                    event(new CommandeValidee($commande));
+                    return response()->json($commande);
+                });
+
+       }catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Erreur lors de la création de la commande',
+                'error' => $th->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -129,7 +160,14 @@ class CommandeController extends Controller
      */
     public function show(string $id)
     {
-        return Commande::with(['details','client','vendeur'])->findOrFail($id);
+        try {
+            return response()->json(Commande::with(['details','client','vendeur'])->findOrFail($id));
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Erreur lors de la récupération de la commande',
+                'error' => $th->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -137,12 +175,19 @@ class CommandeController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $commande = Commande::findOrFail($id);
-        $data = $request->validate([
-            'statut' => 'sometimes|in:brouillon,validee,payee,annulee',
-        ]);
-        $commande->update($data);
-        return $commande->load('details');
+        try {
+            $commande = Commande::findOrFail($id);
+            $data = $request->validate([
+                'statut' => 'sometimes|in:brouillon,validee,payee,annulee',
+            ]);
+            $commande->update($data);
+            return $commande->load('details');
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Erreur lors de la mise à jour de la commande',
+                'error' => $th->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -150,33 +195,52 @@ class CommandeController extends Controller
      */
     public function destroy(string $id)
     {
-        $commande = Commande::findOrFail($id);
-        $commande->delete();
-        return response()->noContent();
+        try {
+            $commande = Commande::findOrFail($id);
+            if($commande->statut !== 'attente'){
+                return response()->json([
+                    'message' => 'Seules les commandes en attente peuvent être annulées',
+                ], 400);
+            }
+            $commande->delete();
+            return response()->noContent();
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Erreur lors de la suppression de la commande',
+                'error' => $th->getMessage(),
+            ], 500);
+        }
     }
 
     public function valider(string $id)
     {
-        $commande = Commande::findOrFail($id);
-        $commande->update(['statut' => 'validee']);
-        $commande->load('details', 'vendeur','client');
-        event(new CommandeValidee($commande));
-        return $commande;
+        try {
+            $commande = Commande::findOrFail($id);
+            $commande->update(['statut' => 'validee']);
+            $commande->load('details', 'vendeur','client');
+            event(new CommandeValidee($commande));
+            return $commande;
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Erreur lors de la validation de la commande',
+                'error' => $th->getMessage(),
+            ], 500);
+        }
     }
 
     public function annuler(string $id)
     {
-        $commande = Commande::findOrFail($id);
-        $commande->update(['statut' => 'annulee']);
-        $commande->load('details', 'vendeur', 'client');
-
-        // Diffuser l'événement (sans bloquer si Reverb n'est pas disponible)
         try {
+            $commande = Commande::findOrFail($id);
+            $commande->update(['statut' => 'annulee']);
+            $commande->load('details', 'vendeur','client');
             event(new CommandeAnnulee($commande));
-        } catch (\Exception $e) {
-            // Log l'erreur mais ne bloque pas l'opération
-            \Log::warning('Erreur lors de la diffusion de l\'annulation: ' . $e->getMessage());
+            return $commande;
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Erreur lors de l\'annulation de la commande',
+                'error' => $th->getMessage(),
+            ], 500);
         }
-        return $commande;
     }
 }

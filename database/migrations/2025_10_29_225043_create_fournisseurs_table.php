@@ -16,7 +16,8 @@ return new class extends Migration
             $table->string('nom');
             $table->string('contact')->nullable();
             $table->string('adresse')->nullable();
-            $table->integer('total_achats')->default(0);
+            $table->bigInteger('total_achats')->default(0);
+            $table->date('date_dernier_livraison')->nullable();
             $table->timestamps();
         });
     }
