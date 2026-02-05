@@ -37,12 +37,13 @@ class CategorieController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Categorie $categorie)
+    public function show(String $categorie)
     {
         try {
+            $categorie=Categorie::findOrFail($categorie);
             return response()->json($categorie);
         } catch (\Throwable $th) {
-            //throw $th;
+            return response()->json(['message' => $th->getMessage()], 500);
         }
     }
 
@@ -54,7 +55,10 @@ class CategorieController extends Controller
         try {
             if($request->validated())
             {
-                $categorie->update($request->validated());
+
+                $categorie=Categorie::findOrFail($request->input('id'));
+                $categorie->nom=$request->input('nom');
+                $categorie->update();
             }
             return response()->json($categorie);
         } catch (\Throwable $th) {
@@ -65,13 +69,14 @@ class CategorieController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Categorie $categorie)
+    public function destroy(string $categorie)
     {
         try {
+            $categorie=Categorie::findOrFail($categorie);
             $categorie->delete();
             return response()->json(null,Response::HTTP_NO_CONTENT);
         } catch (\Throwable $th) {
-            //throw $th;
+            return response()->json(['message' => $th->getMessage()], 500);
         }
     }
 }

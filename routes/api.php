@@ -73,10 +73,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('produits-transfer', [TransferController::class, 'index']);
     Route::put('valider-produits-transfer', [TransferController::class, 'valideTransfer']);
     Route::get('produits-disponibles-boutique', [TransferController::class, 'produitsDisponibles']);
+    #dramé
     Route::get('nombre-produits-total', [TransferController::class, 'nombreProduits']);
     Route::get('quantite-totale-produit', [TransferController::class, 'quantiteTotaleProduit']);
     Route::get('produits-sous-seuil', [TransferController::class, 'produitsSousSeuil']);
     Route::get('montant-total-stock', [TransferController::class, 'MontantTotalStock']);
+    #dramé
     Route::get('produits-controle-boutique', [TransferController::class, 'produitsControleBoutique']);
     Route::get('produits-controle-depots', [TransferController::class, 'produitsControleDepots']);
 
