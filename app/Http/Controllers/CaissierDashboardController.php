@@ -22,7 +22,7 @@ class CaissierDashboardController extends Controller
         $totalEncaissements = (int) Paiement::whereDate('date', $dateStr)->sum('montant');
 
         // Total décaissements du jour = décaissements "fait" validés ce jour-là (updated_at)
-        $totalDecaissements = (int) Decaissement::whereRaw('LOWER(statut) = ?', ['fait'])
+        $totalDecaissements = (int) Decaissement::whereRaw('LOWER(statut) = ?', ['valide'])
             ->whereDate('updated_at', $dateStr)
             ->sum('montant');
 
@@ -62,7 +62,7 @@ class CaissierDashboardController extends Controller
             'especes' => 'Espèces',
             'carte' => 'Carte',
             'wave' => 'Wave',
-            'om' => 'Orange Money',
+            'Orange Money' => 'Orange Money',
             'autre' => 'Autre',
         ];
 
