@@ -18,7 +18,7 @@ class CommandeFactory extends Factory
      */
     public function definition(): array
     {
-        $statuts = ['attente', 'validee', 'payee', 'annulee'];
+        $statuts = ['attente', 'valide', 'payee', 'annulee'];
         $types = ['detail', 'gros'];
 
         return [
