@@ -37,6 +37,7 @@ class MouvementStockFactory extends Factory
             'produit_id' => fn () => Produit::inRandomOrder()->value('id') ?? Produit::factory(),
             'quantite' => $this->faker->numberBetween(1, 50),
             'type' => $type,
+            'motif' => $this->faker->randomElement(['Approvisionnement de produit', 'Transfert de produit']),
             'date' => $this->faker->dateTimeBetween('-3 months', 'now'),
         ];
     }

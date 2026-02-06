@@ -130,6 +130,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('mouvements-stock/inventaire-depot', [MouvementSockController::class, 'inventaireDepot']);
     Route::apiResource('mouvements-stock', MouvementSockController::class);
+    Route::put('produits/{produit}/reduire-stock', [ProduitController::class, 'reduireStockProduit']);
+
 
     Route::apiResource('historique-actions', HistoriqueActionController::class);
 });

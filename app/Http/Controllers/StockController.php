@@ -84,6 +84,7 @@ class StockController extends Controller
                     'produit_id' => $produitId,
                     'quantite' => $qte,
                     'type' => 'sortie',
+                    'motif' => 'Transfert de produit',
                 ],[
                      'date' => now(),
                 ]);
@@ -189,7 +190,8 @@ class StockController extends Controller
                         'destination' => 'boutique:' . Auth::user()->boutique_id,
                         'produit_id' => $validated['produit_id'],
                         'quantite' => $qte,
-                        'type' => 'Approvisionnement',
+                        'type' => 'entree',
+                        'motif' => 'Approvisionnement de produit',
                     ],[
                         'date' => now(),
                     ]);

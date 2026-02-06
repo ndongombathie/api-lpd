@@ -76,6 +76,7 @@ class ProduitController extends Controller
                             'produit_id' => $produit->id,
                             'quantite' => $produit->nombre_carton,
                             'type' => 'Entree',
+                            'motif' => 'Ajout de produit',
                         ],[
                             'date' => now(),
                         ]);
@@ -161,6 +162,37 @@ class ProduitController extends Controller
         } catch (\Throwable $th) {
             return response()->json(['message' => $th->getMessage()], 500);
         }
+    }
+
+    public function reduireStockProduit(string $id, Request $request)
+    {
+        $produit = Produit::findOrFail($id);
+        if($produit->nombre_carton < $request->quantite){
+            return response()->json(['message' => 'Quantite superieure au stock disponible'], 400);
+        }
+        $data = $request->validate([
+            'quantite' => 'required|integer',
+        ]);
+        $produit->decrement('nombre_carton',$data['quantite']);
+        $produit->decrement('stock_global',$data['quantite']*$produit->unite_carton < 0 ? 0 :$data['quantite']*$produit->unite_carton);
+
+        MouvementStock::firstOrCreate([
+            'source' => 'boutique:' . Auth::user()->boutique_id,
+            'destination' => 'depot',
+            'produit_id' => $produit->id,
+            'quantite' => $data['quantite'],
+            'type' => 'Sortie',
+            'motif' => 'Reduction de stock',
+        ],[
+            'date' => now(),
+        ]);
+        //create historique action
+        HistoriqueAction::create([
+            'user_id' => Auth::user()->id,
+            'produit_id' => $produit->id,
+            'action' => 'Reduction de stock',
+        ]);
+        return response()->json($produit);
     }
 }
 

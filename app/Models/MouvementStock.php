@@ -15,7 +15,7 @@ class MouvementStock extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'source','destination','produit_id','quantite','type','date'
+        'source','destination','produit_id','quantite','type','date','motif'
     ];
 
     public function produit(): BelongsTo
