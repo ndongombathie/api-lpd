@@ -192,6 +192,18 @@ class ProduitController extends Controller
             'produit_id' => $produit->id,
             'action' => 'Reduction de stock',
         ]);
+
+        $entree_sortie=EntreeSortie::firstOrCreate([
+            'produit_id'  => $produit->id,
+        ], [
+            'quantite_avant' => 0,
+            'quantite_apres' => 0,
+            'nombre_fois'=>0
+        ]);
+        $entree_sortie->quantite_avant=$entree_sortie->quantite_apres;
+        $entree_sortie->decrement('quantite_apres',$data['quantite']);
+        $entree_sortie->increment('nombre_fois',1);
+        $entree_sortie->save();
         return response()->json($produit);
     }
 }
