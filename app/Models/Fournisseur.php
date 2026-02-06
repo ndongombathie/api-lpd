@@ -14,6 +14,12 @@ class Fournisseur extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'nom','contact','adresse','total_achats'
+        'nom',
+        'contact',
+        'adresse',
+        'total_achats',
+        'type_produit',
+        'derniere_livraison'
     ];
+
 }

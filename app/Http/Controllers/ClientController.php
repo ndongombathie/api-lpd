@@ -10,86 +10,109 @@ use Illuminate\Support\Facades\Auth;
 
 class ClientController extends Controller
 {
-    public function index()
+    // ============================================================
+    // LISTE DES CLIENTS
+    // ============================================================
+    public function index(Request $request)
     {
-        return Client::query()->latest()->paginate(20);
+        $query = Client::query()->latest();
+
+        if ($request->filled('type_client')) {
+            $query->where('type_client', $request->type_client);
+        }
+
+        return $query->paginate(20);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
+    // ============================================================
+    // CRÉATION
+    // ============================================================
     public function store(Request $request)
     {
+        $isResponsable = Auth::user()->role === 'responsable';
+
         $data = $request->validate([
-            'nom' => 'required|string',
-            'prenom' => 'required|string',
-            'adresse' => 'nullable|string',
+            'nom'        => 'required|string',
+            'entreprise' => 'nullable|string',
+            'prenom'     => $isResponsable ? 'nullable|string' : 'required|string',
+            'adresse'    => 'nullable|string',
             'numero_cni' => 'nullable|string',
             'telephone' => 'nullable|string',
-            'type_client' => 'required|in:normal,special',
-            'solde' => 'nullable|numeric',
-            'contact' => 'nullable|string',
+            'contact'    => 'nullable|string',
+            'solde'      => 'nullable|numeric',
         ]);
 
-        if(Auth::user()->role=='reponsable')
-        {
-            $data['type_client'] = 'special';
+        // Règle métier
+        $data['type_client'] = $isResponsable ? 'special' : 'normal';
+
+        // Si responsable → on force prenom = null
+        if ($isResponsable) {
+            $data['prenom'] = null;
         }
-        else
-        {
-            $data['type_client'] = 'normal';
-        }
-        
+
         $client = Client::create($data);
+
         return response()->json($client, 201);
     }
 
-    /**
-     * Display the specified resource.
-     */
+    // ============================================================
+    // AFFICHER
+    // ============================================================
     public function show(string $id)
     {
         return Client::findOrFail($id);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
+    // ============================================================
+    // MODIFICATION
+    // ============================================================
     public function update(Request $request, string $id)
     {
         $client = Client::findOrFail($id);
+        $isResponsable = Auth::user()->role === 'responsable';
+
         $data = $request->validate([
-            'nom' => 'sometimes|string',
-            'prenom' => 'sometimes|string',
-            'adresse' => 'nullable|string',
+            'nom'        => 'sometimes|string',
+            'entreprise' => 'nullable|string',
+            'prenom'     => 'nullable|string',
+            'adresse'    => 'nullable|string',
             'numero_cni' => 'nullable|string',
             'telephone' => 'nullable|string',
-            'type_client' => 'sometimes|in:normal,special',
-            'solde' => 'nullable|numeric',
-            'contact' => 'nullable|string',
+            'contact'    => 'nullable|string',
+            'solde'      => 'nullable|numeric',
         ]);
+
+        // Le responsable ne doit pas renseigner prenom
+        if ($isResponsable) {
+            $data['prenom'] = null;
+        }
+
+        // Seul le responsable peut changer type_client
+        if ($isResponsable && $request->filled('type_client')) {
+            $client->type_client = $request->type_client;
+        }
+
         $client->update($data);
+
         return $client;
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
+    // ============================================================
+    // SUPPRESSION
+    // ============================================================
     public function destroy(string $id)
     {
-        $client = Client::findOrFail($id);
-        $client->delete();
+        Client::findOrFail($id)->delete();
         return response()->noContent();
     }
 
-    /**
-     * Liste des paiements par tranches pour un client et les soldes restants.
-     */
+    // ============================================================
+    // TRANCHES
+    // ============================================================
     public function paiementsTranches(Request $request, string $clientId)
     {
         $client = Client::findOrFail($clientId);
 
-        // Commandes du client avec paiements (tranches)
         $paginator = Commande::with(['paiements' => function ($q) {
                 $q->orderBy('date');
             }])
@@ -97,10 +120,10 @@ class ClientController extends Controller
             ->orderByDesc('date')
             ->paginate(50);
 
-        // Transformer chaque commande pour inclure total payé et reste
         $transformed = $paginator->getCollection()->map(function (Commande $cmd) {
             $totalPaye = $cmd->paiements->sum('montant');
             $reste = max(0, $cmd->total - $totalPaye);
+
             return [
                 'commande_id' => $cmd->id,
                 'date' => $cmd->date,
@@ -119,9 +142,9 @@ class ClientController extends Controller
                 }),
             ];
         });
+
         $paginator->setCollection($transformed);
 
-        // Résumé global pour le client (toutes commandes)
         $commandeIds = Commande::where('client_id', $client->id)->pluck('id');
         $montantTotal = Commande::where('client_id', $client->id)->sum('total');
         $totalPayeGlobal = Paiement::whereIn('commande_id', $commandeIds)->sum('montant');
@@ -131,7 +154,7 @@ class ClientController extends Controller
             'client' => [
                 'id' => $client->id,
                 'nom' => $client->nom,
-                'prenom' => $client->prenom,
+                'entreprise' => $client->entreprise,
                 'type_client' => $client->type_client,
             ],
             'summary' => [

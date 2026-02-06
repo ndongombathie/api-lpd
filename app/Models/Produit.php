@@ -16,14 +16,34 @@ class Produit extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'nom', 'code', 'categorie', 'prix_vente', 'prix_gros', 'prix_seuil', 'stock_global'
+        'nom',
+        'code',
+        'categorie',
+        'prix_vente',
+        'prix_gros',
+        'prix_seuil',
+        'stock_global'
     ];
 
+    // =========================
+    // 🔵 SYSTÈME VENDEUR
+    // =========================
     public function details(): HasMany
     {
         return $this->hasMany(DetailCommande::class);
     }
 
+    // =========================
+    // 🟣 SYSTÈME RESPONSABLE
+    // =========================
+    public function lignesSpeciales(): HasMany
+    {
+        return $this->hasMany(CommandeLigne::class);
+    }
+
+    // =========================
+    // 🔗 COMMUN
+    // =========================
     public function stocks(): HasMany
     {
         return $this->hasMany(StockBoutique::class);
@@ -34,7 +54,13 @@ class Produit extends Model
         return $this->hasMany(MouvementStock::class);
     }
 
-    public function categorie():BelongsTo{
-      return $this->belongsTo(categorie::class);
+    public function categorie(): BelongsTo
+    {
+        return $this->belongsTo(Categorie::class);
+    }
+
+    public function entreees_sorties(): HasMany
+    {
+        return $this->hasMany(EntreeSortie::class);
     }
 }

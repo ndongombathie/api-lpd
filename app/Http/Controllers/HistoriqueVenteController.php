@@ -13,10 +13,30 @@ class HistoriqueVenteController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         try {
-            $historiqueVentes = HistoriqueVente::with(['vendeur', 'produit'])->paginate(10);
+            $query = HistoriqueVente::query()->latest();
+            // Filter by role if provided
+            if ($request->filled('vendeur_id')) {
+                $query->where('vendeur_id', $request->input('vendeur_id'));
+            }
+
+            // Filter by boutique_id if provided
+            if ($request->filled('produit_id')) {
+                $query->where('produit_id', $request->input('produit_id'));
+            }
+
+            // Filter by search term if provided
+            if ($request->filled('search')) {
+                $search = $request->input('search');
+                $query->where(function ($q) use ($search) {
+                    $q->where('montant', 'like', "%{$search}%")
+                      ->orWhere('quantite', 'like', "%{$search}%")
+                      ->orWhere('prix_unitaire', 'like', "%{$search}%");
+                });
+            }
+            $historiqueVentes = $query->with(['vendeur', 'produit'])->paginate(10);
             return response()->json($historiqueVentes);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
@@ -26,10 +46,15 @@ class HistoriqueVenteController extends Controller
     public function inventaireBoutique(Request $request)
     {
 
-        $date=$request->input('date') ?? Carbon::now()->format('Y-m-d');
+        $validated = $request->validate([
+            'date' => 'nullable|date',
+            'per_page' => 'nullable|integer|min:1|max:200',
+        ]);
+        $date = $validated['date'] ?? Carbon::now()->format('Y-m-d');
+
         try {
             // Récupérer les produits vendus à la date donnée avec la quantité totale vendue
-            $produitsVendus = DB::table('historique_ventes')
+            $query = DB::table('historique_ventes')
                 ->join('transfers', 'historique_ventes.produit_id', '=', 'transfers.produit_id')
                 ->select(
                     'transfers.produit_id',
@@ -37,12 +62,12 @@ class HistoriqueVenteController extends Controller
                     DB::raw('SUM(historique_ventes.quantite) as quantite_vendue')
                 )
                // ->whereDate('historique_ventes.created_at', $date)
-                ->groupBy('transfers.produit_id', 'transfers.quantite')
-                ->get();
+                ->groupBy('transfers.produit_id', 'transfers.quantite');
+            $produitsVendus = $query->paginate(10);
             // Ajouter la colonne écart (stock_initial - quantite_vendue)
-            $produitsVendus->map(function ($produit) {
+            $produitsVendus->getCollection()->transform(function ($produit) {
                 $produit->ecart = $produit->stock_initial - $produit->quantite_vendue;
-                $produit->produit=Produit::find($produit->produit_id);
+                $produit->produit=Produit::query()->with('entreees_sorties')->where('id',$produit->produit_id)->get()->first();
                 $produit->total_vendu=$produit->quantite_vendue*$produit->produit->prix_unite_carton;
                 $produit->total_resant=($produit->stock_initial-$produit->quantite_vendue)*$produit->produit->prix_unite_carton > 0 ? ($produit->stock_initial-$produit->quantite_vendue)*$produit->produit->prix_unite_carton  : 0;
                 return $produit;
@@ -58,10 +83,15 @@ class HistoriqueVenteController extends Controller
      public function inventaireDepot(Request $request)
     {
 
-        $date=$request->input('date') ?? Carbon::now()->format('Y-m-d');
+        $validated = $request->validate([
+            'date' => 'nullable|date',
+            'per_page' => 'nullable|integer|min:1|max:200',
+        ]);
+        $date = $validated['date'] ?? Carbon::now()->format('Y-m-d');
+        $perPage = $validated['per_page'] ?? 50;
         try {
             // Récupérer les produits vendus à la date donnée avec la quantité totale vendue
-            $produitsVendus = DB::table('historique_ventes')
+            $query = DB::table('historique_ventes')
                 ->join('transfers', 'historique_ventes.produit_id', '=', 'transfers.produit_id')
                 ->select(
                     'transfers.produit_id',
@@ -69,10 +99,10 @@ class HistoriqueVenteController extends Controller
                     DB::raw('SUM(historique_ventes.quantite) as quantite_vendue')
                 )
                // ->whereDate('historique_ventes.created_at', $date)
-                ->groupBy('transfers.produit_id', 'transfers.quantite')
-                ->get();
+                ->groupBy('transfers.produit_id', 'transfers.quantite');
+            $produitsVendus = $query->paginate($perPage);
             // Ajouter la colonne écart (stock_initial - quantite_vendue)
-            $produitsVendus->map(function ($produit) {
+            $produitsVendus->getCollection()->transform(function ($produit) {
                 $produit->ecart = $produit->stock_initial - $produit->quantite_vendue;
                 $produit->produit=Produit::find($produit->produit_id);
                 return $produit;

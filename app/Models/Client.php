@@ -15,8 +15,17 @@ class Client extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'nom','prenom','adresse','numero_cni','telephone','type_client','solde','contact'
+        'nom',
+        'entreprise',   // ← AJOUTÉ
+        'prenom',
+        'adresse',
+        'numero_cni',
+        'telephone',
+        'type_client',
+        'solde',
+        'contact',
     ];
+
 
     public function commandes(): HasMany
     {

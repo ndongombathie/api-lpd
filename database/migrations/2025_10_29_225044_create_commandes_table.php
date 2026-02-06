@@ -16,7 +16,13 @@ return new class extends Migration
             $table->uuid('client_id')->nullable();
             $table->uuid('vendeur_id');
             $table->integer('total')->default(0);
-            $table->enum('statut', ['attente', 'validee', 'payee', 'annulee'])->default('attente');
+            $table->enum('statut', [
+                'en_attente_caisse',
+                'partiellement_payee',
+                'soldee',
+                'annulee'
+            ])->default('en_attente_caisse');
+
             $table->enum('type_vente', ['detail', 'gros'])->default('detail');
             $table->timestamp('date')->useCurrent();
             $table->timestamps();

@@ -8,9 +8,10 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class Decaissement extends Model
 {
-    /** @use HasFactory<\Database\Factories\DecaissementFactory> */
-    use HasFactory,HasUuids;
+    use HasFactory, HasUuids;
+
     protected $fillable = [
+        // caissier (existant)
         'user_id',
         'caissier_id',
         'motif',
@@ -19,75 +20,22 @@ class Decaissement extends Model
         'methode_paiement',
         'date',
         'statut',
-    ];
-    protected $casts = [
-        'montant' => 'integer',
-    ];
-    
-    protected $appends = [
-        'statut',
-        'methode_paiement',
-        'date',
-        'montant',
-    ];
 
-    public function caissier()
-    {
-        return $this->belongsTo(User::class, 'caissier_id');
-    }
-
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
-    public function getStatutAttribute($value)
-    {
-        return ucfirst($value);
-    }
-    public function setStatutAttribute($value)
-    {
-        $this->attributes['statut'] = strtolower($value);
-    }
-    public function getMethodePaiementAttribute($value)
-    {
-        return ucfirst($value);
-    }
-    public function setMethodePaiementAttribute($value)
-    {
-        $this->attributes['methode_paiement'] = strtolower($value);
-    }
-    public function getDateAttribute($value)
-    {
-        return date('d/m/Y', strtotime($value));
-    }
-    public function setDateAttribute($value)
-    {
-        $this->attributes['date'] = date('Y-m-d', strtotime($value));
-    }
-    public function getMontantAttribute($value)
-    {
-        return number_format($value, 2, ',', ' ');
-    }
-    public function setMontantAttribute($value)
-    {
-        $this->attributes['montant'] = str_replace(',', '', $value);
-    }
-    public function getLibelleAttribute($value)
-    {
-        return ucfirst($value);
-    }
-    public function setLibelleAttribute($value)
-    {
-        $this->attributes['libelle'] = strtolower($value);
-    }
-    public function getMotifAttribute($value)
-    {
-        return ucfirst($value);
-    }
-    public function setMotifAttribute($value)
-    {
-        $this->attributes['motif'] = strtolower($value);
-    }
+        // responsable (ajoutés)
+        'motif_global',
+        'methode_prevue',
+        'date_prevue',
+        'montant_total',
+    ];
+// App\Models\Decaissement.php
+public function lignes()
+{
+    return $this->hasMany(
+        \App\Models\DecaissementLigne::class,
+        'decaissement_id', // clé dans decaissement_lignes
+        'id'              // clé dans decaissements
+    );
+}
 
 
 }
