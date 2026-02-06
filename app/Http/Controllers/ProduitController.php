@@ -174,7 +174,13 @@ class ProduitController extends Controller
             'quantite' => 'required|integer',
         ]);
         $produit->decrement('nombre_carton',$data['quantite']);
-        $produit->decrement('stock_global',$data['quantite']*$produit->unite_carton < 0 ? 0 :$data['quantite']*$produit->unite_carton);
+        
+        if($produit->stock_global < $data['quantite']*$produit->unite_carton){
+            $produit->stock_global=0;
+            $produit->save();
+        }else{
+            $produit->decrement('stock_global',$data['quantite']*$produit->unite_carton);
+        }
 
         MouvementStock::firstOrCreate([
             'source' => 'boutique:' . Auth::user()->boutique_id,
