@@ -29,16 +29,31 @@ class DatabaseSeeder extends Seeder
     {
         $boutiques = Boutique::factory()->count(2)->create();
 
+        $premiereBoutique = $boutiques->first();
+
         // Admin par défaut
         User::factory()->create([
             'nom' => 'Admin',
             'prenom' => 'Global',
             'email' => 'ndongo@example.com',
             'role' => 'admin',
-            'boutique_id' => optional($boutiques->first())->id,
+            'boutique_id' => optional($premiereBoutique)->id,
             'adresse' => 'Siège',
             'telephone' => '+237600000000',
             'numero_cni' => 'ADMIN0000',
+            'password' => 'password',
+        ]);
+
+        // Caissier de test (interface caissier)
+        User::factory()->create([
+            'nom' => 'Caissier',
+            'prenom' => 'LPD',
+            'email' => 'caissier@lpd.com',
+            'role' => 'caissier',
+            'boutique_id' => optional($premiereBoutique)->id,
+            'adresse' => 'Caisse',
+            'telephone' => '+237600000001',
+            'numero_cni' => 'CAISSE01',
             'password' => 'password',
         ]);
 
