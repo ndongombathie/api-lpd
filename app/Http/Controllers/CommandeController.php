@@ -115,7 +115,6 @@ class CommandeController extends Controller
                 $user = $request->user();
                 $tva = $validated['tva'] ?? 0.18; // 18% par défaut
 
-                return DB::transaction(function () use ($validated, $user, $tva) {
                     $commande = Commande::create([
                         'client_id' => $validated['client_id'] ?? null,
                         'vendeur_id' => $user->id,
@@ -145,7 +144,7 @@ class CommandeController extends Controller
                     $commande->load('details', 'vendeur','client');
                     event(new CommandeValidee($commande));
                     return response()->json($commande);
-                });
+
 
        }catch (\Throwable $th) {
             return response()->json([

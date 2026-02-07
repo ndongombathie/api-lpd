@@ -129,6 +129,19 @@ class TransferController extends Controller
         }
     }
 
+    public function produitsRupture()
+    {
+        try {
+            $transfers = Transfer::with(['produit'])
+                ->where('status', 'valide')
+                ->whereRaw('quantite <= 0')
+                ->paginate(20);
+            return response()->json($transfers);
+        } catch (\Throwable $th) {
+            return response()->json(['error' => $th->getMessage()], 500);
+        }
+    }
+
 
     public function valideTransfer(Request $request){
       try {
