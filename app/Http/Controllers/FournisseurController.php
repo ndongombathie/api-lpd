@@ -11,12 +11,25 @@ class FournisseurController extends Controller
      * GET /api/fournisseurs
      * Pagination Laravel pour le Responsable
      */
-    public function index()
+    public function index(Request $request)
     {
-        return Fournisseur::query()
-            ->latest()
-            ->paginate(20);
+        $query = Fournisseur::query()->latest();
+
+        // 🔎 Recherche
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+
+            $query->where(function ($q) use ($search) {
+                $q->where('nom', 'like', "%{$search}%")
+                ->orWhere('contact', 'like', "%{$search}%")
+                ->orWhere('adresse', 'like', "%{$search}%")
+                ->orWhere('type_produit', 'like', "%{$search}%");
+            });
+        }
+
+        return $query->paginate(20);
     }
+
 
     /**
      * POST /api/fournisseurs

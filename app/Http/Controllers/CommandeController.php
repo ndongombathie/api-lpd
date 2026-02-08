@@ -13,20 +13,26 @@ use Illuminate\Support\Facades\DB;
 class CommandeController extends Controller
 {
     // =========================================================
-    // 📦 LISTE DES COMMANDES (pagination + filtres + stats globales)
+    // 📦 LISTE DES COMMANDES (pagination + filtres + stats)
     // =========================================================
     public function index(Request $request)
     {
         try {
-            $baseQuery = Commande::with(['details', 'client', 'vendeur', 'paiements']);
 
-            // =====================================================
-            // 1️⃣ FILTRES COMMUNS (statut, dates, recherche)
-            // =====================================================
+            /*
+            |--------------------------------------------------------------------------
+            | BASE QUERY (filtres communs)
+            |--------------------------------------------------------------------------
+            */
+            $baseQuery = Commande::query()
+                ->with(['details', 'client', 'vendeur', 'paiements']);
+
+            // filtre statut
             if ($request->filled('statut') && $request->statut !== 'tous') {
                 $baseQuery->where('statut', $request->statut);
             }
 
+            // filtre dates
             if ($request->filled('start_date')) {
                 $baseQuery->whereDate('date', '>=', $request->start_date);
             }
@@ -35,31 +41,39 @@ class CommandeController extends Controller
                 $baseQuery->whereDate('date', '<=', $request->end_date);
             }
 
+            // recherche
             if ($request->filled('search')) {
                 $s = $request->search;
+
                 $baseQuery->where(function ($q) use ($s) {
                     $q->where('id', 'like', "%$s%")
-                      ->orWhereHas('client', fn($c) => $c->where('nom', 'like', "%$s%"))
-                      ->orWhereHas('details.produit', function ($p) use ($s) {
-                          $p->where('nom', 'like', "%$s%")
-                            ->orWhere('libelle', 'like', "%$s%")
-                            ->orWhere('reference', 'like', "%$s%");
-                      });
+                        ->orWhereHas('client', fn($c) =>
+                            $c->where('nom', 'like', "%$s%")
+                        )
+                        ->orWhereHas('details.produit', function ($p) use ($s) {
+                            $p->where('nom', 'like', "%$s%")
+                              ->orWhere('libelle', 'like', "%$s%")
+                              ->orWhere('reference', 'like', "%$s%");
+                        });
                 });
             }
 
-            // =====================================================
-            // 2️⃣ REQUÊTE TABLE (règle métier client spécial)
-            // =====================================================
+            /*
+            |--------------------------------------------------------------------------
+            | TABLE QUERY (règle métier client spécial)
+            |--------------------------------------------------------------------------
+            */
             $tableQuery = clone $baseQuery;
 
             if ($request->filled('type_client') && $request->type_client === 'special') {
                 $tableQuery->where(function ($q) {
-                    $q->whereHas('client', fn($c) => $c->where('type_client', 'special'))
-                      ->orWhere(function ($x) {
-                          $x->whereNull('client_id')
-                            ->where('type_vente', 'gros');
-                      });
+                    $q->whereHas('client', fn($c) =>
+                        $c->where('type_client', 'special')
+                    )
+                    ->orWhere(function ($x) {
+                        $x->whereNull('client_id')
+                          ->where('type_vente', 'gros');
+                    });
                 });
             }
 
@@ -68,42 +82,67 @@ class CommandeController extends Controller
             }
 
             $perPage = (int) $request->get('perPage', 20);
-            $table = $tableQuery->orderByDesc('date')->paginate($perPage);
 
-            // =====================================================
-            // 3️⃣ REQUÊTE STATS (MÊME règle métier que la table)
-            // =====================================================
+            $table = $tableQuery
+                ->orderByDesc('date')
+                ->paginate($perPage);
+
+            /*
+            |--------------------------------------------------------------------------
+            | STATS QUERY (MÊME LOGIQUE QUE TABLE)
+            |--------------------------------------------------------------------------
+            */
             $statsQuery = clone $baseQuery;
 
             if ($request->filled('type_client') && $request->type_client === 'special') {
                 $statsQuery->where(function ($q) {
-                    $q->whereHas('client', fn($c) => $c->where('type_client', 'special'))
-                      ->orWhere(function ($x) {
-                          $x->whereNull('client_id')
-                            ->where('type_vente', 'gros');
-                      });
+                    $q->whereHas('client', fn($c) =>
+                        $c->where('type_client', 'special')
+                    )
+                    ->orWhere(function ($x) {
+                        $x->whereNull('client_id')
+                          ->where('type_vente', 'gros');
+                    });
                 });
             }
 
-            $stats = $statsQuery->get();
+            if ($request->filled('client_id')) {
+                $statsQuery->where('client_id', $request->client_id);
+            }
 
+            // récupération non paginée pour stats
+            $statsCollection = $statsQuery->get();
+
+            $totalTTC = $statsCollection->sum('total');
+
+            $totalPaye = $statsCollection
+                ->sum(fn ($c) => $c->paiements->sum('montant'));
+
+            $dette = max($totalTTC - $totalPaye, 0);
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | RESPONSE
+            |--------------------------------------------------------------------------
+            */
             return response()->json([
                 'data' => $table->items(),
                 'current_page' => $table->currentPage(),
                 'last_page' => $table->lastPage(),
                 'total' => $table->total(),
 
-                // 🧮 Stats réelles (non paginées)
                 'stats' => [
-                    'nb' => $stats->count(),
-                    'annulees' => $stats->where('statut', 'annulee')->count(),
-                    'totalTTC' => $stats->sum('total'),
-                    'totalPaye' => $stats->sum(fn($c) => $c->paiements->sum('montant')),
-                    'dette' => $stats
-                        ->whereIn('statut', ['en_attente_caisse', 'partiellement_payee'])
-                        ->sum(fn($c) => max($c->total - $c->paiements->sum('montant'), 0)),
+                    'nb' => $statsCollection->count(),
+                    'annulees' => $statsCollection
+                        ->where('statut', 'annulee')
+                        ->count(),
+                    'totalTTC' => $totalTTC,
+                    'totalPaye' => $totalPaye,
+                    'dette' => $dette,
                 ],
             ]);
+
         } catch (\Throwable $e) {
             return response()->json([
                 'message' => 'Erreur chargement commandes',
@@ -113,7 +152,7 @@ class CommandeController extends Controller
     }
 
     // =========================================================
-    // 🛒 CRÉATION COMMANDE (module vendeur intact)
+    // 🛒 CRÉATION COMMANDE
     // =========================================================
     public function store(Request $request)
     {
@@ -144,6 +183,7 @@ class CommandeController extends Controller
             $totalHt = 0;
 
             foreach ($validated['items'] as $item) {
+
                 $produit = Produit::findOrFail($item['produit_id']);
 
                 $prix = $item['prix_unitaire']
@@ -176,7 +216,12 @@ class CommandeController extends Controller
 
     public function show(string $id)
     {
-        return Commande::with(['details.produit', 'client', 'vendeur', 'paiements'])->findOrFail($id);
+        return Commande::with([
+            'details.produit',
+            'client',
+            'vendeur',
+            'paiements'
+        ])->findOrFail($id);
     }
 
     public function destroy(string $id)

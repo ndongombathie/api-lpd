@@ -18,6 +18,8 @@ use App\Http\Controllers\HistoriqueVenteController;
 use App\Http\Controllers\TransferController;
 use App\Http\Controllers\DecaissementController;
 use App\Http\Controllers\MouvementSockController;
+use App\Http\Controllers\Api\RapportController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -81,6 +83,25 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('historique-ventes', [HistoriqueVenteController::class, 'index']);
     Route::get('total-vente-par-jour', [HistoriqueVenteController::class, 'totalParJour']);
     Route::get('inventaires-boutique', [HistoriqueVenteController::class, 'inventaireBoutique']);
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | RAPPORTS / AUDIT LOGS
+    |--------------------------------------------------------------------------
+    | Journal d'activité du responsable
+    | Fournisseurs & Clients spéciaux
+    */
+    Route::prefix('rapports')->group(function () {
+
+        // Journal fournisseurs
+        Route::get('fournisseurs', [RapportController::class, 'logsFournisseurs']);
+
+        // Journal clients spéciaux
+        Route::get('clients', [RapportController::class, 'logsClients']);
+
+    });
+
 
     // ---------------- STOCK ----------------
     Route::get('stocks', [StockController::class, 'index']);

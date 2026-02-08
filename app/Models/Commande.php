@@ -91,28 +91,27 @@ class Commande extends Model
      * Recalcule le statut caisse
      * RÈGLE MÉTIER OFFICIELLE
      */
-    public function recalcStatut(): void
+    public function recalcStatut()
     {
-        // Annulée = jamais modifiée
-        // 🔒 Une commande annulée est figée pour toujours
+        // une commande annulée ne change jamais de statut
         if ($this->statut === 'annulee') {
             return;
         }
 
+        $totalPaye = $this->paiements()->sum('montant');
 
-        $paye  = $this->montantPaye();
-        $total = (int) $this->total;
-
-        if ($paye === 0) {
+        if ($totalPaye == 0) {
             $this->statut = 'en_attente_caisse';
         }
-        elseif ($paye < $total) {
+        elseif ($totalPaye < $this->total) {
             $this->statut = 'partiellement_payee';
         }
-        elseif ($paye === $total) {
+        else {
+            // paiement EXACT
             $this->statut = 'soldee';
         }
 
         $this->save();
     }
+
 }
