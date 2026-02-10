@@ -18,7 +18,7 @@ class TransferController extends Controller
     public function index()
     {
         try {
-            $transfers = Transfer::with(['produit'])->where('status', 'en_attente')->paginate(20);
+            $transfers = Transfer::with(['produit'])->where('status', 'en_attente')->paginate(10);
             return response()->json($transfers);
         } catch (\Throwable $th) {
             return response()->json(['error' => $th->getMessage()], 500);

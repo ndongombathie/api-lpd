@@ -62,7 +62,7 @@ class MouvementSockController extends Controller
                     DB::raw("SUM(CASE WHEN mouvement_stocks.type = 'entree' THEN mouvement_stocks.quantite ELSE 0 END) as total_entree"),
                     DB::raw("SUM(CASE WHEN mouvement_stocks.type = 'sortie' THEN mouvement_stocks.quantite ELSE 0 END) as total_sortie")
                 )
-                ->groupBy('produits.id', 'produits.nom', 'produits.prix_unite_carton', 'produits.prix_achat');
+                ->groupBy('produits.id', 'produits.nom', 'produits.categorie_id', 'produits.prix_unite_carton', 'produits.prix_achat');
 
             if ($request->filled('date_debut')) {
                 $query->whereDate('mouvement_stocks.date', '>=', $request->date_debut);
