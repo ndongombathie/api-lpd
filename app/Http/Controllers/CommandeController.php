@@ -16,7 +16,7 @@ class CommandeController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = Commande::with('details', 'client', 'vendeur');
+            $query = Commande::with('details', 'client', 'vendeur')
                 ->where('vendeur_id', Auth::user()->id);
 
             if ($request->filled('date')) {
