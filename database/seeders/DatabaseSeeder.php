@@ -98,7 +98,7 @@ class DatabaseSeeder extends Seeder
             if ($reste <= 0 && $total > 0) {
                 $commande->statut = 'payee';
             } elseif ($total > 0) {
-                $commande->statut = 'validee';
+                $commande->statut = 'valide';
             }
 
             $commande->save();
