@@ -73,9 +73,14 @@ class CategorieController extends Controller
     public function destroy(string $categorie)
     {
         try {
-            $categorie=Categorie::findOrFail($categorie);
+            $categorie = Categorie::findOrFail($categorie);
+
+            // Détacher les produits associés avant suppression pour éviter
+            // la suppression en cascade des produits qui échouerait s'ils ont des ventes
+            $categorie->produits()->update(['categorie_id' => null]);
+
             $categorie->delete();
-            return response()->json(null,Response::HTTP_NO_CONTENT);
+            return response()->json(null, Response::HTTP_NO_CONTENT);
         } catch (\Throwable $th) {
             return response()->json(['message' => $th->getMessage()], 500);
         }
