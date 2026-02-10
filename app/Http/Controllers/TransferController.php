@@ -65,7 +65,7 @@ class TransferController extends Controller
     public function produitsControleBoutique()
     {
         try {
-            $transfers = Transfer::with(['produit'])->where('status', 'valide')->paginate(20);
+            $transfers = Transfer::with(['produit'])->where('status', 'valide')->paginate(15);
             $transfers->each(function($transfer) {
                 $transfer->produit->etat_stock = $transfer->quantite < $transfer->seuil ? true : false;
                 $transfer->produit->entree_sortie = entree_sortie_boutique::where('produit_id', $transfer->produit_id)->get()->first();
@@ -79,7 +79,7 @@ class TransferController extends Controller
     public function produitsControleDepots()
     {
         try {
-            $produits = Produit::with(['produit'])->where('status', 'valide')->paginate(20);
+            $produits = Produit::with(['entreees_sorties'])->paginate(15);
             $produits->each(function($produit) {
                 $produit->etat_stock = $produit->quantite < $produit->stock_seuil ? true : false;
                 $produit->entree_sortie = EntreeSortie::where('produit_id', $produit->id)->get()->first();
