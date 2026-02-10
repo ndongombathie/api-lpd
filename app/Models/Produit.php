@@ -51,7 +51,7 @@ class Produit extends Model
     }
 
     public function categorie():BelongsTo{
-      return $this->belongsTo(categorie::class);
+      return $this->belongsTo(Categorie::class);
     }
 
     public function fournisseur():BelongsTo{
