@@ -22,7 +22,6 @@ class UpdateCategorieRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'id'=>'string',
             'nom'=>'required|string'
         ];
     }

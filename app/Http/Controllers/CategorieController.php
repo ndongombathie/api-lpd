@@ -50,18 +50,19 @@ class CategorieController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateCategorieRequest $request, Categorie $categorie)
+    public function update(UpdateCategorieRequest $request, string $categorie)
     {
         try {
             if($request->validated())
             {
 
-                $categorie=Categorie::findOrFail($request->input('id'));
+                $categorie=Categorie::findOrFail($categorie);
                 $categorie->nom=$request->input('nom');
                 $categorie->update();
             }
             return response()->json($categorie);
         } catch (\Throwable $th) {
+            return response()->json(['message' => $th->getMessage()], 500);
             //throw $th;
         }
     }
