@@ -49,7 +49,7 @@ class DatabaseSeeder extends Seeder
         Produit::factory()->count(50)->create();
         Client::factory()->count(20)->create();
         Fournisseur::factory()->count(5)->create();
-        Transfer::factory()->count(10)->create();
+        Transfer::factory()->count(50)->create();
 
 
         // Stock initial par boutique
@@ -98,7 +98,7 @@ class DatabaseSeeder extends Seeder
             if ($reste <= 0 && $total > 0) {
                 $commande->statut = 'payee';
             } elseif ($total > 0) {
-                $commande->statut = 'validee';
+                $commande->statut = 'valide';
             }
 
             $commande->save();
