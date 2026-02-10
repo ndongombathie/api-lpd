@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('historique_actions', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('user_id')->constrained('users');
-            $table->foreignUuid('produit_id')->constrained('produits')->onDelete('null');
+            $table->foreignUuid('produit_id')->constrained('produits')->nullOnDelete();
             $table->string('action');
             $table->timestamps();
         });
