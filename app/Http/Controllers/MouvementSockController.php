@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Categorie;
 use App\Models\EntreeSortie;
+use App\Models\Inventaire;
 use App\Models\MouvementStock;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -13,6 +14,10 @@ class MouvementSockController extends Controller
     /**
      * Display a listing of the resource.
      */
+    protected $inventaireController;
+    public function __construct(InventaireController $inventaireController) {
+        $this->inventaireController = $inventaireController;
+    }
     public function index(Request $request)
     {
         try {
@@ -101,7 +106,7 @@ class MouvementSockController extends Controller
                 $sortie = (int) $item->total_sortie;
                 $stock  = (int) $item->stock_restant;
                 $prix   = (float) $item->prix_achat;
-                
+
                 $carry['prix_achat_total'] += $entree * $prix;
                 $carry['prix_valeur_sortie_total'] += $sortie * $prix;
                 $carry['valeur_estimee_total'] += $stock * $prix;
@@ -116,6 +121,18 @@ class MouvementSockController extends Controller
 
                 $total['benefice_total'] =
                     $total['prix_valeur_sortie_total'] - $total['prix_achat_total'];
+
+                Inventaire::create([
+                    'type' => 'Depot',
+                    'date_debut' => $request->date_debut ?? now(),
+                    'date_fin' => $request->date_fin ?? now(),
+                    'date' => now(),
+                    'prix_achat_total' => $total['prix_achat_total'],
+                    'prix_valeur_sortie_total' => $total['prix_valeur_sortie_total'],
+                    'valeur_estimee_total' => $total['valeur_estimee_total'],
+                    'benefice_total' => $total['benefice_total'],
+                ]);
+
                 return response()->json($total);
         } catch (\Throwable $th) {
             return response()->json(['error' => $th->getMessage()], 500);

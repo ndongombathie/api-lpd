@@ -82,7 +82,7 @@ class TransferController extends Controller
             $produits = Produit::with(['entreees_sorties'])->paginate(15);
             $produits->each(function($produit) {
                 $produit->etat_stock = $produit->quantite < $produit->stock_seuil ? true : false;
-                
+                $produit->entree_sortie = EntreeSortie::where('produit_id', $produit->id)->get()->first();
             });
             return response()->json($produits);
         } catch (\Throwable $th) {
