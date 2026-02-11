@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\HistoriqueVente;
+use App\Models\Inventaire;
 use App\Models\Produit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -78,6 +79,50 @@ class HistoriqueVenteController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
 
+    }
+
+    #a partir de inventaireDepot calculer l'inventaireBoutique faire la somme de prix_achat_total,prix_valeur_sortie_total,valeur_estimee_total et le benefice_total
+    public function enregistrerInventaireBoutique(Request $request)
+    {
+        try {
+            $inventaire = $this->inventaireBoutique($request);
+            $total = $inventaire->reduce(function ($carry, $item) {
+
+                $entree = (int) $item->total_entree;
+                $sortie = (int) $item->total_sortie;
+                $stock  = (int) $item->stock_restant;
+                $prix   = (float) $item->prix_achat;
+
+                $carry['prix_achat_total'] += $entree * $prix;
+                $carry['prix_valeur_sortie_total'] += $sortie * $prix;
+                $carry['valeur_estimee_total'] += $stock * $prix;
+
+                return $carry;
+
+                }, [
+                    'prix_achat_total' => 0,
+                    'prix_valeur_sortie_total' => 0,
+                    'valeur_estimee_total' => 0,
+                ]);
+
+                $total['benefice_total'] =
+                    $total['prix_valeur_sortie_total'] - $total['prix_achat_total'];
+
+                Inventaire::create([
+                    'type' => 'Boutique',
+                    'date_debut' => $request->date_debut ?? now(),
+                    'date_fin' => $request->date_fin ?? now(),
+                    'date' => now(),
+                    'prix_achat_total' => $total['prix_achat_total'],
+                    'prix_valeur_sortie_total' => $total['prix_valeur_sortie_total'],
+                    'valeur_estimee_total' => $total['valeur_estimee_total'],
+                    'benefice_total' => $total['benefice_total'],
+                ]);
+
+                return response()->json($total);
+        } catch (\Throwable $th) {
+            return response()->json(['error' => $th->getMessage()], 500);
+        }
     }
 
      public function inventaireDepot(Request $request)
