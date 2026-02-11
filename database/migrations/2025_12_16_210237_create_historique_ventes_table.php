@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('historique_ventes', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('vendeur_id')->references('id')->on('users');
-            $table->foreignUuid('produit_id')->references('id')->on('produits');
+            $table->foreignUuid('produit_id')->nullable()->constrained('produits')->onDelete('set null');
             $table->unsignedInteger('quantite');
             $table->integer('prix_unitaire');
             $table->integer('montant');
