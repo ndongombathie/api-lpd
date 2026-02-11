@@ -20,8 +20,9 @@ class CaissierDashboardController extends Controller
         $fondOuverture = $this->getFondOuverture($date);
 
         // Total encaissements du jour = somme des paiements du jour (heure exacte)
-        $totalEncaissements = (int) Paiement::whereDate('date', $dateStr)->sum('montant')
-        ->where('caissier_id', Auth::user()->id);
+        $totalEncaissements = (int) Paiement::whereDate('date', $dateStr)
+        ->where('caissier_id', Auth::user()->id)
+        ->sum('montant');
 
         // Total décaissements du jour = décaissements "fait" validés ce jour-là (updated_at)
         $totalDecaissements = (int) Decaissement::whereRaw('LOWER(statut) = ?', ['valide'])

@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use App\Http\Requests\UpdateDecaissementRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class DecaissementController extends Controller
 {
@@ -17,7 +18,7 @@ class DecaissementController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = Decaissement::query()->latest();
+            $query = Decaissement::query()->where('caissier_id', Auth::user()->id)->latest();
             // Filter by motif if provided
             if ($request->filled('motif')) {
                 $query->where('motif', $request->input('motif'));
@@ -57,7 +58,7 @@ class DecaissementController extends Controller
 
     public function montantTotalDecaissement(){
         try {
-            $montantTotal =Decaissement::sum('montant');
+            $montantTotal =Decaissement::where('caissier_id', Auth::user()->id)->sum('montant');
             return response()->json(['montant_total' => $montantTotal], 200);
         } catch (\Throwable $th) {
             //throw $th;
@@ -76,12 +77,12 @@ class DecaissementController extends Controller
                 ->whereRaw('LOWER(statut) = ?', ['en_attente'])
                 ->orderBy('created_at', 'asc')
                 ->get();
-            
+
             // Retourner les valeurs brutes directement depuis la base de données
             $decaissementsArray = $decaissements->map(function ($dec) {
                 // Utiliser getAttributes() pour obtenir les valeurs brutes
                 $attributes = $dec->getAttributes();
-                
+
                 return [
                     'id' => $attributes['id'] ?? $dec->id,
                     'user_id' => $attributes['user_id'] ?? $dec->user_id,
@@ -108,11 +109,11 @@ class DecaissementController extends Controller
                     ] : null,
                 ];
             });
-            
+
             return response()->json(['data' => $decaissementsArray->values()]);
         } catch (\Exception $e) {
-            \Log::error('Erreur getDecaissementsEnAttente: ' . $e->getMessage());
-            \Log::error('Stack trace: ' . $e->getTraceAsString());
+            Log::error('Erreur getDecaissementsEnAttente: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
