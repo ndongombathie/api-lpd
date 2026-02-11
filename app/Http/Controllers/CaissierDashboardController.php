@@ -126,8 +126,16 @@ class CaissierDashboardController extends Controller
 
     private function getFondOuverture(Carbon $date): int
     {
-        $veille = $date->copy()->subDay()->toDateString();
+        $dateStr = $date->toDateString();
 
+        // Si le responsable a déjà défini le fond pour ce jour (journal existant), l'utiliser
+        $journalDuJour = CaissierCaisseJournal::where('date', $dateStr)->first();
+        if ($journalDuJour !== null) {
+            return (int) ($journalDuJour->fond_ouverture ?? 0);
+        }
+
+        // Sinon : fond = solde de clôture de la veille
+        $veille = $date->copy()->subDay()->toDateString();
         $rapportVeille = CaissierCaisseJournal::where('date', $veille)
             ->where('cloture', true)
             ->first();

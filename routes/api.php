@@ -21,6 +21,7 @@ use App\Http\Controllers\TransferController;
 use App\Http\Controllers\DecaissementController;
 use App\Http\Controllers\CaissierDashboardController;
 use App\Http\Controllers\CaissierCaisseJournalController;
+use App\Http\Controllers\FondOuvertureController;
 use App\Http\Controllers\HistoriqueActionController;
 use App\Http\Controllers\MouvementSockController;
 
@@ -105,6 +106,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('caissier/caisses-journal/{date}', [CaissierCaisseJournalController::class, 'show']);
     Route::post('caissier/caisses-journal', [CaissierCaisseJournalController::class, 'store']);
     Route::put('caissier/caisses-journal/{date}/cloture', [CaissierCaisseJournalController::class, 'cloture']);
+
+    // Fond d'ouverture : lecture (tous) / définition (responsable)
+    Route::get('fond-ouverture', [FondOuvertureController::class, 'show']);
+    Route::put('fond-ouverture', [FondOuvertureController::class, 'update']);
+
     Route::get('montant-total-decaissement', [DecaissementController::class, 'montantTotalDecaissement']);
     Route::get('decaissements-attente', [DecaissementController::class, 'getDecaissemenentEnAttente']);
 
