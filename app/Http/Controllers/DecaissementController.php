@@ -46,6 +46,17 @@ class DecaissementController extends Controller
         }
     }
 
+    public function getDecaissemenentEnAttente(){
+        try {
+            return response()->json(Decaissement::query()->where('statut', 'en_attente')->with('user')->latest()->paginate(20));
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Erreur lors de la récupération des décaissements en attente',
+                'error' => $th->getMessage(),
+            ], 500);
+        }
+    }
+
     public function montantTotalDecaissement(){
         try {
             $montantTotal =Decaissement::sum('montant');

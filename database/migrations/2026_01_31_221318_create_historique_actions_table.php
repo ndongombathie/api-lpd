@@ -11,13 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('fournisseurs', function (Blueprint $table) {
+        Schema::create('historique_actions', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('nom');
-            $table->string('contact')->nullable();
-            $table->string('adresse')->nullable();
-            $table->bigInteger('total_achats')->default(0);
-            $table->date('date_dernier_livraison')->nullable();
+            $table->foreignUuid('user_id')->constrained('users');
+            $table->foreignUuid('produit_id')->constrained('produits');
+            $table->string('action');
             $table->timestamps();
         });
     }
@@ -27,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('fournisseurs');
+        Schema::dropIfExists('historique_actions');
     }
 };

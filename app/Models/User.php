@@ -86,4 +86,9 @@ class User extends Authenticatable
     {
         $this->is_online = $value ;
     }
+
+    public function historique_actions(): HasMany
+    {
+        return $this->hasMany(HistoriqueAction::class);
+    }
 }

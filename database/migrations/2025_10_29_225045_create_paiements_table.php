@@ -13,6 +13,8 @@ return new class extends Migration
     {
         Schema::create('paiements', function (Blueprint $table) {
             $table->uuid('id')->primary();
+            $table->uuid('caissier_id');
+            $table->foreign('caissier_id')->references('id')->on('users')->cascadeOnDelete();
             $table->uuid('commande_id');
             $table->integer('montant');
             $table->string('type_paiement'); // cash, mobile, carte, virement

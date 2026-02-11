@@ -40,6 +40,10 @@ class ProduitRepository extends BaseRepository
     }
 
     function index() {
-        return Produit::query()->with('categorie')->latest()->paginate(20);
+        $produits = Produit::query()->with(['categorie','entreees_sorties'])->latest()->paginate(20);
+        $produits->each(function($produit) {
+            $produit->etat_stock = $produit->nombre_carton < $produit->stock_seuil ? true : false;
+        });
+        return $produits;
     }
 }

@@ -15,7 +15,7 @@ class StockBoutique extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'boutique_id','produit_id','quantite'
+        'boutique_id','produit_id','quantite','nombre_carton'
     ];
 
     public function produit()

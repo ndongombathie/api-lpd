@@ -16,6 +16,10 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Transfer;
 use App\Models\HistoriqueVente;
 
+use App\Models\Decaissement;
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
+
 class PaiementController extends Controller
 {
     protected $historique;
@@ -31,6 +35,70 @@ class PaiementController extends Controller
 
 
 
+
+    public function rapportJournalier(Request $request)
+    {
+        $date = $request->input('date') ?? date('Y-m-d');
+
+        try {
+            // Paiements grouped by cashier (using caissier_id)
+            $paiements = DB::table('paiements')
+                ->join('users', 'paiements.caissier_id', '=', 'users.id')
+                ->select(
+                    'users.id as caissier_id',
+                    'users.nom',
+                    'users.prenom',
+                    DB::raw('COUNT(paiements.id) as nombre_paiement'),
+                    DB::raw('SUM(paiements.montant) as valeur_total_paiement')
+                )
+                ->whereDate('paiements.date', $date)
+                ->groupBy('users.id', 'users.nom', 'users.prenom')
+                ->get();
+
+            // Decaissements grouped by caissier
+            $decaissements = DB::table('decaissements')
+                ->select(
+                    'caissier_id',
+                    DB::raw('SUM(montant) as total_decaissement')
+                )
+                ->whereDate('date', $date)
+                ->whereNotNull('caissier_id')
+                ->groupBy('caissier_id')
+                ->get()
+                ->keyBy('caissier_id');
+
+            // Get all unique caissier IDs involved
+            $caissierIds = $paiements->pluck('caissier_id')->merge($decaissements->keys())->unique();
+
+            $rapport = [];
+            foreach ($caissierIds as $id) {
+                $p = $paiements->firstWhere('caissier_id', $id);
+                $d = $decaissements->get($id);
+
+                if ($p) {
+                    $nom = $p->nom;
+                    $prenom = $p->prenom;
+                } else {
+                    $user = DB::table('users')->where('id', $id)->select('nom', 'prenom')->first();
+                    $nom = $user ? $user->nom : 'Inconnu';
+                    $prenom = $user ? $user->prenom : '';
+                }
+
+                $rapport[] = [
+                    'caissier_nom' => $nom . ' ' . $prenom,
+                    'date_journalier' => $date,
+                    'fond_de_caisse' => 0, // Placeholder as requested
+                    'nombre_paiement' => $p ? $p->nombre_paiement : 0,
+                    'valeur_total_paiement' => $p ? $p->valeur_total_paiement : 0,
+                    'total_decaissement' => $d ? $d->total_decaissement : 0,
+                ];
+            }
+
+            return response()->json($rapport);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
 
     /**
      * Store a newly created resource in storage.
@@ -85,6 +153,7 @@ class PaiementController extends Controller
                 'type_paiement' => $data['type_paiement'],
                 'date' => now(),
                 'reste_du' => $reste,
+                'caissier_id' => Auth::user()->id ?? $commande->vendeur_id, // Fallback to vendeur if no auth user
             ]);
 
             // Diffuser l'événement de paiement (sans bloquer si Reverb n'est pas disponible)

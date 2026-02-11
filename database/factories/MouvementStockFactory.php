@@ -17,7 +17,7 @@ class MouvementStockFactory extends Factory
      */
     public function definition(): array
     {
-        $type = $this->faker->randomElement(['entree', 'sortie', 'transfert']);
+        $type = $this->faker->randomElement(['entree', 'sortie']);
         $source = null;
         $destination = null;
         if ($type === 'entree') {

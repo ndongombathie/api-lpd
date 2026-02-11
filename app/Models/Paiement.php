@@ -15,11 +15,16 @@ class Paiement extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'commande_id','montant','type_paiement','date','reste_du'
+        'commande_id','montant','type_paiement','date','reste_du','caissier_id'
     ];
 
     public function commande(): BelongsTo
     {
         return $this->belongsTo(Commande::class);
+    }
+
+    public function cassier(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'cassier_id');
     }
 }

@@ -18,7 +18,7 @@ class BoutiqueController extends Controller
 
     public function montantTotalBoutique(){
         try {
-            $montantTotalDecaissement =Decaissement::sum('montant');
+            $montantTotalDecaissement =Decaissement::where('statut', 'valide')->sum('montant');
             $montantTotalProduit =Produit::sum('prix_unite_carton');
             $montantTotal = $montantTotalProduit - $montantTotalDecaissement;
             return response()->json(['montant_total' => $montantTotal], 200);

@@ -21,6 +21,8 @@ use App\Http\Controllers\TransferController;
 use App\Http\Controllers\DecaissementController;
 use App\Http\Controllers\CaissierDashboardController;
 use App\Http\Controllers\CaissierCaisseJournalController;
+use App\Http\Controllers\HistoriqueActionController;
+use App\Http\Controllers\MouvementSockController;
 
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
@@ -57,6 +59,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('mon-profil', [AuthController::class, 'monProfil']);
     Route::put('mon-profil', [AuthController::class, 'updateProfil']);
+    Route::put('change-password', [AuthController::class, 'changePassword']);
 
     Route::apiResource('categories',CategorieController::class);
     Route::apiResource('produits', ProduitController::class);
@@ -74,13 +77,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('quantite-totale-produit', [TransferController::class, 'quantiteTotaleProduit']);
     Route::get('produits-sous-seuil', [TransferController::class, 'produitsSousSeuil']);
     Route::get('montant-total-stock', [TransferController::class, 'MontantTotalStock']);
+    Route::get('produits-controle-boutique', [TransferController::class, 'produitsControleBoutique']);
+    Route::get('produits-controle-depots', [TransferController::class, 'produitsControleDepots']);
+
 
 
 
     # Gestion des historiques de vente
-    Route::get('index', [HistoriqueVenteController::class, 'index']);
+    Route::get('historique-ventes', [HistoriqueVenteController::class, 'index']);
     Route::get('total-vente-par-jour', [HistoriqueVenteController::class, 'totalParJour']);
     Route::get('inventaires-boutique', [HistoriqueVenteController::class, 'inventaireBoutique']);
+
+
 
     Route::get('stocks', [StockController::class, 'index']);
     Route::apiResource('decaissements', DecaissementController::class);
@@ -98,6 +106,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('caissier/caisses-journal', [CaissierCaisseJournalController::class, 'store']);
     Route::put('caissier/caisses-journal/{date}/cloture', [CaissierCaisseJournalController::class, 'cloture']);
     Route::get('montant-total-decaissement', [DecaissementController::class, 'montantTotalDecaissement']);
+    Route::get('decaissements-attente', [DecaissementController::class, 'getDecaissemenentEnAttente']);
 
     Route::get('stocks/ruptures', [StockController::class, 'ruptures']);
     Route::get('produits-ruptures', [ProduitController::class, 'produits_en_rupture']);
@@ -113,6 +122,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('commandes/{commande}/annuler', [CommandeController::class, 'annuler']);
 
     Route::post('commandes/{commande}/paiements', [PaiementController::class, 'store']);
+    Route::get('paiements-rapport-journalier', [PaiementController::class, 'rapportJournalier']);
     Route::get('commandes/{commande}/paiements', [PaiementController::class, 'index']);
     Route::apiResource('utilisateurs', UserController::class);
+    Route::post('utilisateurs/{utilisateur}/reset-password', [UserController::class, 'resetPassword']);
+
+    Route::get('mouvements-stock/inventaire-depot', [MouvementSockController::class, 'inventaireDepot']);
+    Route::apiResource('mouvements-stock', MouvementSockController::class);
+
+    Route::apiResource('historique-actions', HistoriqueActionController::class);
 });

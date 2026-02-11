@@ -15,6 +15,8 @@ use App\Models\MouvementStock;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\Decaissement;
+use App\Models\EntreeSortie;
+use App\Models\HistoriqueAction;
 use App\Models\HistoriqueVente;
 use App\Models\Transfer;
 
@@ -118,10 +120,13 @@ class DatabaseSeeder extends Seeder
         });
 
         // Mouvements de stock
-       // MouvementStock::factory()->count(80)->create();
+        MouvementStock::factory()->count(80)->create();
 
         // Décaisements
         Decaissement::factory()->count(10)->create();
         HistoriqueVente::factory()->count(50)->create();
+        HistoriqueAction::factory()->count(50)->create();
+        EntreeSortie::factory()->count(50)->create();
     }
+
 }

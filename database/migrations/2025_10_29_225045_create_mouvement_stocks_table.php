@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('mouvement_stocks', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('source')->nullable(); // depot, boutique:{id}
+            $table->string('source')->nullable();
             $table->string('destination')->nullable();
             $table->uuid('produit_id');
             $table->integer('quantite');

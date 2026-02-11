@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Transfer;
 use App\Http\Requests\StoreTransferRequest;
 use App\Http\Requests\UpdateTransferRequest;
+use App\Models\entree_sortie_boutique;
+use App\Models\EntreeSortie;
 use Illuminate\Http\Request;
 use App\Models\Produit;
 
@@ -30,7 +32,7 @@ class TransferController extends Controller
     public function nombreProduits()
     {
         try {
-            $count = Transfer::count();
+            $count = Transfer::where('status', 'valide')->count();
             return response()->json(['total' => $count]);
         } catch (\Throwable $th) {
             return response()->json(['error' => $th->getMessage()], 500);
@@ -43,10 +45,10 @@ class TransferController extends Controller
     public function quantiteTotaleProduit()
     {
         try {
-            $totalQuantity = Transfer::sum('quantite');
-            return response()->json(['total_quantity' => $totalQuantity]);
+                $totalQuantity = Transfer::where('status', 'valide')->sum('quantite');
+                return response()->json(['total_quantity' => $totalQuantity]);
         } catch (\Throwable $th) {
-            return response()->json(['error' => $th->getMessage()], 500);
+                return response()->json(['error' => $th->getMessage()], 500);
         }
     }
 
@@ -55,6 +57,34 @@ class TransferController extends Controller
         try {
             $transfers = Transfer::with(['produit'])->where('status', 'valide')->paginate(20);
             return response()->json($transfers);
+        } catch (\Throwable $th) {
+            return response()->json(['error' => $th->getMessage()], 500);
+        }
+    }
+
+    public function produitsControleBoutique()
+    {
+        try {
+            $transfers = Transfer::with(['produit'])->where('status', 'valide')->paginate(20);
+            $transfers->each(function($transfer) {
+                $transfer->produit->etat_stock = $transfer->quantite < $transfer->seuil ? true : false;
+                $transfer->produit->entree_sortie = entree_sortie_boutique::where('produit_id', $transfer->produit_id)->get()->first();
+            });
+            return response()->json($transfers);
+        } catch (\Throwable $th) {
+            return response()->json(['error' => $th->getMessage()], 500);
+        }
+    }
+
+    public function produitsControleDepots()
+    {
+        try {
+            $produits = Produit::with(['produit'])->where('status', 'valide')->paginate(20);
+            $produits->each(function($produit) {
+                $produit->etat_stock = $produit->quantite < $produit->stock_seuil ? true : false;
+                $produit->entree_sortie = EntreeSortie::where('produit_id', $produit->id)->get()->first();
+            });
+            return response()->json($produits);
         } catch (\Throwable $th) {
             return response()->json(['error' => $th->getMessage()], 500);
         }
@@ -127,10 +157,10 @@ class TransferController extends Controller
             $produit = Produit::where('id', $transfer->produit_id)->get()->first();
             $total += $transfer->quantite * $produit->prix_vente_detail;
            }
+           return response()->json(['total' => $total]);
         } catch (\Throwable $th) {
-
+            return response()->json(['error' => $th->getMessage()], 500);
         }
-        return response()->json(['total' => $total]);
     }
 
 
