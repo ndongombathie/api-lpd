@@ -94,6 +94,7 @@ class PaiementController extends Controller
                     'nombre_paiement' => $p ? $p->nombre_paiement : 0,
                     'valeur_total_paiement' => $p ? $p->valeur_total_paiement : 0,
                     'total_decaissement' => $d ? $d->total_decaissement : 0,
+                    'caisse_final'=> $p->valeur_total_paiement - ($d->total_decaissement + 0),
                 ];
             }
 

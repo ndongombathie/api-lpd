@@ -151,6 +151,7 @@ class ProduitController extends Controller
     {
         try {
             $produit = Produit::findOrFail($id);
+            $produit->produits()->update(['categorie_id' => null]);
             $produit->delete();
             //create historique action
             HistoriqueAction::create([
@@ -174,7 +175,7 @@ class ProduitController extends Controller
             'quantite' => 'required|integer',
         ]);
         $produit->decrement('nombre_carton',$data['quantite']);
-        
+
         if($produit->stock_global < $data['quantite']*$produit->unite_carton){
             $produit->stock_global=0;
             $produit->save();

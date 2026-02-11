@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 
 class CaissierCaisseJournalController extends Controller
 {
+
     public function show(string $date)
     {
         $dateStr = Carbon::parse($date)->toDateString();
@@ -19,12 +20,13 @@ class CaissierCaisseJournalController extends Controller
             ['fond_ouverture' => $this->getFondOuverture(Carbon::parse($dateStr))]
         );
 
-        [$totalEncaissements, $totalDecaissements, $soldeTheorique] = $this->computeTotals($dateStr, (int) $journal->fond_ouverture);
+        [$totalEncaissements, $totalDecaissements, $soldeTheorique,$nombrePaiements] = $this->computeTotals($dateStr, (int) $journal->fond_ouverture);
 
         // Mettre à jour les totaux théoriques (sans écraser solde_reel/observations)
         $journal->fill([
             'total_encaissements' => $totalEncaissements,
             'total_decaissements' => $totalDecaissements,
+            'nombre_paiements'=>$nombrePaiements,
             'solde_theorique' => $soldeTheorique,
         ])->save();
 
@@ -60,11 +62,14 @@ class CaissierCaisseJournalController extends Controller
             ['fond_ouverture' => $this->getFondOuverture(Carbon::parse($dateStr))]
         );
 
-        [$totalEncaissements, $totalDecaissements, $soldeTheorique] = $this->computeTotals($dateStr, (int) $journal->fond_ouverture);
+        [$totalEncaissements, $totalDecaissements, $soldeTheorique, $nombrePaiements] = $this->computeTotals($dateStr, (int) $journal->fond_ouverture);
 
+        // Mettre à jour les totaux réels et autres informations
         $journal->fill([
             'total_encaissements' => $totalEncaissements,
             'total_decaissements' => $totalDecaissements,
+            'nombre_paiements' => $nombrePaiements,
+            'caissier_id' => $request->user()->id,
             'solde_theorique' => $soldeTheorique,
             'solde_reel' => (int) $data['solde_reel'],
             'observations' => $data['observations'] ?? null,
@@ -77,6 +82,7 @@ class CaissierCaisseJournalController extends Controller
     private function computeTotals(string $dateStr, int $fondOuverture): array
     {
         $totalEncaissements = (int) Paiement::whereDate('date', $dateStr)->sum('montant');
+        $nombrePaiements = (int) Paiement::whereDate('date', $dateStr)->count();
 
         $totalDecaissements = (int) Decaissement::whereRaw('LOWER(statut) = ?', ['fait'])
             ->whereDate('updated_at', $dateStr)
@@ -84,7 +90,7 @@ class CaissierCaisseJournalController extends Controller
 
         $soldeTheorique = (int) ($fondOuverture + $totalEncaissements - $totalDecaissements);
 
-        return [$totalEncaissements, $totalDecaissements, $soldeTheorique];
+        return [$totalEncaissements, $totalDecaissements, $soldeTheorique, $nombrePaiements];
     }
 
     private function getFondOuverture(Carbon $date): int
