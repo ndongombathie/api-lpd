@@ -10,6 +10,7 @@ use App\Events\CommandeAnnulee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class CommandeController extends Controller
 {
@@ -229,6 +230,18 @@ class CommandeController extends Controller
 
     public function annuler(string $id)
     {
+        $commande = Commande::findOrFail($id);
+        $commande->update(['statut' => 'annulee']);
+        $commande->load('details', 'vendeur', 'client');
+
+        // Diffuser l'événement (sans bloquer si Reverb n'est pas disponible)
+        try {
+            event(new CommandeAnnulee($commande));
+        } catch (\Exception $e) {
+            // Log l'erreur mais ne bloque pas l'opération
+            Log::warning('Erreur lors de la diffusion de l\'annulation: ' . $e->getMessage());
+        }
+        return $commande;
         try {
             $commande = Commande::findOrFail($id);
             $commande->update(['statut' => 'annulee']);

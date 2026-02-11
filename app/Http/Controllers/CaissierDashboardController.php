@@ -24,7 +24,7 @@ class CaissierDashboardController extends Controller
         ->where('caissier_id', Auth::user()->id)
         ->sum('montant');
 
-        // Total décaissements du jour = décaissements "fait" validés ce jour-là (updated_at)
+        // Total décaissements du jour = décaissements "valide" validés ce jour-là (updated_at)
         $totalDecaissements = (int) Decaissement::whereRaw('LOWER(statut) = ?', ['valide'])
             ->whereDate('updated_at', $dateStr)
             ->where('caissier_id', Auth::user()->id)

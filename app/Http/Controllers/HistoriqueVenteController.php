@@ -17,6 +17,10 @@ class HistoriqueVenteController extends Controller
     public function index(Request $request)
     {
         try {
+            // Ordonner par ordre croissant par heure d'arrivée (created_at)
+            $historiqueVentes = HistoriqueVente::with(['vendeur', 'produit'])
+                ->orderBy('created_at', 'asc')
+                ->paginate(10);
             $query = HistoriqueVente::query()->latest();
             // Filter by role if provided
             if ($request->filled('vendeur_id')) {

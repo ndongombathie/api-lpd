@@ -19,10 +19,10 @@ use App\Mail\UserCredentialsMail;
 use App\Http\Controllers\HistoriqueVenteController;
 use App\Http\Controllers\TransferController;
 use App\Http\Controllers\DecaissementController;
-use App\Http\Controllers\HistoriqueActionController;
-use App\Http\Controllers\MouvementSockController;
 use App\Http\Controllers\CaissierDashboardController;
 use App\Http\Controllers\CaissierCaisseJournalController;
+use App\Http\Controllers\HistoriqueActionController;
+use App\Http\Controllers\MouvementSockController;
 
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
@@ -103,7 +103,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('caissier/dashboard/ventes-par-moyen', [CaissierDashboardController::class, 'ventesParMoyen']);
     Route::get('caissier/dashboard/ventes-par-heure', [CaissierDashboardController::class, 'ventesParHeure']);
 
-    // Rapports journaliers de caisse (caissier)
+    // Rapports journaliers de caisse (caissier + comptable)
+    Route::get('caissier/caisses-journal', [CaissierCaisseJournalController::class, 'index']);
     Route::get('caissier/caisses-journal/{date}', [CaissierCaisseJournalController::class, 'show']);
     Route::post('caissier/caisses-journal', [CaissierCaisseJournalController::class, 'store']);
     Route::put('caissier/caisses-journal/{date}/cloture', [CaissierCaisseJournalController::class, 'cloture']);
