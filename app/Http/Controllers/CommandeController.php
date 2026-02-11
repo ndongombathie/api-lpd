@@ -63,7 +63,7 @@ class CommandeController extends Controller
                     $q->orderBy('date', 'desc'); // Trier les paiements par date décroissante
                 }])
                 ->latest()
-                ->paginate(20));
+                ->paginate(15));
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la récupération des commandes validées',
