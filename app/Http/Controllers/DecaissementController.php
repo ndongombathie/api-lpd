@@ -17,7 +17,7 @@ class DecaissementController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = Decaissement::query()->latest();
+            $query = Decaissement::query()->with(['user', 'caissier'])->latest('updated_at');
             // Filter by role if provided
             if ($request->filled('motif')) {
                 $query->where('motif', $request->input('motif'));
@@ -34,11 +34,13 @@ class DecaissementController extends Controller
                 $query->where(function ($q) use ($search) {
                     $q->where('methode_paiement', 'like', "%{$search}%")
                       ->orWhere('date', 'like', "%{$search}%")
-                      ->orWhere('status', 'like', "%{$search}%");
+                      ->orWhere('statut', 'like', "%{$search}%");
                 });
             }
 
-            return response()->json($query->paginate(10));
+            $perPage = (int) $request->input('per_page', 15);
+            $perPage = min(max($perPage, 1), 200);
+            return response()->json($query->paginate($perPage));
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }

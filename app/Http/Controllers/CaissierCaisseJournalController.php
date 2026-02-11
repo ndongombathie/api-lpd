@@ -10,6 +10,29 @@ use Illuminate\Http\Request;
 
 class CaissierCaisseJournalController extends Controller
 {
+    /**
+     * Liste des rapports journaliers (pour interface comptable / export).
+     * Query: date_debut, date_fin (Y-m-d), cloture (0|1).
+     */
+    public function index(Request $request)
+    {
+        $query = CaissierCaisseJournal::query()->orderByDesc('date');
+
+        if ($request->filled('date_debut')) {
+            $query->where('date', '>=', $request->date_debut);
+        }
+        if ($request->filled('date_fin')) {
+            $query->where('date', '<=', $request->date_fin);
+        }
+        if ($request->has('cloture')) {
+            $query->where('cloture', (bool) $request->cloture);
+        }
+
+        $journals = $query->limit(100)->get();
+
+        return response()->json($journals);
+    }
+
     public function show(string $date)
     {
         $dateStr = Carbon::parse($date)->toDateString();
@@ -78,7 +101,7 @@ class CaissierCaisseJournalController extends Controller
     {
         $totalEncaissements = (int) Paiement::whereDate('date', $dateStr)->sum('montant');
 
-        $totalDecaissements = (int) Decaissement::whereRaw('LOWER(statut) = ?', ['fait'])
+        $totalDecaissements = (int) Decaissement::whereRaw('LOWER(statut) = ?', ['valide'])
             ->whereDate('updated_at', $dateStr)
             ->sum('montant');
 
