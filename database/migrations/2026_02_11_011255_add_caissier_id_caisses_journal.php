@@ -12,9 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('caisses_journal', function (Blueprint $table) {
-            // Ajouter la colonne caissier_id
             $table->uuid('caissier_id')->nullable();
-            $table->foreignUuid('caissier_id')->nullable()->constrained('caissiers')->onDelete('set null');
+            $table->foreign('caissier_id')->references('id')->on('users')->cascadeOnDelete();
         });
     }
 

@@ -151,14 +151,14 @@ class ProduitController extends Controller
     {
         try {
             $produit = Produit::findOrFail($id);
-            $produit->produits()->update(['categorie_id' => null]);
-            $produit->delete();
-            //create historique action
             HistoriqueAction::create([
                 'user_id' => Auth::user()->id,
                 'produit_id' => $produit->id,
                 'action' => 'Suppression de produit',
             ]);
+            $produit->delete();
+            //create historique action
+
             return response()->noContent();
         } catch (\Throwable $th) {
             return response()->json(['message' => $th->getMessage()], 500);
