@@ -71,7 +71,7 @@ class MouvementSockController extends Controller
                 $query->whereDate('mouvement_stocks.date', '<=', $request->date_fin);
             }
 
-            $inventaire = $query->paginate(20);
+            $inventaire = $query->paginate(15);
 
             $inventaire->getCollection()->transform(function ($item) {
                 $entrees=EntreeSortie::where('produit_id',$item->id)->get()->first();
@@ -84,9 +84,39 @@ class MouvementSockController extends Controller
                 return $item;
             });
 
+            return $inventaire;
+        } catch (\Throwable $th) {
+            return response()->json(['error' => $th->getMessage()], 500);
+        }
+    }
 
+    #a partir de inventaireDepot calculer l'inventaireDeopt faire la somme de prix_achat_total,prix_valeur_sortie_total,valeur_estimee_total et le benefice_total
+    public function enregistrerInventaireDepot(Request $request)
+    {
+        try {
+            $inventaire = $this->inventaireDepot($request);
+            $total = $inventaire->reduce(function ($carry, $item) {
 
-            return response()->json($inventaire);
+                $entree = (int) $item->total_entree;
+                $sortie = (int) $item->total_sortie;
+                $stock  = (int) $item->stock_restant;
+                $prix   = (float) $item->prix_achat;
+                
+                $carry['prix_achat_total'] += $entree * $prix;
+                $carry['prix_valeur_sortie_total'] += $sortie * $prix;
+                $carry['valeur_estimee_total'] += $stock * $prix;
+
+                return $carry;
+
+                }, [
+                    'prix_achat_total' => 0,
+                    'prix_valeur_sortie_total' => 0,
+                    'valeur_estimee_total' => 0,
+                ]);
+
+                $total['benefice_total'] =
+                    $total['prix_valeur_sortie_total'] - $total['prix_achat_total'];
+                return response()->json($total);
         } catch (\Throwable $th) {
             return response()->json(['error' => $th->getMessage()], 500);
         }
