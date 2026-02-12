@@ -126,12 +126,14 @@ class ProduitController extends Controller
         $produit = Produit::findOrFail($id);
         $data = $request->validate([
             'nom' => 'required|string',
-            'code' => 'required|string|unique:produits,code',
+            'code' => 'required|string|unique:produits,code,'.$id,
             'categorie_id' => 'nullable|string',
+            'fournisseur_id' => 'nullable|string',
             'unite_carton' => 'nullable|integer',
             'prix_unite_carton' => 'nullable|numeric',
             'nombre_carton' => 'nullable|integer',
             'stock_seuil' => 'nullable|integer',
+            'prix_achat' => 'nullable|numeric',
         ]);
         $data['stock_global'] = $data['unite_carton']*$data['nombre_carton'];
         $data['prix_total'] = $data['prix_unite_carton']*($data['nombre_carton']*$data['unite_carton']);
@@ -174,7 +176,7 @@ class ProduitController extends Controller
         $data = $request->validate([
             'quantite' => 'required|integer',
         ]);
-       
+
         $produit->decrement('nombre_carton',$data['quantite']);
 
         if($produit->stock_global < $data['quantite']*$produit->unite_carton){
