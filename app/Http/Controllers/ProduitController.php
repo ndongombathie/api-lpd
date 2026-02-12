@@ -128,7 +128,7 @@ class ProduitController extends Controller
             'nom' => 'required|string',
             'code' => 'required|string|unique:produits,code',
             'categorie_id' => 'nullable|string',
-            'unite_carton' => 'nullable|string',
+            'unite_carton' => 'nullable|integer',
             'prix_unite_carton' => 'nullable|numeric',
             'nombre_carton' => 'nullable|integer',
             'stock_seuil' => 'nullable|integer',
@@ -174,6 +174,7 @@ class ProduitController extends Controller
         $data = $request->validate([
             'quantite' => 'required|integer',
         ]);
+       
         $produit->decrement('nombre_carton',$data['quantite']);
 
         if($produit->stock_global < $data['quantite']*$produit->unite_carton){
