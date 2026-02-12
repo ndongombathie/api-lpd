@@ -21,7 +21,6 @@ class InventaireController extends Controller
             if ($request->filled('type')) {
                 $query->where('type', $request->input('type'));
             }
-            
             // Filter by search term if provided
             if ($request->filled('search')) {
                 $search = $request->input('search');

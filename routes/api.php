@@ -131,8 +131,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('utilisateurs/{utilisateur}/reset-password', [UserController::class, 'resetPassword']);
 
     Route::get('mouvements-stock/inventaire-depot', [MouvementSockController::class, 'inventaireDepot']);
-    Route::get('enregistrer-inventaire-depot', [MouvementSockController::class, 'enregistrerInventaireDepot']);
-    Route::get('enregistrer-inventaire-boutique', [HistoriqueVenteController::class, 'enregistrerInventaireBoutique']);
+    Route::post('enregistrer-inventaire-depot', [MouvementSockController::class, 'enregistrerInventaireDepot']);
+    Route::post('enregistrer-inventaire-boutique', [HistoriqueVenteController::class, 'enregistrerInventaireBoutique']);
+    Route::get('historique-inventaire', [HistoriqueVenteController::class, 'index']);
 
 
 

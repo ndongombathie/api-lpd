@@ -62,7 +62,7 @@ class HistoriqueVenteController extends Controller
                     DB::raw('SUM(historique_ventes.quantite) as quantite_vendue')
                 )
                 ->groupBy('transfers.produit_id', 'transfers.quantite');
-            $produitsVendus = $query->paginate(15);
+
 
             if($request->filled('date_debut')) {
                 $query->whereDate('historique_ventes.date', '>=', $request->date_debut);
@@ -71,6 +71,8 @@ class HistoriqueVenteController extends Controller
             if ($request->filled('date_fin')) {
                 $query->whereDate('historique_ventes.date', '<=', $request->date_fin);
             }
+            
+            $produitsVendus = $query->paginate(15);
 
             $produitsVendus->getCollection()->transform(function ($produit) {
                 $produit->ecart = $produit->stock_initial - $produit->quantite_vendue;
