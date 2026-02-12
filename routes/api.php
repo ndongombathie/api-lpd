@@ -132,6 +132,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('mouvements-stock/inventaire-depot', [MouvementSockController::class, 'inventaireDepot']);
     Route::post('enregistrer-inventaire-depot', [MouvementSockController::class, 'enregistrerInventaireDepot']);
+    Route::post('enregistrer-inventaire-boutique', [HistoriqueVenteController::class, 'enregistrerInventaireBoutique']);
+
 
 
     Route::apiResource('mouvements-stock', MouvementSockController::class);

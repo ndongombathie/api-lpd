@@ -78,7 +78,7 @@ class HistoriqueVenteController extends Controller
                 return $produit;
             });
 
-            return response()->json(['date' => $date, 'produits' => $produitsVendus]);
+            return ['date' => $date, 'produits' => $produitsVendus] ;
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
@@ -89,13 +89,15 @@ class HistoriqueVenteController extends Controller
     public function enregistrerInventaireBoutique(Request $request)
     {
         try {
-            $inventaire = $this->inventaireBoutique($request);
-            $total = $inventaire->reduce(function ($carry, $item) {
+                $inventaire = $this->inventaireBoutique($request)['produits'];
+                $total = $inventaire->reduce(function ($carry, $item) {
 
-                $entree = (int) $item->total_entree;
-                $sortie = (int) $item->total_sortie;
-                $stock  = (int) $item->stock_restant;
-                $prix   = (float) $item->prix_achat;
+                $mouvement = $item->produit->entreees_sorties_boutique->first();
+
+                $entree = (int) ($mouvement->quantite_apres ?? 0);
+                $sortie = (int) ($mouvement->quantite_avant ?? 0);
+                $stock  = (int) $item->total_resant;
+                $prix   = (float) $item->produit->prix_achat;
 
                 $carry['prix_achat_total'] += $entree * $prix;
                 $carry['prix_valeur_sortie_total'] += $sortie * $prix;
