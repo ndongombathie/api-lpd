@@ -183,6 +183,7 @@ class StockController extends Controller
                     if ($qte !== null) {
                     $dest->increment('quantite', $qte);
                     $produit->increment('stock_global', $qte*$produit->unite_carton);
+                    $produit->increment('nombre_carton',$qte);
                     }
 
                     MouvementStock::firstOrCreate([
