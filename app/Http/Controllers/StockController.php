@@ -9,6 +9,7 @@ use App\Events\StockBoutiqueMisAJour;
 use App\Events\StockRupture;
 use App\Models\entree_sortie_boutique;
 use App\Models\EntreeSortie;
+use App\Models\EntreeSortieBoutique;
 use App\Models\HistoriqueAction;
 use App\Models\Transfer;
 use Illuminate\Http\Request;
@@ -140,7 +141,7 @@ class StockController extends Controller
 
     public function EntreeSortiesBoutique($produitId,$qte)
     {
-        $entree_sortie=entree_sortie_boutique::firstOrCreate([
+        $entree_sortie=EntreeSortieBoutique::firstOrCreate([
             'produit_id'  => $produitId,
         ], [
             'quantite_avant' => 0,
