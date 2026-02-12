@@ -65,7 +65,7 @@ class Produit extends Model
 
     public function entreees_sorties_boutique(): HasMany
     {
-        return $this->hasMany(entree_sortie_boutique::class);
+        return $this->hasMany(EntreeSortieBoutique::class);
     }
 
     public function historique_actions(): HasMany

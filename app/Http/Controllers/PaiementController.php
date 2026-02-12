@@ -211,6 +211,7 @@ class PaiementController extends Controller
                         'prix_unitaire' => $detail->prix_unitaire ?? 0,
                         // Montant pour ce produit spécifique
                         'montant' => ($detail->prix_unitaire ?? 0) * $detail->quantite,
+                        'date' => now()
                     ]);
 
                     MouvementStock::create([

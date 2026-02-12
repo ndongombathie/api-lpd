@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Transfer;
 use App\Http\Requests\StoreTransferRequest;
 use App\Http\Requests\UpdateTransferRequest;
-use App\Models\entree_sortie_boutique;
+use App\Models\EntreeSortieBoutique;
 use App\Models\EntreeSortie;
 use Illuminate\Http\Request;
 use App\Models\Produit;
@@ -68,7 +68,7 @@ class TransferController extends Controller
             $transfers = Transfer::with(['produit'])->where('status', 'valide')->paginate(15);
             $transfers->each(function($transfer) {
                 $transfer->produit->etat_stock = $transfer->quantite < $transfer->seuil ? true : false;
-                $transfer->produit->entree_sortie = entree_sortie_boutique::where('produit_id', $transfer->produit_id)->get()->first();
+                $transfer->produit->entree_sortie = EntreeSortieBoutique::where('produit_id', $transfer->produit_id)->get()->first();
             });
             return response()->json($transfers);
         } catch (\Throwable $th) {

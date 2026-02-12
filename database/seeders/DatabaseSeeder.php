@@ -15,7 +15,7 @@ use App\Models\MouvementStock;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\Decaissement;
-use App\Models\entree_sortie_boutique;
+use App\Models\EntreeSortieBoutique;
 use App\Models\EntreeSortie;
 use App\Models\HistoriqueAction;
 use App\Models\HistoriqueVente;
@@ -128,7 +128,7 @@ class DatabaseSeeder extends Seeder
         HistoriqueVente::factory()->count(50)->create();
         HistoriqueAction::factory()->count(50)->create();
         EntreeSortie::factory()->count(50)->create();
-        //entree_sortie_boutique::factory()->count(50)->create();
+        EntreeSortieBoutique::factory()->count(50)->create();
     }
 
 }

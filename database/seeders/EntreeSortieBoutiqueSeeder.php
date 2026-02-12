@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\entree_sortie_boutique;
+use App\Models\EntreeSortieBoutique;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -13,6 +13,6 @@ class EntreeSortieBoutiqueSeeder extends Seeder
      */
     public function run(): void
     {
-       entree_sortie_boutique::factory()->count(40)->create();
+       EntreeSortieBoutique::factory()->count(40)->create();
     }
 }

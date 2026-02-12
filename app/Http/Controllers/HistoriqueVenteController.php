@@ -51,13 +51,8 @@ class HistoriqueVenteController extends Controller
     public function inventaireBoutique(Request $request)
     {
 
-        $validated = $request->validate([
-            'date' => 'nullable|date',
-            'per_page' => 'nullable|integer|min:1|max:200',
-        ]);
-        $date = $validated['date'] ?? Carbon::now()->format('Y-m-d');
-
         try {
+            //dd($request);
             // Récupérer les produits vendus à la date donnée avec la quantité totale vendue
             $query = DB::table('historique_ventes')
                 ->join('transfers', 'historique_ventes.produit_id', '=', 'transfers.produit_id')
@@ -66,10 +61,17 @@ class HistoriqueVenteController extends Controller
                     'transfers.quantite as stock_initial',
                     DB::raw('SUM(historique_ventes.quantite) as quantite_vendue')
                 )
-               // ->whereDate('historique_ventes.created_at', $date)
                 ->groupBy('transfers.produit_id', 'transfers.quantite');
-            $produitsVendus = $query->paginate(10);
-            // Ajouter la colonne écart (stock_initial - quantite_vendue)
+            $produitsVendus = $query->paginate(15);
+
+            if($request->filled('date_debut')) {
+                $query->whereDate('historique_ventes.date', '>=', $request->date_debut);
+            }
+
+            if ($request->filled('date_fin')) {
+                $query->whereDate('historique_ventes.date', '<=', $request->date_fin);
+            }
+
             $produitsVendus->getCollection()->transform(function ($produit) {
                 $produit->ecart = $produit->stock_initial - $produit->quantite_vendue;
                 $produit->produit=Produit::query()->with('entreees_sorties_boutique')->where('id',$produit->produit_id)->get()->first();
@@ -78,7 +80,8 @@ class HistoriqueVenteController extends Controller
                 return $produit;
             });
 
-            return ['date' => $date, 'produits' => $produitsVendus] ;
+            return ['produits' => $produitsVendus];
+
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
