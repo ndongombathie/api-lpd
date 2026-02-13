@@ -80,7 +80,7 @@ class TransferController extends Controller
     {
         try {
             //dd($id);
-            $transfer = Transfer::where('status', 'valide')->get()->first();
+            $transfer = Transfer::where('status', 'valide')->where('produit_id', $id)->get()->first();
             $transfer->produit->etat_stock = $transfer->quantite < $transfer->seuil ? true : false;
             $transfer->produit->entree_sortie = EntreeSortieBoutique::where('produit_id', $transfer->produit_id)->get()->first();
 
