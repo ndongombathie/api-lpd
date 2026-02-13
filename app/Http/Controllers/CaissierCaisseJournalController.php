@@ -74,10 +74,11 @@ class CaissierCaisseJournalController extends Controller
             ->first();
 
         if (!$journal) {
-            return response()->json(['error' => 'Journal not found'], 404);
+            [$totalEncaissements, $totalDecaissements, $soldeTheorique,$nombrePaiements] = [0, 0, 0, 0];
+        } else {
+            [$totalEncaissements, $totalDecaissements, $soldeTheorique,$nombrePaiements] = $this->computeTotals($dateStr, (int) $journal->fond_ouverture);
         }
 
-        [$totalEncaissements, $totalDecaissements, $soldeTheorique,$nombrePaiements] = $this->computeTotals($dateStr, (int) $journal->fond_ouverture);
 
         // Mettre à jour les totaux théoriques (sans écraser solde_reel/observations)
         $journal->fill([
@@ -182,7 +183,7 @@ class CaissierCaisseJournalController extends Controller
 
         $journal = CaissierCaisseJournal::updateOrCreate(
             ['date' => $data['date']],
-            ['fond_ouverture' => (int) $data['fond_ouverture']]
+            ['fond_ouverture' => $this->getFondOuverture(Carbon::parse($data['date']))]
         );
 
         return response()->json($journal, 201);
@@ -205,11 +206,11 @@ class CaissierCaisseJournalController extends Controller
             [$totalEncaissements, $totalDecaissements, $soldeTheorique, $nombrePaiements] = [0, 0, 0, 0];
         }
 
-        [$totalEncaissements, $totalDecaissements, $soldeTheorique, $nombrePaiements] = $this->computeTotals($dateStr, (int) $journal->fond_ouverture);
+        [$totalEncaissements, $totalDecaissements, $soldeTheorique, $nombrePaiements] = $this->computeTotals($dateStr, (int) $this->getFondOuverture(Carbon::parse($dateStr)));
 
         // Mettre à jour les totaux réels et autres informations
         $journal->fill([
-            'fond_ouverture' => (int) $journal->fond_ouverture,
+            'fond_ouverture' => $this->getFondOuverture(Carbon::parse($dateStr)),
             'total_encaissements' => $totalEncaissements,
             'total_decaissements' => $totalDecaissements,
             'nombre_paiements' => $nombrePaiements,
@@ -255,7 +256,7 @@ class CaissierCaisseJournalController extends Controller
             return 0;
         }
 
-        return (int) ($rapportVeille->solde_reel ?? $rapportVeille->solde_theorique ?? 0);
+        return (int) ($rapportVeille->montant ?? 0);
     }
 }
 

@@ -144,7 +144,7 @@ class CaissierDashboardController extends Controller
             return 0;
         }
 
-        return (int) ($rapportVeille->solde_reel ?? $rapportVeille->solde_theorique ?? 0);
+        return (int) ($rapportVeille->montant ?? 0);
     }
 }
 
