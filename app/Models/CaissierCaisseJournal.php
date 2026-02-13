@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class CaissierCaisseJournal extends Model
 {
+    use UserFactory;
     use HasUuids;
 
     public $incrementing = false;
