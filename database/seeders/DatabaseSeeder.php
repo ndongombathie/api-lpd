@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use App\Models\Boutique;
+use App\Models\CaissierCaisseJournal;
 use App\Models\Categorie;
 use App\Models\Produit;
 use App\Models\Client;
@@ -129,6 +130,7 @@ class DatabaseSeeder extends Seeder
         HistoriqueAction::factory()->count(50)->create();
         EntreeSortie::factory()->count(50)->create();
         EntreeSortieBoutique::factory()->count(50)->create();
+        CaissierCaisseJournal::factory()->count(50)->create();
     }
 
 }
