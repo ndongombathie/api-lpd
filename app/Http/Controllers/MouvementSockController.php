@@ -152,7 +152,16 @@ class MouvementSockController extends Controller
      */
     public function show(string $id)
     {
-        //
+        try {
+            //dd($id);
+            $mouvement=MouvementStock::query()->where('produit_id',$id)->get()->first();
+            $mouvement->entree_sortie = EntreeSortie::where('produit_id', $mouvement->produit_id)->first();
+            return $mouvement;
+
+        } catch (\Throwable $th) {
+
+          return response()->json(['error' => $th->getMessage()], 500);
+        }
     }
 
     /**
