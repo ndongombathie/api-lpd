@@ -75,8 +75,15 @@ class CaissierCaisseJournalController extends Controller
 
         if (!$journal) {
             [$totalEncaissements, $totalDecaissements, $soldeTheorique,$nombrePaiements] = [0, 0, 0, 0];
+            return response()->json([
+                'total_encaissements' => $totalEncaissements,
+                'total_decaissements' => $totalDecaissements,
+                'nombre_paiements'=>$nombrePaiements,
+                'solde_theorique' => $soldeTheorique,
+            ]);
+
         } else {
-            [$totalEncaissements, $totalDecaissements, $soldeTheorique,$nombrePaiements] = $this->computeTotals($dateStr, (int) $journal->fond_ouverture);
+            [$totalEncaissements, $totalDecaissements, $soldeTheorique,$nombrePaiements] = $this->computeTotals($dateStr, (int) $this->getFondOuverture(Carbon::parse($dateStr)));
         }
 
 
