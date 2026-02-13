@@ -238,6 +238,7 @@ class CaissierCaisseJournalController extends Controller
 
         $rapportVeille = fondCaisse::where('date', $veille)
             ->where('caissier_id', Auth::user()->id)
+            ->get('montant')
             ->first();
 
         if (!$rapportVeille) {
