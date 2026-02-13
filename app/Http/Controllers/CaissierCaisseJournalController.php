@@ -28,14 +28,14 @@ class CaissierCaisseJournalController extends Controller
             $query->where('cloture', (bool) $request->cloture);
         }
 
-        $journals = $query->limit(100)->get();
+        $journals = $query->paginate(10);
 
         return response()->json($journals);
     }
 
     public function show(string $date)
     {
-        $dateStr = Carbon::parse($date)->toDateString();
+        $dateStr = Carbon::parse($date)->toDateString() ?? now()->toDateString();
 
         $journal = CaissierCaisseJournal::firstOrCreate(
             ['date' => $dateStr],
