@@ -73,6 +73,10 @@ class CaissierCaisseJournalController extends Controller
             ->where('caissier_id', Auth::user()->id)
             ->first();
 
+        if (!$journal) {
+            return response()->json(['error' => 'Journal not found'], 404);
+        }
+
         [$totalEncaissements, $totalDecaissements, $soldeTheorique,$nombrePaiements] = $this->computeTotals($dateStr, (int) $journal->fond_ouverture);
 
         // Mettre à jour les totaux théoriques (sans écraser solde_reel/observations)
@@ -193,10 +197,13 @@ class CaissierCaisseJournalController extends Controller
             'observations' => 'nullable|string',
         ]);
 
-        $journal = CaissierCaisseJournal::firstOrCreate(
-            ['date' => $dateStr],
-            ['fond_ouverture' => $this->getFondOuverture(Carbon::parse($dateStr))]
-        );
+        $journal = CaissierCaisseJournal::where('date', $dateStr)
+            ->where('caissier_id', Auth::user()->id)
+            ->first();
+
+        if (!$journal) {
+            return response()->json(['error' => 'Journal not found'], 404);
+        }
 
         [$totalEncaissements, $totalDecaissements, $soldeTheorique, $nombrePaiements] = $this->computeTotals($dateStr, (int) $journal->fond_ouverture);
 
@@ -218,11 +225,16 @@ class CaissierCaisseJournalController extends Controller
 
     private function computeTotals(string $dateStr, int $fondOuverture): array
     {
-        $totalEncaissements = (int) Paiement::whereDate('date', $dateStr)->sum('montant');
-        $nombrePaiements = (int) Paiement::whereDate('date', $dateStr)->count();
+        $totalEncaissements = (int) Paiement::whereDate('date', $dateStr)
+            ->where('caissier_id', Auth::user()->id)
+            ->sum('montant');
+        $nombrePaiements = (int) Paiement::whereDate('date', $dateStr)
+            ->where('caissier_id', Auth::user()->id)
+            ->count();
 
         $totalDecaissements = (int) Decaissement::whereRaw('LOWER(statut) = ?', ['valide'])
             ->whereDate('updated_at', $dateStr)
+            ->where('caissier_id', Auth::user()->id)
             ->sum('montant');
 
         $soldeTheorique = (int) ($fondOuverture + $totalEncaissements - $totalDecaissements);
