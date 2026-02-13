@@ -86,24 +86,48 @@ class CaissierCaisseJournalController extends Controller
         return response()->json($journal->fresh()->load('caissier'));
     }
 
-    public function total_encaissement(string $date)
+    #filter par date mettre la date par defaut a la date d'aujourd'hui si la paremtre n'est pas fourni
+    public function total_encaissement(Request $request)
     {
-        $dateStr = Carbon::parse($date)->toDateString();
+        try {
+            
+            $query = Paiement::query();
 
-        $totalEncaissements = (int) Paiement::whereDate('date', $dateStr)->sum('montant');
+            if (!$request->filled('date_debut')) {
+                $request->merge(['date_debut' => Carbon::today()->toDateString()]);
+            }
+            if (!$request->filled('date_fin')) {
+                $request->merge(['date_fin' => Carbon::today()->toDateString()]);
+            }
 
-        return response()->json($totalEncaissements);
+            if ($request->filled('date_debut')) {
+                $query->where('date', '>=', $request->date_debut);
+            }
+            if ($request->filled('date_fin')) {
+                $query->where('date', '<=', $request->date_fin);
+            }
+
+            $totalEncaissements = (int) $query->sum('montant');
+
+            return response()->json($totalEncaissements);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
     public function total_decaissement(string $date)
     {
-        $dateStr = Carbon::parse($date)->toDateString();
+        try {
+            $dateStr = Carbon::parse($date)->toDateString();
 
-        $totalDecaissements = (int) Decaissement::whereRaw('LOWER(statut) = ?', ['valide'])
-            ->whereDate('updated_at', $dateStr)
-            ->sum('montant');
+            $totalDecaissements = (int) Decaissement::whereRaw('LOWER(statut) = ?', ['valide'])
+                ->whereDate('updated_at', $dateStr)
+                ->sum('montant');
 
-        return response()->json($totalDecaissements);
+            return response()->json($totalDecaissements);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
     public function total_caisse(string $date)
