@@ -20,6 +20,7 @@ use App\Models\EntreeSortie;
 use App\Models\HistoriqueAction;
 use App\Models\HistoriqueVente;
 use App\Models\Transfer;
+use App\Models\Inventaire;
 
 class DatabaseSeeder extends Seeder
 {
@@ -129,6 +130,7 @@ class DatabaseSeeder extends Seeder
         HistoriqueAction::factory()->count(50)->create();
         EntreeSortie::factory()->count(50)->create();
         EntreeSortieBoutique::factory()->count(50)->create();
+        Inventaire::factory()->count(50)->create();
     }
 
 }
