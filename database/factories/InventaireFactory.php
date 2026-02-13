@@ -21,10 +21,10 @@ class InventaireFactory extends Factory
             'date'=>$this->faker->date(),
             'date_debut'=>$this->faker->date(),
             'date_fin'=>$this->faker->date(),
-            'prix_achat_total'=>$this->faker->randomNumber(5),
-            'prix_valeur_sortie_total'=>$this->faker->randomNumber(5),
-            'valeur_estimee_total'=>$this->faker->randomNumber(5),
-            'benefice_total'=>$this->faker->randomNumber(5),
+            'prix_achat_total'=>$this->faker->between(1000,100000),
+            'prix_valeur_sortie_total'=>$this->faker->between(1000,100000),
+            'valeur_estimee_total'=>$this->faker->between(1000,100000),
+            'benefice_total'=>$this->faker->between(1000,100000),
         ];
     }
 }
