@@ -73,8 +73,7 @@ class CaissierCaisseJournalController extends Controller
             ['date' => $dateStr],
             ['fond_ouverture' => $this->getFondOuverture(Carbon::parse($dateStr))]
         )
-        ->where('caissier_id', Auth::user()->id)
-        ->load('caissier');
+        ->where('caissier_id', Auth::user()->id);
 
         [$totalEncaissements, $totalDecaissements, $soldeTheorique,$nombrePaiements] = $this->computeTotals($dateStr, (int) $journal->fond_ouverture);
 
