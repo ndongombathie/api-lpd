@@ -105,6 +105,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Rapports journaliers de caisse (caissier + comptable)
     Route::get('caissier/caisses-journal', [CaissierCaisseJournalController::class, 'index']);
+    Route::get('caissier/caisses-journals', [CaissierCaisseJournalController::class, 'all']);
     Route::get('caissier/caisses-journal/{date}', [CaissierCaisseJournalController::class, 'show']);
     Route::post('caissier/caisses-journal', [CaissierCaisseJournalController::class, 'store']);
     Route::put('caissier/caisses-journal/{date}/cloture', [CaissierCaisseJournalController::class, 'cloture']);
