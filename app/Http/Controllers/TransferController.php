@@ -76,6 +76,20 @@ class TransferController extends Controller
         }
     }
 
+    public function showMouvementStockProduit($id)
+    {
+        try {
+            //dd($id);
+            $transfer = Transfer::where('status', 'valide')->get()->first();
+            $transfer->produit->etat_stock = $transfer->quantite < $transfer->seuil ? true : false;
+            $transfer->produit->entree_sortie = EntreeSortieBoutique::where('produit_id', $transfer->produit_id)->get()->first();
+
+            return response()->json($transfer);
+        } catch (\Throwable $th) {
+            return response()->json(['error' => $th->getMessage()], 500);
+        }
+    }
+
     public function produitsControleDepots()
     {
         try {
