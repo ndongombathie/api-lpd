@@ -34,6 +34,36 @@ class CaissierCaisseJournalController extends Controller
         return response()->json($journals);
     }
 
+    #toutes les caisserjounal et filter par date mettre la date par defaut a la date d'aujourd'hui
+    public function all(Request $request)
+    {
+        try {
+            $query = CaissierCaisseJournal::query()->orderByDesc('date');
+
+            if (!$request->filled('date_debut')) {
+                $request->merge(['date_debut' => Carbon::today()->toDateString()]);
+            }
+            if (!$request->filled('date_fin')) {
+                $request->merge(['date_fin' => Carbon::today()->toDateString()]);
+            }
+
+            if ($request->filled('date_debut')) {
+                $query->where('date', '>=', $request->date_debut);
+            }
+            if ($request->filled('date_fin')) {
+                $query->where('date', '<=', $request->date_fin);
+            }
+
+            $journals = $query->paginate(10);
+
+        return response()->json($journals);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+
+
     public function show(string $date)
     {
         $dateStr = Carbon::parse($date)->toDateString();
