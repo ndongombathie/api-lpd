@@ -136,7 +136,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('enregistrer-inventaire-depot', [MouvementSockController::class, 'enregistrerInventaireDepot']);
     Route::post('enregistrer-inventaire-boutique', [HistoriqueVenteController::class, 'enregistrerInventaireBoutique']);
-    Route::get('historique-inventaire', [InventaireController::class, 'index']);
+    Route::get('historique-inventaires', [InventaireController::class, 'index']);
 
 
 
