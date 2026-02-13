@@ -127,7 +127,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('commandes/{commande}/annuler', [CommandeController::class, 'annuler']);
 
     Route::post('commandes/{commande}/paiements', [PaiementController::class, 'store']);
-    Route::get('paiements-rapport-journalier', [PaiementController::class, 'show']);
+    Route::get('paiements-rapport-journalier', [CaissierCaisseJournalController::class, 'show']);
     Route::get('commandes/{commande}/paiements', [PaiementController::class, 'index']);
     Route::apiResource('utilisateurs', UserController::class);
     Route::post('utilisateurs/{utilisateur}/reset-password', [UserController::class, 'resetPassword']);
