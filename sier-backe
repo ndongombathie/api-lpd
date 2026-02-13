@@ -1,0 +1,138 @@
+[33mcommit c07eda70fb3589cfa7d51704710af2c68730908f[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mcaissier-backend[m[33m)[m
+Author: ndongombathie <ndongo.mbath@univ-thies.sn>
+Date:   Tue Feb 3 21:26:16 2026 +0000
+
+    importation de log
+
+[33mcommit a5316b654c747f620697338b61c724b755d4b36b[m
+Merge: 013a7e8 0cf499b
+Author: Atta Fall <atta.fall@applize.io>
+Date:   Wed Jan 28 20:28:39 2026 +0000
+
+    feat: dernier version
+
+[33mcommit 0cf499b60233daf628cbced9f9ea09982a4fb189[m
+Author: ndongombathie <ndongo.mbath@univ-thies.sn>
+Date:   Wed Jan 28 18:46:47 2026 +0000
+
+    reajustement des endpoits pour le decaissements
+
+[33mcommit 7bd0574299d0d603db76b6a2b30ed356de5afe99[m
+Author: ndongombathie <ndongo.mbath@univ-thies.sn>
+Date:   Wed Jan 28 18:13:27 2026 +0000
+
+    reajustement des endpoits pour le decaissements
+
+[33mcommit 501e44f5b92a7251b5511bcc0dc94d331237f185[m
+Author: ndongombathie <ndongo.mbath@univ-thies.sn>
+Date:   Wed Jan 28 00:01:29 2026 +0000
+
+    ajout endpoint pour faire inventaire du boutique
+
+[33mcommit a7e5aec6803bf281011361e22944e888c9a3eab3[m
+Author: ndongombathie <ndongo.mbath@univ-thies.sn>
+Date:   Tue Jan 27 20:26:38 2026 +0000
+
+    ajout des filtre sur les users
+
+[33mcommit e6810182da89b04d94b2f882d1381eb8e8a5de4d[m
+Author: ndongombathie <ndongo.mbath@univ-thies.sn>
+Date:   Tue Jan 27 19:55:10 2026 +0000
+
+    ajout des categories
+
+[33mcommit 9ef22558ef97649ccd7955aea007392084d7c0cc[m
+Author: ndongombathie <ndongo.mbath@univ-thies.sn>
+Date:   Tue Jan 27 14:01:22 2026 +0000
+
+    ajout des seeders pour le transfert de produit
+
+[33mcommit 77539755366cd1dadb172dac5b555a81e948107d[m
+Author: ndongombathie <ndongo.mbath@univ-thies.sn>
+Date:   Mon Jan 26 15:34:07 2026 +0000
+
+    correction de la creation d'un user
+
+[33mcommit 013a7e84eeaf66f29a0967a731c1bfa82cb9e701[m
+Author: Atta Fall <atta.fall@applize.io>
+Date:   Sat Jan 24 18:19:52 2026 +0000
+
+    fix(caissier): save methode_paiement on decaissement validation
+
+[33mcommit 83b549c8b9d4d52bdf029de3213fcc7adcd7c445[m
+Author: Atta Fall <atta.fall@applize.io>
+Date:   Sat Jan 24 14:22:59 2026 +0000
+
+    feat(caissier): dashboard & caisse journal endpoints
+
+[33mcommit 9915cad0bb9eede3047167eb82aed57693939459[m
+Author: ndongombathie <ndongo.mbath@univ-thies.sn>
+Date:   Thu Jan 8 16:00:39 2026 +0000
+
+    ajout des endpoints pour gestionnaire de boutique
+
+[33mcommit 9672bc5e33e7601142a331708070b9e20aa346c1[m
+Author: ndongombathie <ndongo.mbath@univ-thies.sn>
+Date:   Thu Jan 8 10:41:01 2026 +0000
+
+    ajout des endpoints pour gestionnaire de boutique
+
+[33mcommit 1c81f89b900e7adb9ddc498588f9967d7a009fee[m
+Author: ndongombathie <ndongo.mbath@univ-thies.sn>
+Date:   Tue Dec 30 23:10:51 2025 +0000
+
+    gestion des decaissements
+
+[33mcommit e8d1da2e63b0062c1c318ee2932fa30a83e3b5d3[m
+Author: ndongombathie <ndongo.mbath@univ-thies.sn>
+Date:   Sun Dec 28 12:37:02 2025 +0000
+
+    seeder tous les roles
+
+[33mcommit bfbb03d846957f5d1ef8c3b6b37aac0fb6f94ba2[m
+Author: ndongombathie <ndongo.mbath@univ-thies.sn>
+Date:   Sun Dec 28 11:27:55 2025 +0000
+
+    copie de .env -> .env.example
+
+[33mcommit 144b69c3048a0a3273126390ce9166356459f3e6[m
+Author: ndongombath <ndongo.mbath@univ-thies.sn>
+Date:   Sat Dec 27 23:16:52 2025 +0000
+
+    ajout du profil du comptable
+
+[33mcommit d5bb74610453522a0b1dc42eef89103c08517be9[m
+Author: ndongombathie <ndongo.mbath@univ-thies.sn>
+Date:   Tue Dec 16 21:01:01 2025 +0000
+
+    gestion des transferts de stock
+
+[33mcommit 16158873e93b7cf7f5e72b620e45ab182a0b4736[m
+Author: ndongombathie <ndongo.mbath@univ-thies.sn>
+Date:   Sun Dec 14 01:20:07 2025 +0000
+
+    gestion des trandsfers et is_oneline
+
+[33mcommit 8032349e57915fc4918ee897f95a1ee1ef766642[m
+Author: ndongombathie <ndongo.mbath@univ-thies.sn>
+Date:   Sat Dec 13 18:39:19 2025 +0000
+
+    gerstion inters boutiques
+
+[33mcommit 198efb3e8bf72402a3897967e6050164cb37382c[m
+Author: ndongombathie <ndongo.mbath@univ-thies.sn>
+Date:   Sun Nov 16 23:30:42 2025 +0000
+
+    visualisation on real time
+
+[33mcommit acea1b7777663a82d0c4377aff4f8582b974df92[m
+Author: ndongombathie <ndongo.mbath@univ-thies.sn>
+Date:   Mon Nov 3 19:58:47 2025 +0000
+
+    les endpoints des users
+
+[33mcommit 4c0e216282e37ef02c30d563aa5d039dffe640de[m
+Author: ndongombathie <ndongo.mbath@univ-thies.sn>
+Date:   Mon Nov 3 15:38:21 2025 +0000
+
+    fisrt commit

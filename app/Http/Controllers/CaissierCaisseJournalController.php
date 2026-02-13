@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CaissierCaisseJournal;
 use App\Models\Decaissement;
+use App\Models\fondCaisse;
 use App\Models\Paiement;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -233,8 +234,8 @@ class CaissierCaisseJournalController extends Controller
     {
         $veille = $date->copy()->subDay()->toDateString();
 
-        $rapportVeille = CaissierCaisseJournal::where('date', $veille)
-            ->where('cloture', true)
+        $rapportVeille = fondCaisse::where('date', $veille)
+            ->where('caissier_id', Auth::user()->id)
             ->first();
 
         if (!$rapportVeille) {

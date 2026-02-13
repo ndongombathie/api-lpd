@@ -91,4 +91,14 @@ class User extends Authenticatable
     {
         return $this->hasMany(HistoriqueAction::class);
     }
+
+    public function caissier_caisse_journals(): HasMany
+    {
+        return $this->hasMany(CaissierCaisseJournal::class);
+    }
+
+    public function fond_caisses(): HasMany
+    {
+        return $this->hasMany(FondCaisse::class);
+    }
 }
