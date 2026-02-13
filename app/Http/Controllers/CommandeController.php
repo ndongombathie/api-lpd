@@ -18,7 +18,7 @@ class CommandeController extends Controller
     {
         try {
             $query = Commande::with('details', 'client', 'vendeur')
-                ->where('vendeur_id', Auth::user()->id);
+               ->where('vendeur_id', Auth::user()->id);
 
             if ($request->filled('date')) {
                 $query->whereDate('date', $request->date);
@@ -114,7 +114,7 @@ class CommandeController extends Controller
 
         try {
                 $user = $request->user();
-                $tva = $validated['tva'] ?? 0.18; // 18% par défaut
+                $tva = $validated['tva'] ?? 0;
 
                     $commande = Commande::create([
                         'client_id' => $validated['client_id'] ?? null,
