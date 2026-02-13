@@ -38,7 +38,7 @@ class CaissierCaisseJournalController extends Controller
     public function all(Request $request)
     {
         try {
-            $query = CaissierCaisseJournal::query()->orderByDesc('date');
+            $query = CaissierCaisseJournal::query()->with('caissier')->orderByDesc('date');
 
             if (!$request->filled('date_debut')) {
                 $request->merge(['date_debut' => Carbon::today()->toDateString()]);
