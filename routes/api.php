@@ -109,7 +109,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('caissier/caisses-journal/{date}', [CaissierCaisseJournalController::class, 'show']);
     Route::post('caissier/caisses-journal', [CaissierCaisseJournalController::class, 'store']);
     Route::put('caissier/caisses-journal/{date}/cloture', [CaissierCaisseJournalController::class, 'cloture']);
-    Route::get('caissier/caisses-journal/{date}/total-encaissement', [CaissierCaisseJournalController::class, 'total_encaissement']);
+    Route::get('caissier/caisses-journal/total-encaissement', [CaissierCaisseJournalController::class, 'total_encaissement']);
     Route::get('caissier/caisses-journal/{date}/total-decaissement', [CaissierCaisseJournalController::class, 'total_decaissement']);
     Route::get('caissier/caisses-journal/{date}/total-caisse', [CaissierCaisseJournalController::class, 'total_caisse']);
     Route::get('montant-total-decaissement', [DecaissementController::class, 'montantTotalDecaissement']);
