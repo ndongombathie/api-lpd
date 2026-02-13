@@ -17,7 +17,14 @@ class InventaireFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'type'=>$this->faker->randomElement(['Depot','Boutique']),
+            'date'=>$this->faker->date(),
+            'date_debut'=>$this->faker->date(),
+            'date_fin'=>$this->faker->date(),
+            'prix_achat_total'=>$this->faker->randomNumber(5),
+            'prix_valeur_sortie_total'=>$this->faker->randomNumber(5),
+            'valeur_estimee_total'=>$this->faker->randomNumber(5),
+            'benefice_total'=>$this->faker->randomNumber(5),
         ];
     }
 }
