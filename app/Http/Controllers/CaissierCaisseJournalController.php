@@ -76,10 +76,12 @@ class CaissierCaisseJournalController extends Controller
         if (!$journal) {
             [$totalEncaissements, $totalDecaissements, $soldeTheorique,$nombrePaiements] = [0, 0, 0, 0];
             return response()->json([
-                'total_encaissements' => $totalEncaissements,
-                'total_decaissements' => $totalDecaissements,
-                'nombre_paiements'=>$nombrePaiements,
-                'solde_theorique' => $soldeTheorique,
+                'date' => $dateStr,
+                'fond_ouverture' => $this->getFondOuverture(Carbon::parse($dateStr)),
+                'total_encaissements' => $totalEncaissements ?? 0,
+                'total_decaissements' => $totalDecaissements ?? 0,
+                'nombre_paiements'=>$nombrePaiements ?? 0,
+                'solde_theorique' => $soldeTheorique ?? 0,
             ]);
 
         } else {
@@ -89,13 +91,14 @@ class CaissierCaisseJournalController extends Controller
 
         // Mettre à jour les totaux théoriques (sans écraser solde_reel/observations)
         $journal->fill([
-            'total_encaissements' => $totalEncaissements,
-            'total_decaissements' => $totalDecaissements,
-            'nombre_paiements'=>$nombrePaiements,
-            'solde_theorique' => $soldeTheorique,
+            'fond_ouverture' => $this->getFondOuverture(Carbon::parse($dateStr)),
+            'total_encaissements' => $totalEncaissements ?? 0,
+            'total_decaissements' => $totalDecaissements ?? 0,
+            'nombre_paiements'=>$nombrePaiements ?? 0,
+            'solde_theorique' => $soldeTheorique ?? 0,
         ])->save();
 
-        return response()->json($journal->fresh()->load('caissier'));
+        return response()->json($journal->fresh());
     }
 
     #filter par date mettre la date par defaut a la date d'aujourd'hui si la paremtre n'est pas fourni
@@ -218,12 +221,12 @@ class CaissierCaisseJournalController extends Controller
         // Mettre à jour les totaux réels et autres informations
         $journal->fill([
             'fond_ouverture' => $this->getFondOuverture(Carbon::parse($dateStr)),
-            'total_encaissements' => $totalEncaissements,
-            'total_decaissements' => $totalDecaissements,
-            'nombre_paiements' => $nombrePaiements,
+            'total_encaissements' => $totalEncaissements ?? 0,
+            'total_decaissements' => $totalDecaissements ?? 0,
+            'nombre_paiements' => $nombrePaiements ?? 0,
             'caissier_id' => Auth::user()->id,
-            'solde_theorique' => $soldeTheorique,
-            'solde_reel' => (int) $data['solde_reel'],
+            'solde_theorique' => $soldeTheorique ?? 0,
+            'solde_reel' => (int) $data['solde_reel'] ?? 0,
             'observations' => $data['observations'] ?? null,
             'cloture' => true,
         ])->save();
