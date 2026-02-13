@@ -90,7 +90,7 @@ class CaissierCaisseJournalController extends Controller
     public function total_encaissement(Request $request)
     {
         try {
-            
+
             $query = Paiement::query();
 
             if (!$request->filled('date_debut')) {
@@ -115,14 +115,27 @@ class CaissierCaisseJournalController extends Controller
         }
     }
 
-    public function total_decaissement(string $date)
+    public function total_decaissement(Request $request)
     {
         try {
-            $dateStr = Carbon::parse($date)->toDateString();
 
-            $totalDecaissements = (int) Decaissement::whereRaw('LOWER(statut) = ?', ['valide'])
-                ->whereDate('updated_at', $dateStr)
-                ->sum('montant');
+            $query = Decaissement::query();
+
+            if (!$request->filled('date_debut')) {
+                $request->merge(['date_debut' => Carbon::today()->toDateString()]);
+            }
+            if (!$request->filled('date_fin')) {
+                $request->merge(['date_fin' => Carbon::today()->toDateString()]);
+            }
+
+            if ($request->filled('date_debut')) {
+                $query->where('date', '>=', $request->date_debut);
+            }
+            if ($request->filled('date_fin')) {
+                $query->where('date', '<=', $request->date_fin);
+            }
+
+            $totalDecaissements = (int) $query->sum('montant');
 
             return response()->json($totalDecaissements);
         } catch (\Exception $e) {
@@ -130,11 +143,27 @@ class CaissierCaisseJournalController extends Controller
         }
     }
 
-    public function total_caisse(string $date)
+    public function total_caisse(Request $request)
     {
-        $dateStr = Carbon::parse($date)->toDateString();
+        $query = CaissierCaisseJournal::query();
 
-        $totalCaisse = (int) CaissierCaisseJournal::whereDate('date', $dateStr)->sum('solde_theorique');
+        if (!$request->filled('date_debut')) {
+            $request->merge(['date_debut' => Carbon::today()->toDateString()]);
+        }
+        if (!$request->filled('date_fin')) {
+            $request->merge(['date_fin' => Carbon::today()->toDateString()]);
+        }
+
+        if ($request->filled('date_debut')) {
+            $query->where('date', '>=', $request->date_debut);
+        }
+        if ($request->filled('date_fin')) {
+            $query->where('date', '<=', $request->date_fin);
+        }
+
+        $dateStr = Carbon::parse($request->date_debut)->toDateString();
+
+        $totalCaisse = (int) $query->whereDate('date', $dateStr)->sum('solde_theorique');
 
         return response()->json($totalCaisse);
     }
