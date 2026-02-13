@@ -11,7 +11,6 @@ use App\Http\Controllers\CommandeController;
 use App\Http\Controllers\PaiementController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\InventaireController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Broadcast;
@@ -84,7 +83,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('produits-controle-boutique', [TransferController::class, 'produitsControleBoutique']);
     Route::get('produits-controle-depots', [TransferController::class, 'produitsControleDepots']);
 
-    Route::get('mouvement-stock-boutique/{id}', [TransferController::class, 'showMouvementStockProduit']);
 
 
 
@@ -127,18 +125,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('commandes/{commande}/annuler', [CommandeController::class, 'annuler']);
 
     Route::post('commandes/{commande}/paiements', [PaiementController::class, 'store']);
-    Route::get('paiements-rapport-journalier', [CaissierCaisseJournalController::class, 'show']);
+    Route::get('paiements-rapport-journalier', [PaiementController::class, 'rapportJournalier']);
     Route::get('commandes/{commande}/paiements', [PaiementController::class, 'index']);
     Route::apiResource('utilisateurs', UserController::class);
     Route::post('utilisateurs/{utilisateur}/reset-password', [UserController::class, 'resetPassword']);
 
     Route::get('mouvements-stock/inventaire-depot', [MouvementSockController::class, 'inventaireDepot']);
-
-
     Route::post('enregistrer-inventaire-depot', [MouvementSockController::class, 'enregistrerInventaireDepot']);
     Route::post('enregistrer-inventaire-boutique', [HistoriqueVenteController::class, 'enregistrerInventaireBoutique']);
-    Route::get('historique-inventaires', [InventaireController::class, 'index']);
-
+    Route::get('historique-inventaire', [HistoriqueVenteController::class, 'index']);
 
 
 

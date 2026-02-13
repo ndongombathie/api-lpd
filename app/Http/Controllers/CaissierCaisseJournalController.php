@@ -35,7 +35,7 @@ class CaissierCaisseJournalController extends Controller
 
     public function show(string $date)
     {
-        $dateStr = Carbon::parse($date)->toDateString() ?? now()->toDateString();
+        $dateStr = Carbon::parse($date)->toDateString();
 
         $journal = CaissierCaisseJournal::firstOrCreate(
             ['date' => $dateStr],
