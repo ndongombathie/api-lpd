@@ -55,6 +55,36 @@ class CaissierCaisseJournalController extends Controller
         return response()->json($journal->fresh());
     }
 
+    public function total_encaissement(string $date)
+    {
+        $dateStr = Carbon::parse($date)->toDateString();
+
+        $totalEncaissements = (int) Paiement::whereDate('date', $dateStr)->sum('montant');
+
+        return response()->json($totalEncaissements);
+    }
+
+    public function total_decaissement(string $date)
+    {
+        $dateStr = Carbon::parse($date)->toDateString();
+
+        $totalDecaissements = (int) Decaissement::whereRaw('LOWER(statut) = ?', ['valide'])
+            ->whereDate('updated_at', $dateStr)
+            ->sum('montant');
+
+        return response()->json($totalDecaissements);
+    }
+
+    public function total_caisse(string $date)
+    {
+        $dateStr = Carbon::parse($date)->toDateString();
+
+        $totalCaisse = (int) CaissierCaisseJournal::whereDate('date', $dateStr)->sum('solde_theorique');
+
+        return response()->json($totalCaisse);
+    }
+
+
     public function store(Request $request)
     {
         $data = $request->validate([
