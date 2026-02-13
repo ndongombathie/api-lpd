@@ -131,11 +131,8 @@ class DatabaseSeeder extends Seeder
         HistoriqueAction::factory()->count(50)->create();
         EntreeSortie::factory()->count(50)->create();
         EntreeSortieBoutique::factory()->count(50)->create();
-<<<<<<< HEAD
         Inventaire::factory()->count(50)->create();
-=======
         CaissierCaisseJournal::factory()->count(50)->create();
->>>>>>> 43694b57bdb6dff1156704aca3fab193ea569e60
     }
 
 }
