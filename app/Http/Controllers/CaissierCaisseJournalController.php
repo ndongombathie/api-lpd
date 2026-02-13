@@ -202,7 +202,7 @@ class CaissierCaisseJournalController extends Controller
             ->first();
 
         if (!$journal) {
-            return response()->json(['error' => 'Journal not found'], 404);
+            [$totalEncaissements, $totalDecaissements, $soldeTheorique, $nombrePaiements] = [0, 0, 0, 0];
         }
 
         [$totalEncaissements, $totalDecaissements, $soldeTheorique, $nombrePaiements] = $this->computeTotals($dateStr, (int) $journal->fond_ouverture);
