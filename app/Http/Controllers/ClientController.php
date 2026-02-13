@@ -12,13 +12,25 @@
     {
         // ============================================================
         // LISTE DES CLIENTS
-        // ============================================================
         public function index(Request $request)
         {
-            $query = Client::query()->latest();
+            $query = Client::withCount('commandes')->latest();
 
+            // filtre type client
             if ($request->filled('type_client')) {
                 $query->where('type_client', $request->type_client);
+            }
+
+            // ✅ FILTRE RECHERCHE (MANQUANT)
+            if ($request->filled('search')) {
+                $s = $request->search;
+
+                $query->where(function ($q) use ($s) {
+                    $q->where('nom', 'like', "%{$s}%")
+                    ->orWhere('contact', 'like', "%{$s}%")
+                    ->orWhere('entreprise', 'like', "%{$s}%")
+                    ->orWhere('adresse', 'like', "%{$s}%");
+                });
             }
 
             return $query->paginate(20);
@@ -38,7 +50,26 @@
                 'adresse'    => 'nullable|string',
                 'numero_cni' => 'nullable|string',
                 'telephone' => 'nullable|string',
-                'contact'    => 'nullable|string',
+                'contact' => [
+                    'required',
+                    'string',
+                    'max:20',
+                    function ($attribute, $value, $fail) use ($isResponsable) {
+
+                        // uniquement pour les clients spéciaux
+                        if ($isResponsable) {
+
+                            $exists = Client::where('contact', $value)
+                                ->where('type_client', 'special')
+                                ->exists();
+
+                            if ($exists) {
+                                $fail('Un client spécial avec ce numéro existe déjà.');
+                            }
+                        }
+                    },
+                ],
+
                 'solde'      => 'nullable|numeric',
             ]);
             $data['entreprise'] = $data['entreprise'] ?? null;
@@ -79,7 +110,25 @@
                 'adresse'    => 'nullable|string',
                 'numero_cni' => 'nullable|string',
                 'telephone' => 'nullable|string',
-                'contact'    => 'nullable|string',
+                'contact' => [
+                    'nullable',
+                    'string',
+                    function ($attribute, $value, $fail) use ($client, $isResponsable) {
+
+                        if ($isResponsable && $value) {
+
+                            $exists = Client::where('contact', $value)
+                                ->where('type_client', 'special')
+                                ->where('id', '!=', $client->id)
+                                ->exists();
+
+                            if ($exists) {
+                                $fail('Un client spécial avec ce numéro existe déjà.');
+                            }
+                        }
+                    },
+                ],
+
                 'solde'      => 'nullable|numeric',
             ]);
             $data['entreprise'] = $data['entreprise'] ?? null;
@@ -111,6 +160,7 @@
 
                 $hasDebt = $client->commandes()
                     ->where('statut', '!=', 'annulee')
+                    ->whereNotNull('total')
                     ->whereRaw("
                         total > (
                             SELECT COALESCE(SUM(montant),0)
@@ -148,8 +198,9 @@
                 ->paginate(50);
 
             $transformed = $paginator->getCollection()->map(function (Commande $cmd) {
-                $totalPaye = $cmd->paiements->sum('montant');
-                $reste = max(0, $cmd->total - $totalPaye);
+            $totalPaye = $cmd->montantPaye();
+            $reste = $cmd->resteAPayer();
+
 
                 return [
                     'commande_id' => $cmd->id,

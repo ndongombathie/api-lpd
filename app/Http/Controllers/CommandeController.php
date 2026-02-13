@@ -25,7 +25,24 @@ class CommandeController extends Controller
             |--------------------------------------------------------------------------
             */
             $baseQuery = Commande::query()
-                ->with(['details', 'client', 'vendeur', 'paiements']);
+                ->with([
+                    'details',
+                    'client',
+                    'vendeur',
+                    'paiements' => function ($q) use ($request) {
+
+                        if ($request->filled('paiement_type')) {
+                            $q->where('type_paiement', $request->paiement_type);
+                        }
+
+                        if ($request->filled('paiement_date')) {
+                            $q->whereDate('date', $request->paiement_date);
+                        }
+
+                        $q->orderBy('date');
+                    }
+                ]);
+
 
             // filtre statut
             if ($request->filled('statut') && $request->statut !== 'tous') {
@@ -40,23 +57,41 @@ class CommandeController extends Controller
             if ($request->filled('end_date')) {
                 $baseQuery->whereDate('date', '<=', $request->end_date);
             }
+            if ($request->filled('paiement_type')) {
+                $baseQuery->whereHas('paiements', function ($q) use ($request) {
+                    $q->where('type_paiement', $request->paiement_type);
+                });
+            }
 
+            if ($request->filled('paiement_date')) {
+                $baseQuery->whereHas('paiements', function ($q) use ($request) {
+                    $q->whereDate('date', $request->paiement_date);
+                });
+            }
             // recherche
             if ($request->filled('search')) {
                 $s = $request->search;
 
                 $baseQuery->where(function ($q) use ($s) {
-                    $q->where('id', 'like', "%$s%")
-                        ->orWhereHas('client', fn($c) =>
-                            $c->where('nom', 'like', "%$s%")
-                        )
-                        ->orWhereHas('details.produit', function ($p) use ($s) {
-                            $p->where('nom', 'like', "%$s%")
-                              ->orWhere('libelle', 'like', "%$s%")
-                              ->orWhere('reference', 'like', "%$s%");
-                        });
+
+                    // numéro commande
+                    $q->where('numero', 'like', "%$s%")
+
+
+                    // nom client
+                    ->orWhereHas('client', function ($c) use ($s) {
+                        $c->where('nom', 'like', "%$s%");
+                    })
+
+                    // nom produit
+                    ->orWhereHas('details.produit', function ($p) use ($s) {
+                        $p->where('nom', 'like', "%$s%");
+                    });
                 });
             }
+
+
+
 
             /*
             |--------------------------------------------------------------------------
@@ -66,15 +101,9 @@ class CommandeController extends Controller
             $tableQuery = clone $baseQuery;
 
             if ($request->filled('type_client') && $request->type_client === 'special') {
-                $tableQuery->where(function ($q) {
-                    $q->whereHas('client', fn($c) =>
-                        $c->where('type_client', 'special')
-                    )
-                    ->orWhere(function ($x) {
-                        $x->whereNull('client_id')
-                          ->where('type_vente', 'gros');
-                    });
-                });
+                $tableQuery->whereHas('client', fn($c) =>
+                    $c->where('type_client', 'special')
+                );
             }
 
             if ($request->filled('client_id')) {
@@ -86,6 +115,51 @@ class CommandeController extends Controller
             $table = $tableQuery
                 ->orderByDesc('date')
                 ->paginate($perPage);
+            $table->getCollection()->transform(function ($cmd) {
+
+                $totalPaye = $cmd->montantPaye();
+                $reste = $cmd->resteAPayer();
+
+                return [
+                    'id' => $cmd->id,
+                    'numero' => $cmd->numero ?? $cmd->id,                    
+                    'dateCommande' => $cmd->date,
+                    'statut' => $cmd->statut,
+                    'type_vente' => $cmd->type_vente,
+
+                    // ✅ CHAMPS MÉTIER
+                    'totalTTC' => $cmd->total,
+                    'montantPaye' => $totalPaye,
+                    'resteAPayer' => $reste,
+
+                    'clientId' => $cmd->client_id,
+                    'lignes' => $cmd->details->map(function ($d) {
+                        return [
+                            'id' => $d->id,
+                            'produit_id' => $d->produit_id,
+                            'libelle' => $d->produit->nom ?? null,
+                            'ref' => $d->produit->reference ?? null,
+                            'quantite' => $d->quantite,
+                            'prix_unitaire' => $d->prix_unitaire,
+                            'total_ttc' => $d->prix_unitaire * $d->quantite,
+                        ];
+                    }),
+
+
+                    'paiements' => $cmd->paiements->map(function ($p) {
+                        return [
+                            'id' => $p->id,
+                            'montant' => $p->montant,
+                            'type_paiement' => $p->type_paiement,
+                            'date' => $p->date,
+                            'reste_du' => $p->reste_du,
+                        ];
+                    }),
+
+                    'client' => $cmd->client,
+                    'vendeur' => $cmd->vendeur,
+                ];
+            });
 
             /*
             |--------------------------------------------------------------------------
@@ -95,15 +169,9 @@ class CommandeController extends Controller
             $statsQuery = clone $baseQuery;
 
             if ($request->filled('type_client') && $request->type_client === 'special') {
-                $statsQuery->where(function ($q) {
-                    $q->whereHas('client', fn($c) =>
-                        $c->where('type_client', 'special')
-                    )
-                    ->orWhere(function ($x) {
-                        $x->whereNull('client_id')
-                          ->where('type_vente', 'gros');
-                    });
-                });
+                $statsQuery->whereHas('client', fn($c) =>
+                    $c->where('type_client', 'special')
+                );
             }
 
             if ($request->filled('client_id')) {
@@ -113,12 +181,29 @@ class CommandeController extends Controller
             // récupération non paginée pour stats
             $statsCollection = $statsQuery->get();
 
-            $totalTTC = $statsCollection->sum('total');
+            // ===============================
+            // LOGIQUE CLIENTS SPECIAUX
+            // ===============================
 
-            $totalPaye = $statsCollection
-                ->sum(fn ($c) => $c->paiements->sum('montant'));
+            if ($request->statut === 'annulee') {
 
-            $dette = max($totalTTC - $totalPaye, 0);
+                // MODE TRAÇABILITÉ (théorique)
+                $annulees = $statsCollection->where('statut', 'annulee');
+
+                $totalTTC = $annulees->sum('total');
+                $totalPaye = 0;
+                $dette = $totalTTC;
+
+            } else {
+
+                // MODE NORMAL (financier réel)
+                $actives = $statsCollection->where('statut', '!=', 'annulee');
+
+                $totalTTC = $actives->sum('total');
+                $totalPaye = $actives->sum(fn ($c) => $c->montantPaye());
+                $dette = max($totalTTC - $totalPaye, 0);
+            }
+
 
 
             /*
@@ -179,6 +264,17 @@ class CommandeController extends Controller
                 'total' => 0,
                 'date' => now(),
             ]);
+            $lastNumero = Commande::max('numero');
+
+            $next = $lastNumero
+                ? ((int) substr($lastNumero, 4)) + 1
+                : 1;
+
+            $commande->numero = 'CMD-' . str_pad($next, 6, '0', STR_PAD_LEFT);
+
+
+            $commande->save();
+
 
             $totalHt = 0;
 

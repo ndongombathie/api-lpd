@@ -19,14 +19,54 @@ class ProduitController extends Controller
         $this->repository = $repository;
     }
 
-    public function index()
+    public function index(Request $request)
     {
         try {
-            return $this->repository->index();
+
+            $query = Produit::query();
+
+            // =========================
+            // 🔎 RECHERCHE PRODUIT
+            // =========================
+            if ($request->filled('search')) {
+
+                $s = trim($request->search);
+
+                $query->where(function ($q) use ($s) {
+
+                    // =========================
+                    // ✅ SCAN CODE-BARRES (PRIORITÉ)
+                    // =========================
+                    if (is_numeric($s)) {
+
+                        $q->where('code', $s)
+                        ->orWhere('code', 'like', "%$s%")
+                        ->orWhere('nom', 'like', "%$s%");
+
+                    } else {
+
+                        // =========================
+                        // ✅ RECHERCHE TEXTE
+                        // =========================
+                        $q->where('nom', 'like', "%$s%")
+                        ->orWhere('code', 'like', "%$s%");
+                    }
+                });
+            }
+
+
+
+            return $query
+                ->orderBy('nom')
+                ->paginate(50);
+
         } catch (\Throwable $th) {
-            return response()->json(['message' => $th->getMessage()], 500);
+            return response()->json([
+                'message' => $th->getMessage()
+            ], 500);
         }
     }
+
 
     public function produits_en_rupture()
     {
