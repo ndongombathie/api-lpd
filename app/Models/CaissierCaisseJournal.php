@@ -38,5 +38,10 @@ class CaissierCaisseJournal extends Model
         'solde_reel' => 'integer',
         'cloture' => 'boolean',
     ];
+
+    public function caissier()
+    {
+        return $this->belongsTo(User::class, 'caissier_id');
+    }
 }
 

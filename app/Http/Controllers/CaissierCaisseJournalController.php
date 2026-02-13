@@ -7,6 +7,7 @@ use App\Models\Decaissement;
 use App\Models\Paiement;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class CaissierCaisseJournalController extends Controller
 {
@@ -40,7 +41,7 @@ class CaissierCaisseJournalController extends Controller
         $journal = CaissierCaisseJournal::firstOrCreate(
             ['date' => $dateStr],
             ['fond_ouverture' => $this->getFondOuverture(Carbon::parse($dateStr))]
-        );
+        )->load('caissier');
 
         [$totalEncaissements, $totalDecaissements, $soldeTheorique,$nombrePaiements] = $this->computeTotals($dateStr, (int) $journal->fond_ouverture);
 
@@ -52,7 +53,7 @@ class CaissierCaisseJournalController extends Controller
             'solde_theorique' => $soldeTheorique,
         ])->save();
 
-        return response()->json($journal->fresh());
+        return response()->json($journal->fresh()->load('caissier'));
     }
 
     public function total_encaissement(string $date)
@@ -121,7 +122,7 @@ class CaissierCaisseJournalController extends Controller
             'total_encaissements' => $totalEncaissements,
             'total_decaissements' => $totalDecaissements,
             'nombre_paiements' => $nombrePaiements,
-            'caissier_id' => $request->user()->id,
+            'caissier_id' => Auth::user()->id,
             'solde_theorique' => $soldeTheorique,
             'solde_reel' => (int) $data['solde_reel'],
             'observations' => $data['observations'] ?? null,
