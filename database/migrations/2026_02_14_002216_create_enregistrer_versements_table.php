@@ -18,7 +18,7 @@ return new class extends Migration
             $table->text('observation')->nullable();
             $table->date('date');
             $table->timestamps();
-        });
+        }); 
     }
 
     /**
