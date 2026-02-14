@@ -82,6 +82,7 @@ class CaissierCaisseJournalController extends Controller
                 'total_decaissements' => $totalDecaissements ?? 0,
                 'nombre_paiements'=>$nombrePaiements ?? 0,
                 'solde_theorique' => $soldeTheorique ?? 0,
+                'solde_reel' => $journal->solde_reel ?? 0,
             ]);
 
         } else {
