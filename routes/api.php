@@ -24,6 +24,7 @@ use App\Http\Controllers\CaissierCaisseJournalController;
 use App\Http\Controllers\FondCaisseController;
 use App\Http\Controllers\HistoriqueActionController;
 use App\Http\Controllers\MouvementSockController;
+use App\Http\Controllers\InventaireController;
 
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
@@ -138,7 +139,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('mouvements-stock/inventaire-depot', [MouvementSockController::class, 'inventaireDepot']);
     Route::post('enregistrer-inventaire-depot', [MouvementSockController::class, 'enregistrerInventaireDepot']);
     Route::post('enregistrer-inventaire-boutique', [HistoriqueVenteController::class, 'enregistrerInventaireBoutique']);
-    Route::get('historique-inventaire', [HistoriqueVenteController::class, 'index']);
+    Route::get('historique-inventaires', [InventaireController::class, 'index']);
 
 
 
