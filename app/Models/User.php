@@ -101,4 +101,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(FondCaisse::class);
     }
+
+    public function enregistrer_versements(): HasMany
+    {
+        return $this->hasMany(EnregistrerVersement::class);
+    }
 }
