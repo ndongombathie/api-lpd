@@ -21,6 +21,7 @@ use App\Http\Controllers\TransferController;
 use App\Http\Controllers\DecaissementController;
 use App\Http\Controllers\CaissierDashboardController;
 use App\Http\Controllers\CaissierCaisseJournalController;
+use App\Http\Controllers\EnregistrerVersementController;
 use App\Http\Controllers\FondCaisseController;
 use App\Http\Controllers\HistoriqueActionController;
 use App\Http\Controllers\MouvementSockController;
@@ -150,6 +151,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('historique-actions', HistoriqueActionController::class);
 
     Route::post('fond-caisse', [FondCaisseController::class, 'store']);
+
+    # Gestion des enregistrements de versement
+    Route::apiResource('enregistrer-versements', EnregistrerVersementController::class);
 
 
 });

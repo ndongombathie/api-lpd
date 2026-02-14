@@ -16,6 +16,7 @@ return new class extends Migration
             $table->uuid('caissier_id')->nullable()->foreignId('users')->cascadeOnDelete();
             $table->bigInteger('montant');
             $table->text('observation')->nullable();
+            $table->date('date');
             $table->timestamps();
         });
     }

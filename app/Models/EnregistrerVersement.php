@@ -16,6 +16,7 @@ class EnregistrerVersement extends Model
         'caissier_id',
         'montant',
         'observation',
+        'date',
     ];
 
     public function caissier()

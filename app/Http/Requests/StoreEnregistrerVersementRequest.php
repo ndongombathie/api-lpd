@@ -11,7 +11,7 @@ class StoreEnregistrerVersementRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,9 @@ class StoreEnregistrerVersementRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'caissier_id' => 'required|uuid|exists:users,id',
+            'montant' => 'required|integer|min:1',
+            'observation' => 'nullable|string',
         ];
     }
 }
