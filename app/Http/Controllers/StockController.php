@@ -48,10 +48,12 @@ class StockController extends Controller
             $sourceLabel = 'depot';
 
             if (!empty(Auth::user()->boutique_id)) {
+
                 $src = StockBoutique::firstOrCreate([
                     'boutique_id' => Auth::user()->boutique_id,
                     'produit_id' => $produitId,
                 ]);
+
                 $transfer = Transfer::firstOrCreate([
                     'boutique_id' => Auth::user()->boutique_id,
                     'produit_id'  => $produitId,
@@ -76,7 +78,9 @@ class StockController extends Controller
 
                 $this->EntreeSortiesBoutique($produitId,$qte);
                 $this->Sorties($produitId,$qte);
-                $src->decrement('quantite', $qte);
+                
+                $src->decrement('quantite', $qte*$produit->unite_carton);
+                $src->decrement('nombre_carton',$qte);
                 $sourceLabel = 'boutique:' . Auth::user()->boutique_id;
 
                 MouvementStock::firstOrCreate([
