@@ -168,6 +168,7 @@ class TransferController extends Controller
             $produit->prix_seuil_gros = $request->prix_seuil_gros;
             $produit->save();
             $transfer->save();
+            
             return response()->json($transfer);
       } catch (\Throwable $th) {
         return response()->json(['error' => $th->getMessage()], 500);
