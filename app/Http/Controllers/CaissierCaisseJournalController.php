@@ -255,11 +255,10 @@ class CaissierCaisseJournalController extends Controller
 
     private function getFondOuverture(Carbon $date): int
     {
-        $veille = $date->copy()->subDay()->toDateString();
+       // $veille = $date->copy()->subDay()->toDateString();
 
-        $rapportVeille = fondCaisse::where('date', $veille)
+        $rapportVeille = fondCaisse::where('date', $date)
             ->where('caissier_id', Auth::user()->id)
-            ->get('montant')
             ->first();
 
         if (!$rapportVeille) {
