@@ -121,9 +121,9 @@ class StockController extends Controller
     {
         try {
             $validated = $request->validate([
-                'transfert_id' => 'required|uuid|exists:transfers,id',
+                'transfer_id' => 'required|uuid|exists:transfers,id',
             ]);
-            $id = $validated['transfert_id'];
+            $id = $validated['transfer_id'];
 
             $transfer = Transfer::findOrFail($id);
             if ($transfer->status != 'en_attente') {
