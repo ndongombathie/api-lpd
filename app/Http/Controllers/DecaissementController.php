@@ -88,7 +88,7 @@ class DecaissementController extends Controller
         try {
             return response()->json(Decaissement::query()->where('statut', 'en_attente')
             ->where('caissier_id', Auth::user()->id)
-            ->with('user')->latest()->paginate(20));
+            ->with('user')->latest()->paginate(10));
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la récupération des décaissements en attente',

@@ -21,7 +21,7 @@ class FournisseurController extends Controller
                 });
             }
 
-            return response()->json($query->paginate(20));
+            return response()->json($query->paginate(10));
         } catch (\Throwable $th) {
             return response()->json(['error' => $th->getMessage()], 500);
         }

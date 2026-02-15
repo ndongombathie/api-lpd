@@ -78,7 +78,7 @@ class MouvementSockController extends Controller
                 $query->whereDate('mouvement_stocks.date', '<=', $request->date_fin);
             }
 
-            $inventaire = $query->paginate(15);
+            $inventaire = $query->paginate(10);
 
             $inventaire->getCollection()->transform(function ($item) {
                 $entrees=EntreeSortie::where('produit_id',$item->id)->get()->first();

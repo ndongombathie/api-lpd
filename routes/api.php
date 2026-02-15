@@ -22,6 +22,7 @@ use App\Http\Controllers\DecaissementController;
 use App\Http\Controllers\CaissierDashboardController;
 use App\Http\Controllers\CaissierCaisseJournalController;
 use App\Http\Controllers\EnregistrerVersementController;
+use App\Http\Controllers\FactureController;
 use App\Http\Controllers\FondCaisseController;
 use App\Http\Controllers\HistoriqueActionController;
 use App\Http\Controllers\MouvementSockController;
@@ -98,6 +99,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('historique-ventes', [HistoriqueVenteController::class, 'index']);
     Route::get('total-vente-par-jour', [HistoriqueVenteController::class, 'totalParJour']);
     Route::get('inventaires-boutique', [HistoriqueVenteController::class, 'inventaireBoutique']);
+
+    #impression de la facture
+    Route::get('factures/{id}', [FactureController::class, 'show']);
 
 
 

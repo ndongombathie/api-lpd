@@ -71,8 +71,8 @@ class HistoriqueVenteController extends Controller
             if ($request->filled('date_fin')) {
                 $query->whereDate('historique_ventes.date', '<=', $request->date_fin);
             }
-            
-            $produitsVendus = $query->paginate(15);
+
+            $produitsVendus = $query->paginate(10);
 
             $produitsVendus->getCollection()->transform(function ($produit) {
                 $produit->ecart = $produit->stock_initial - $produit->quantite_vendue;

@@ -35,7 +35,7 @@ class UserController extends Controller
                       ->orWhere('email', 'like', "%{$search}%");
                 });
             }
-            return $query->paginate(20);
+            return $query->paginate(10);
 
         } catch (\Throwable $th) {
             return response()->json([

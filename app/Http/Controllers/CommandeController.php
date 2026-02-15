@@ -33,7 +33,7 @@ class CommandeController extends Controller
                 $query->where('type_vente', $request->type);
             }
 
-            return response()->json($query->paginate(20));
+            return response()->json($query->paginate(10));
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la récupération des commandes',
@@ -48,7 +48,7 @@ class CommandeController extends Controller
                 ->where('statut', 'attente')
                 ->with(['details.produit', 'client', 'vendeur', 'paiements'])
                 ->latest()
-                ->paginate(20));
+                ->paginate(10));
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la récupération des commandes en attente',
@@ -65,7 +65,7 @@ class CommandeController extends Controller
                     $q->orderBy('date', 'desc'); // Trier les paiements par date décroissante
                 }])
                 ->latest()
-                ->paginate(15));
+                ->paginate(10));
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la récupération des commandes validées',
@@ -81,7 +81,7 @@ class CommandeController extends Controller
                 ->where('created_at','>=',now()->subMonth())
                 ->with(['details.produit', 'client', 'vendeur'])
                 ->latest()
-                ->paginate(20));
+                ->paginate(10));
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la récupération des commandes annulées',

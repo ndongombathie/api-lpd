@@ -35,7 +35,7 @@ class StockController extends Controller
         return StockBoutique::with('produit')
             ->where('quantite', '<=', 'stock_seuil')
             ->when($boutiqueId, fn($q) => $q->where('boutique_id', $boutiqueId))
-            ->paginate(20);
+            ->paginate(10);
     }
 
     public function transfer(Request $request)
