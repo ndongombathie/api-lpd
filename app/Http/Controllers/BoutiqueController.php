@@ -36,7 +36,9 @@ class BoutiqueController extends Controller
             $benefice = $this->montantTotalBoutique()['montant_total'] - Produit::sum('prix_unite_carton');
             return response()->json(['benefice' => $benefice], 200);
         } catch (\Throwable $th) {
-            //throw $th;
+            Log::error('Erreur BeneficeBoutique: ' . $th->getMessage());
+            Log::error('Stack trace: ' . $th->getTraceAsString());
+            return response()->json(['error' => $th->getMessage()], 500);
         }
     }
 
