@@ -18,6 +18,7 @@ class CommandeController extends Controller
     {
         try {
             $query = Commande::with('details', 'client', 'vendeur')
+               ->orderBy('created_at', 'desc')
                ->where('vendeur_id', Auth::user()->id);
 
             if ($request->filled('date')) {

@@ -14,7 +14,9 @@ class FondCaisseController extends Controller
     public function index()
     {
         try {
-            $fondCaisses = fondCaisse::with('caissier')->get();
+            $fondCaisses = fondCaisse::with('caissier')
+            ->orderBy('created_at', 'desc')
+            ->get();
             return response()->json($fondCaisses, 200);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);

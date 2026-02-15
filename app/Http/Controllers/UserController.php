@@ -13,7 +13,9 @@ class UserController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = User::query()->latest();
+            $query = User::query()
+            ->orderBy('created_at', 'desc')
+            ->latest();
             // Filter by role if provided
             if ($request->filled('role')) {
                 $query->where('role', $request->input('role'));

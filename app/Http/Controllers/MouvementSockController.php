@@ -21,7 +21,9 @@ class MouvementSockController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = MouvementStock::query()->with('produit');
+            $query = MouvementStock::query()
+            ->orderBy('created_at', 'desc')
+            ->with('produit');
 
             if ($request->filled('date_debut')) {
                 $query->whereDate('date', '>=', $request->date_debut);
