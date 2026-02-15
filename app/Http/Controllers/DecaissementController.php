@@ -19,7 +19,7 @@ class DecaissementController extends Controller
     {
         try {
 
-            
+
             $query = Decaissement::query()->with(['user', 'caissier'])
                 ->where('caissier_id', Auth::user()->id)
                 ->latest('updated_at');
@@ -51,9 +51,44 @@ class DecaissementController extends Controller
         }
     }
 
+
+    #get all decaissements with filter
+    public function getDecaissements(Request $request){
+        try {
+            $query = Decaissement::query()->with(['user', 'caissier'])
+                ->latest('created_at');
+            // Filter by role if provided
+            if ($request->filled('motif')) {
+                $query->where('motif', $request->input('motif'));
+            }
+
+            // Filter by boutique_id if provided
+            if ($request->filled('cassier_id')) {
+                $query->where('cassier_id', $request->input('cassier_id'));
+            }
+            
+            // Filter by search term if provided
+            if ($request->filled('search')) {
+                $search = $request->input('search');
+                $query->where(function ($q) use ($search) {
+                    $q->where('methode_paiement', 'like', "%{$search}%")
+                      ->orWhere('date', 'like', "%{$search}%")
+                      ->orWhere('statut', 'like', "%{$search}%");
+                });
+            }
+            return response()->json($query->paginate(10));
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+
+
     public function getDecaissemenentEnAttente(){
         try {
-            return response()->json(Decaissement::query()->where('statut', 'en_attente')->with('user')->latest()->paginate(20));
+            return response()->json(Decaissement::query()->where('statut', 'en_attente')
+            ->where('caissier_id', Auth::user()->id)
+            ->with('user')->latest()->paginate(20));
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la récupération des décaissements en attente',
