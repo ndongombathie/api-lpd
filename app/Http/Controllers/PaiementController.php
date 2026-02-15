@@ -32,8 +32,12 @@ class PaiementController extends Controller
 
     public function index(string $commandeId)
     {
-        $commande = Commande::findOrFail($commandeId);
-        return Paiement::where('commande_id', $commande->id)->orderBy('date')->get();
+        try {
+            $commande = Commande::findOrFail($commandeId);
+            return Paiement::where('commande_id', $commande->id)->orderBy('date')->get();
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
 

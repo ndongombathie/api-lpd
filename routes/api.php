@@ -58,6 +58,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('montant-total-boutique', [BoutiqueController::class, 'montantTotalBoutique']);
     Route::get('benefice-boutique', [BoutiqueController::class, 'BeneficeBoutique']);
+    Route::get('montant-total-ventes-today', [BoutiqueController::class, 'montantTotalVentesToday']);
+
+
 
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('mon-profil', [AuthController::class, 'monProfil']);

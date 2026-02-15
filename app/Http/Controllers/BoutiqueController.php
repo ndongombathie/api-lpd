@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Decaissement;
+use App\Models\HistoriqueVente;
 use App\Models\Produit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -38,6 +39,22 @@ class BoutiqueController extends Controller
             //throw $th;
         }
     }
+
+
+    #use HistoriqueVenteController give montantTotalVentesBoutique frr the day current
+    public function montantTotalVentesToday(){
+        try {
+            $montantTotalVentes = HistoriqueVente::where('date', date('Y-m-d'))->sum('montant');
+            return response()->json(['montant_total_ventes' => $montantTotalVentes], 200);
+        } catch (\Throwable $th) {
+            Log::error('Erreur montantTotalVentesBoutique: ' . $th->getMessage());
+            Log::error('Stack trace: ' . $th->getTraceAsString());
+            return response()->json(['error' => $th->getMessage()], 500);
+        }
+    }
+
+
+
 
     #enregistrer une inventaire entre deux dates choisies donnees en parametre (argent Total ventes	argent Total achats	Résultat)
 
