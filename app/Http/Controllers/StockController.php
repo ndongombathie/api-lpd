@@ -73,6 +73,7 @@ class StockController extends Controller
 
                 $transfer->increment('quantite', $qte*$produit->unite_carton);
                 $transfer->increment('nombre_carton', $qte);
+                $transfer->status = 'en_attente';
                 $transfer->updated_at = now();
                 $transfer->save();
 
@@ -122,9 +123,11 @@ class StockController extends Controller
         try {
             $validated = $request->validate([
                 'produit_id' => 'required|uuid|exists:produits,id',
+                'quantite'   => 'required|integer|min:1', // ajout de la quantité
             ]);
 
             $produitId = $validated['produit_id'];
+            $qteDemandee = $validated['quantite'];
             $boutiqueId = Auth::user()->boutique_id;
 
             if (empty($boutiqueId)) {
@@ -140,13 +143,16 @@ class StockController extends Controller
                 abort(422, 'Aucun transfert à annuler pour ce produit');
             }
 
-            $qteCarton = $transfer->nombre_carton;
-            $qteUnite  = $transfer->quantite;
+            // Vérifier que la quantité demandée ne dépasse pas celle du transfert
+            if ($qteDemandee > $transfer->nombre_carton) {
+                abort(422, 'Quantité à annuler supérieure à celle transférée');
+            }
 
             $produit = Produit::findOrFail($produitId);
+            $qteUnite = $qteDemandee * $produit->unite_carton;
 
             // Remettre les quantités dans le dépôt
-            $produit->increment('nombre_carton', $qteCarton);
+            $produit->increment('nombre_carton', $qteDemandee);
             $produit->increment('stock_global', $qteUnite);
 
             // Remettre les quantités dans la boutique
@@ -155,20 +161,18 @@ class StockController extends Controller
                 'produit_id'  => $produitId,
             ]);
             $src->increment('quantite', $qteUnite);
-            $src->increment('nombre_carton', $qteCarton);
+            $src->increment('nombre_carton', $qteDemandee);
 
-            // Réinitialiser le transfert
-            $transfer->update([
-                'quantite'      => 0,
-                'nombre_carton' => 0,
-            ]);
+            // Déduire la quantité annulée du transfert
+            $transfer->decrement('nombre_carton', $qteDemandee);
+            $transfer->decrement('quantite', $qteUnite);
 
             // Enregistrer le mouvement inverse
             MouvementStock::firstOrCreate([
                 'source'      => 'boutique:' . $boutiqueId,
                 'destination' => 'depot',
                 'produit_id'  => $produitId,
-                'quantite'    => $qteCarton,
+                'quantite'    => $qteDemandee,
                 'type'        => 'entree',
                 'motif'       => 'Annulation transfert',
             ], [
@@ -182,8 +186,8 @@ class StockController extends Controller
             ]);
 
             // Inverser les impacts sur EntreeSortie / EntreeSortieBoutique
-            $this->EntreeSorties($produitId, $qteCarton);              // décrémenter l’entrée initiale
-            $this->EntreeSortiesBoutique($produitId, -$qteCarton); // décrémenter la sortie boutique
+            $this->EntreeSorties($produitId, $qteDemandee);              // décrémenter l’entrée initiale
+            $this->EntreeSortiesBoutique($produitId, -$qteDemandee); // décrémenter la sortie boutique
 
             event(new StockBoutiqueMisAJour($src->fresh()));
 
