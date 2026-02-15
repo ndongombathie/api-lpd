@@ -32,7 +32,7 @@ class TransferController extends Controller
                 });
             }
 
-            return response()->json($ $transfers->paginate(10));
+            return response()->json($transfers->paginate(10));
         } catch (\Throwable $th) {
             return response()->json(['error' => $th->getMessage()], 500);
         }
