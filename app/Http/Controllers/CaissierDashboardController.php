@@ -38,6 +38,7 @@ class CaissierDashboardController extends Controller
         // Tickets traités = commandes passées à "payee" ce jour-là (updated_at)
         $ticketsTraites = (int) Commande::whereRaw('LOWER(statut) = ?', ['payee'])
             ->whereDate('updated_at', $dateStr)
+            ->where('caissier_id', Auth::user()->id)
             ->count();
 
         return response()->json([
