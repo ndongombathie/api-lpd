@@ -175,7 +175,7 @@ class PaiementController extends Controller
             // Traiter la finalisation de la commande (mise à jour du statut, stock, etc.)
             // Même en cas d'erreur, on retourne le paiement car il est déjà créé
             if ($reste <= 0) {
-                $commande->update(['statut' => 'payee']);
+                $commande->update(['statut' => 'payee','caissier_id'=>Auth::user()->id]);
 
                 // Créer la facture
                 $facture = Facture::create([

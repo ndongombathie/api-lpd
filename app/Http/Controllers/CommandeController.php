@@ -61,6 +61,7 @@ class CommandeController extends Controller
         try {
             return response()->json(Commande::query()
                 ->where('statut', 'payee')
+                ->where('caissier_id', Auth::user()->id)
                 ->with(['details','client','vendeur', 'paiements' => function($q) {
                     $q->orderBy('date', 'desc'); // Trier les paiements par date décroissante
                 }])
@@ -79,6 +80,7 @@ class CommandeController extends Controller
             return response()->json(Commande::query()
                 ->where('statut', 'annulee')
                 ->where('created_at','>=',now()->subMonth())
+                ->where('caissier_id', Auth::user()->id)
                 ->with(['details.produit', 'client', 'vendeur'])
                 ->latest()
                 ->paginate(10));
@@ -181,7 +183,9 @@ class CommandeController extends Controller
             $data = $request->validate([
                 'statut' => 'sometimes|in:brouillon,validee,payee,annulee',
             ]);
+
             $commande->update($data);
+
             return $commande->load('details');
         } catch (\Throwable $th) {
             return response()->json([
@@ -232,7 +236,7 @@ class CommandeController extends Controller
     public function annuler(string $id)
     {
         $commande = Commande::findOrFail($id);
-        $commande->update(['statut' => 'annulee']);
+        $commande->update(['statut' => 'annulee','caissier_id'=>Auth::user()->id]);
         $commande->load('details', 'vendeur', 'client');
 
         // Diffuser l'événement (sans bloquer si Reverb n'est pas disponible)
