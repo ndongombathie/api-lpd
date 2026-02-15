@@ -20,7 +20,7 @@ class ProduitFactory extends Factory
     {
         return [
             'nom' => $this->faker->words(2, true),
-            'code' => strtoupper($this->faker->bothify('MAT-####')),
+            'code' => strtoupper($this->faker->bothify('MAT-#################')),
             'categorie_id' => Categorie::inRandomOrder()->value('id') ?? Categorie::factory(),
             'fournisseur_id' => Fournisseur::inRandomOrder()->value('id') ?? Fournisseur::factory(),
             'unite_carton' => $this->faker->numberBetween(1, 100),
