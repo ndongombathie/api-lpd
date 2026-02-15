@@ -21,7 +21,9 @@ class StockController extends Controller
     public function index()
     {
         try {
-            return StockBoutique::with('produit')->paginate(50);
+            return StockBoutique::with('produit')
+            ->orderBy('created_at', 'desc')
+            ->paginate(50);
         } catch (\Throwable $th) {
             return response()->json(['error' => $th->getMessage()], 500);
         }
