@@ -121,6 +121,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('stocks/ruptures', [StockController::class, 'ruptures']);
     Route::get('produits-ruptures', [ProduitController::class, 'produits_en_rupture']);
     Route::post('stocks/transfer', [StockController::class, 'transfer']);
+    #annulerTransfer
+    Route::post('stocks/transfer/annuler', [StockController::class, 'annulerTransfer']);
 
     Route::post('stocks/reapprovisionner', [StockController::class, 'reapprovisionner']);
 
