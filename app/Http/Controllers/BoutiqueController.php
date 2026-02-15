@@ -46,10 +46,10 @@ class BoutiqueController extends Controller
     #use HistoriqueVenteController give montantTotalVentesBoutique frr the day current
     public function montantTotalVentesToday(){
         try {
-            $montantTotalVentes = HistoriqueVente::where('date', date('Y-m-d'))->sum('montant');
+            $montantTotalVentes = HistoriqueVente::whereDate('created_at', date('Y-m-d'))->sum('montant');
             return response()->json(['montant_total_ventes' => $montantTotalVentes], 200);
         } catch (\Throwable $th) {
-            Log::error('Erreur montantTotalVentesBoutique: ' . $th->getMessage());
+            Log::error('Erreur montantTotalVentesToday: ' . $th->getMessage());
             Log::error('Stack trace: ' . $th->getTraceAsString());
             return response()->json(['error' => $th->getMessage()], 500);
         }

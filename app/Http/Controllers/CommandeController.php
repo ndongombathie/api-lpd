@@ -256,4 +256,19 @@ class CommandeController extends Controller
             ], 500);
         }
     }
+
+    # les commandes payee aujourduih
+    public function commandesPayeesAujourdhui(){
+        try {
+            $commandes = Commande::where('statut', 'payee')
+            ->whereDate('created_at', date('Y-m-d'))
+            ->count();
+            return response()->json($commandes);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Erreur lors de la récupération des commandes payées aujourd\'hui',
+                'error' => $th->getMessage(),
+            ], 500);
+        }
+    }
 }
