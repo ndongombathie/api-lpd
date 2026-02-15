@@ -113,11 +113,11 @@ class DatabaseSeeder extends Seeder
             }
 
             // Statut basé sur paiements
-            if ($reste <= 0 && $total > 0) {
+            /* if ($reste <= 0 && $total > 0) {
                 $commande->statut = 'payee';
             } elseif ($total > 0) {
                 $commande->statut = 'valide';
-            }
+            } */
 
             $commande->save();
         });

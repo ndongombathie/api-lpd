@@ -225,7 +225,10 @@ class ProduitController extends Controller
             $nombreProduitsVendus = Commande::whereDate('created_at', date('Y-m-d'))
             ->with('details.produit')
             ->where('statut', 'valide')
-            ->sum('quantite');
+            ->get()
+            ->sum(function ($commande) {
+                return $commande->details->sum('quantite');
+            });
             return response()->json(['nombre_produits_vendus' => $nombreProduitsVendus], 200);
         } catch (\Throwable $th) {
             return response()->json([

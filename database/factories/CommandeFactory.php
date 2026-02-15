@@ -27,7 +27,7 @@ class CommandeFactory extends Factory
             'total' => $this->faker->numberBetween(1000, 300000),
             'statut' => $this->faker->randomElement($statuts),
             'type_vente' => $this->faker->randomElement($types),
-            'date' => $this->faker->dateTimeBetween('-3 months', 'now'),
+            'date' => $this->faker->dateTimeBetween('-1 months', 'now'),
         ];
     }
 }
