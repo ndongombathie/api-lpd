@@ -66,7 +66,7 @@ class DecaissementController extends Controller
             if ($request->filled('cassier_id')) {
                 $query->where('cassier_id', $request->input('cassier_id'));
             }
-            
+
             // Filter by search term if provided
             if ($request->filled('search')) {
                 $search = $request->input('search');
@@ -76,7 +76,7 @@ class DecaissementController extends Controller
                       ->orWhere('statut', 'like', "%{$search}%");
                 });
             }
-            return response()->json($query->paginate(10));
+            return response()->json($query->paginate(8));
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
