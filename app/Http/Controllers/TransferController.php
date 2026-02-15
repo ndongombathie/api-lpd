@@ -15,17 +15,47 @@ class TransferController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         try {
             $transfers = Transfer::with(['produit'])
             ->where('status', 'en_attente')
-            ->orderBy('created_at', 'desc')
-            ->paginate(10);
-            return response()->json($transfers);
+            ->latest();
+
+            if($request->filled('search')){
+                $search = $request->input('search');
+                $transfers->where(function ($q) use ($search) {
+                    $q->where('produit.nom', 'like', "%{$search}%")
+                      ->orWhere('produit.code', 'like', "%{$search}%");
+                });
+            }
+
+            return response()->json($ $transfers->paginate(10));
         } catch (\Throwable $th) {
             return response()->json(['error' => $th->getMessage()], 500);
         }
+    }
+
+
+    public function alltransfert(Request $request){
+      try {
+        $transfers = Transfer::with(['produit'])
+        ->latest();
+
+        # Filter by search term if provided
+        if ($request->filled('search')) {
+          $search = $request->input('search');
+          $transfers->where(function ($q) use ($search) {
+              $q->where('produit.nom', 'like', "%{$search}%")
+              ->orWhere('status', 'like', "%{$search}%")
+                ->orWhere('produit.code', 'like', "%{$search}%");
+          });
+        }
+
+        return response()->json($transfers->paginate(15));
+      } catch (\Throwable $th) {
+        return response()->json(['error' => $th->getMessage()], 500);
+      }
     }
 
 
@@ -119,10 +149,19 @@ class TransferController extends Controller
     }
 
 
-    public function getTransferValide(){
+    public function getTransferValide(Request $request){
       try {
-        $transfers = Transfer::with(['produit'])->where('status', 'valide')->get();
-        return response()->json($transfers);
+        $transfers = Transfer::with(['produit'])->where('status', 'valide')->latest();
+
+        if($request->filled('search')){
+          $search = $request->input('search');
+          $transfers->where(function ($q) use ($search) {
+              $q->where('produit.nom', 'like', "%{$search}%")
+                ->orWhere('produit.code', 'like', "%{$search}%")
+                ->orWhere('created_at', 'like', "%{$search}%");
+          });
+        }
+        return response()->json($transfers->paginate(15));
       } catch (\Throwable $th) {
         return response()->json(['error' => $th->getMessage()], 500);
       }
@@ -132,27 +171,43 @@ class TransferController extends Controller
     /**
      * Get products below stock threshold
      */
-    public function produitsSousSeuil()
+    public function produitsSousSeuil(Request $request)
     {
         try {
             $transfers = Transfer::with(['produit'])
                 ->where('status', 'valide')
                 ->whereRaw('quantite <= seuil')
-                ->paginate(20);
-            return response()->json($transfers);
+                ->latest();
+
+            if($request->filled('search')){
+                $search = $request->input('search');
+                $transfers->where(function ($q) use ($search) {
+                    $q->where('produit.nom', 'like', "%{$search}%")
+                      ->orWhere('produit.code', 'like', "%{$search}%");
+                });
+            }
+            return response()->json($transfers->paginate(20));
         } catch (\Throwable $th) {
             return response()->json(['error' => $th->getMessage()], 500);
         }
     }
 
-    public function produitsRupture()
+    public function produitsRupture(Request $request)
     {
         try {
             $transfers = Transfer::with(['produit'])
                 ->where('status', 'valide')
                 ->whereRaw('quantite <= 0')
-                ->paginate(20);
-            return response()->json($transfers);
+                ->latest();
+
+            if($request->filled('search')){
+                $search = $request->input('search');
+                $transfers->where(function ($q) use ($search) {
+                    $q->where('produit.nom', 'like', "%{$search}%")
+                      ->orWhere('produit.code', 'like', "%{$search}%");
+                });
+            }
+            return response()->json($transfers->paginate(20));
         } catch (\Throwable $th) {
             return response()->json(['error' => $th->getMessage()], 500);
         }
