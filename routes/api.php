@@ -102,7 +102,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('decaissements', DecaissementController::class);
     Route::get('decaissements-attente', [DecaissementController::class, 'getDecaissementsEnAttente']);
     Route::put('decaissements/{decaissement}/statut', [DecaissementController::class, 'updateStatusDecaissement']);
-    Route::get('decaissements', [DecaissementController::class, 'getDecaissements']);
+    Route::get('decaissements-all', [DecaissementController::class, 'getDecaissements']);
 
     // Dashboard caissier (optimisé côté backend)
     Route::get('caissier/dashboard/stats', [CaissierDashboardController::class, 'stats']);
