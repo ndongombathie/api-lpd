@@ -28,7 +28,11 @@ class TransferController extends Controller
                     $q->whereHas('produit', function ($sub) use ($search) {
                         $sub->where('nom', 'like', "%{$search}%")
                             ->orWhere('code', 'like', "%{$search}%");
-                    })->orWhere('created_at', 'like', "%{$search}%");
+                    })
+                    ->orWhere('quantite', 'like', "%{$search}%")
+                    ->orWhere('seuil', 'like', "%{$search}%")
+                    ->orWhere('nombre_carton', 'like', "%{$search}%")
+                    ->orWhere('created_at', 'like', "%{$search}%");
                 });
             }
 
@@ -51,7 +55,11 @@ class TransferController extends Controller
               $q->whereHas('produit', function ($sub) use ($search) {
                   $sub->where('nom', 'like', "%{$search}%")
                       ->orWhere('code', 'like', "%{$search}%");
-              })->orWhere('created_at', 'like', "%{$search}%");
+              })
+              ->orWhere('quantite', 'like', "%{$search}%")
+            ->orWhere('seuil', 'like', "%{$search}%")
+            ->orWhere('nombre_carton', 'like', "%{$search}%")
+              ->orWhere('created_at', 'like', "%{$search}%");
           });
         }
 
@@ -88,11 +96,27 @@ class TransferController extends Controller
         }
     }
 
-    public function produitsDisponibles()
+    public function produitsDisponibles(Request $request)
     {
         try {
-            $transfers = Transfer::with(['produit'])->where('status', 'valide')->paginate(20);
-            return response()->json($transfers);
+            $transfers = Transfer::with(['produit'])->where('status', 'valide')
+            ->latest();
+            
+            if($request->filled('search')){
+                $search = $request->input('search');
+                $transfers->where(function ($q) use ($search) {
+                    $q->whereHas('produit', function ($sub) use ($search) {
+                        $sub->where('nom', 'like', "%{$search}%")
+                            ->orWhere('code', 'like', "%{$search}%");
+                    })
+                    ->orWhere('quantite', 'like', "%{$search}%")
+                    ->orWhere('seuil', 'like', "%{$search}%")
+                    ->orWhere('nombre_carton', 'like', "%{$search}%")
+                    ->orWhere('created_at', 'like', "%{$search}%");
+                });
+            }
+
+            return response()->json($transfers->paginate(10));
         } catch (\Throwable $th) {
             return response()->json(['error' => $th->getMessage()], 500);
         }
@@ -110,7 +134,11 @@ class TransferController extends Controller
                     $q->whereHas('produit', function ($sub) use ($search) {
                         $sub->where('nom', 'like', "%{$search}%")
                             ->orWhere('code', 'like', "%{$search}%");
-                    })->orWhere('created_at', 'like', "%{$search}%");
+                    })
+                    ->orWhere('quantite', 'like', "%{$search}%")
+                    ->orWhere('seuil', 'like', "%{$search}%")
+                    ->orWhere('nombre_carton', 'like', "%{$search}%")
+                    ->orWhere('created_at', 'like', "%{$search}%");
                 });
             }
             $transfers->each(function($transfer) {
