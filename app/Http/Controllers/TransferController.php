@@ -26,6 +26,7 @@ class TransferController extends Controller
                 $search = $request->input('search');
                 $transfers->where(function ($q) use ($search) {
                     $q->where('produit.nom', 'like', "%{$search}%")
+                      ->orWhere('created_at', 'like', "%{$search}%")
                       ->orWhere('produit.code', 'like', "%{$search}%");
                 });
             }
