@@ -56,7 +56,8 @@ class TransferController extends Controller
                   $sub->where('nom', 'like', "%{$search}%")
                       ->orWhere('code', 'like', "%{$search}%");
               })
-              ->orWhere('quantite', 'like', "%{$search}%")
+            ->orWhere('status', 'like', "%{$search}%")
+            ->orWhere('quantite', 'like', "%{$search}%")
             ->orWhere('seuil', 'like', "%{$search}%")
             ->orWhere('nombre_carton', 'like', "%{$search}%")
               ->orWhere('created_at', 'like', "%{$search}%");
@@ -101,7 +102,7 @@ class TransferController extends Controller
         try {
             $transfers = Transfer::with(['produit'])->where('status', 'valide')
             ->latest();
-            
+
             if($request->filled('search')){
                 $search = $request->input('search');
                 $transfers->where(function ($q) use ($search) {
