@@ -5,11 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\Commande;
 use App\Models\Paiement;
 use App\Models\Facture;
+use App\Models\DetailCommande;
+use App\Models\StockBoutique;
 use App\Models\MouvementStock;
 use App\Events\PaiementCree;
 use App\Events\FactureCree;
 use App\Events\StockRupture;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Models\Transfer;
 use App\Models\HistoriqueVente;
 use Illuminate\Support\Facades\Log;
@@ -23,20 +26,14 @@ use Illuminate\Support\Facades\Auth;
 class PaiementController extends Controller
 {
     protected $historique;
-
-    public function __construct(HistoriqueVenteController $historique)
-    {
-        $this->historique = $historique;
+    public function __construct(HistoriqueVenteController $historique) {
+      $this->historique=$historique;
     }
 
-    // =========================================================
-    // 📄 Liste des paiements d'une commande
-    // =========================================================
     public function index(string $commandeId)
     {
-        return Paiement::where('commande_id', $commandeId)
-            ->orderBy('date')
-            ->get();
+        $commande = Commande::findOrFail($commandeId);
+        return Paiement::where('commande_id', $commande->id)->orderBy('date')->get();
     }
 
 
@@ -151,41 +148,13 @@ class PaiementController extends Controller
         }
 
 
-        // ❌ Interdire de dépasser le total
-        if ($nouveauTotal > $commande->total) {
-            return response()->json([
-                'message' => 'Le montant dépasse le total de la commande.'
-            ], 422);
-        }
+            $totalPaye = Paiement::where('commande_id', $commande->id)->sum('montant');
+            $reste = max(0, $commande->total - $totalPaye - $data['montant']);
 
-        // 💾 Enregistrer le paiement
-        $paiement = Paiement::create([
-            'commande_id' => $commande->id,
-            'montant' => $data['montant'],
-            'type_paiement' => $data['type_paiement'],
-            'date' => now(),
-            'reste_du' => max(0, $commande->total - $nouveauTotal),
-        ]);
-
-        event(new PaiementCree($paiement));
-
-        // ===========================
-        // 🧠 Moteur officiel du statut
-        // ===========================
-        $ancienStatut = $commande->statut;
-        $commande->recalcStatut();   // ← seule source de vérité
-
-        // ===========================
-        // 🧾 Facture + stock uniquement
-        // quand on passe à SOLDEE
-        // ===========================
-        if ($ancienStatut !== 'soldee' && $commande->statut === 'soldee') {
-
-            // 🧾 Créer la facture
-            $facture = Facture::create([
+            $paiement = Paiement::create([
                 'commande_id' => $commande->id,
-                'total' => $commande->total,
-                'mode_paiement' => $data['type_paiement'],
+                'montant' => $data['montant'],
+                'type_paiement' => $data['type_paiement'],
                 'date' => now(),
                 'reste_du' => $reste,
                 'caissier_id' => Auth::user()->id ?? $commande->vendeur_id, // Fallback to vendeur if no auth user
@@ -204,9 +173,13 @@ class PaiementController extends Controller
             if ($reste <= 0) {
                 $commande->update(['statut' => 'payee']);
 
-                $stock = Transfer::where('boutique_id', $boutiqueId)
-                    ->where('produit_id', $detail->produit_id)
-                    ->first();
+                // Créer la facture
+                $facture = Facture::create([
+                    'commande_id' => $commande->id,
+                    'total' => $commande->total,
+                    'mode_paiement' => $paiement->type_paiement,
+                    'date' => now(),
+                ]);
 
                 // Mettre à jour le stock de la boutique et enregistrer le mouvement
                 $commande->loadMissing(['details', 'vendeur']);
@@ -263,10 +236,32 @@ class PaiementController extends Controller
                     Log::warning('Erreur lors de la diffusion de la facture: ' . $e->getMessage());
                 }
             }
+            return $paiement;
+    }
 
-            event(new FactureCree($facture));
-        }
 
-        return response()->json($paiement, 201);
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(string $id)
+    {
+        return Paiement::findOrFail($id);
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, string $id)
+    {
+        abort(405);
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(string $id)
+    {
+        abort(405);
     }
 }
