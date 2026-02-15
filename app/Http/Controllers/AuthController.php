@@ -10,7 +10,7 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    
+
 
     public function login(Request $request)
     {
@@ -57,9 +57,28 @@ class AuthController extends Controller
 
     public function changePassword(Request $request)
     {
-        $request->user()->update([
-            'password' => Hash::make($request->input('password')),
+        $request->validate([
+            'current_password' => ['required'],
+            'new_password' => ['required', 'string', 'min:6', 'confirmed'],
         ]);
-        return response()->json(['message' => 'Mot de passe changé']);
+
+        $user = $request->user();
+
+        // ✅ Vérifier l'ancien mot de passe
+        if (!Hash::check($request->current_password, $user->password)) {
+            return response()->json([
+                'message' => 'Ancien mot de passe incorrect.'
+            ], 422);
+        }
+
+        // ✅ Mise à jour du mot de passe
+        $user->update([
+            'password' => Hash::make($request->new_password),
+        ]);
+
+        return response()->json([
+            'message' => 'Mot de passe changé avec succès.'
+        ]);
     }
+
 }

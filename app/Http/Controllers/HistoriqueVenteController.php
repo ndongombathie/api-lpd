@@ -61,22 +61,13 @@ class HistoriqueVenteController extends Controller
                     'transfers.quantite as stock_initial',
                     DB::raw('SUM(historique_ventes.quantite) as quantite_vendue')
                 )
+               // ->whereDate('historique_ventes.created_at', $date)
                 ->groupBy('transfers.produit_id', 'transfers.quantite');
-
-
-            if($request->filled('date_debut')) {
-                $query->whereDate('historique_ventes.date', '>=', $request->date_debut);
-            }
-
-            if ($request->filled('date_fin')) {
-                $query->whereDate('historique_ventes.date', '<=', $request->date_fin);
-            }
-            
-            $produitsVendus = $query->paginate(15);
-
+            $produitsVendus = $query->paginate(10);
+            // Ajouter la colonne écart (stock_initial - quantite_vendue)
             $produitsVendus->getCollection()->transform(function ($produit) {
                 $produit->ecart = $produit->stock_initial - $produit->quantite_vendue;
-                $produit->produit=Produit::query()->with('entreees_sorties_boutique')->where('id',$produit->produit_id)->get()->first();
+                $produit->produit=Produit::query()->with('entreees_sorties')->where('id',$produit->produit_id)->get()->first();
                 $produit->total_vendu=$produit->quantite_vendue*$produit->produit->prix_unite_carton;
                 $produit->total_resant=($produit->stock_initial-$produit->quantite_vendue)*$produit->produit->prix_unite_carton > 0 ? ($produit->stock_initial-$produit->quantite_vendue)*$produit->produit->prix_unite_carton  : 0;
                 return $produit;

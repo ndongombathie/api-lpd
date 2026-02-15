@@ -35,11 +35,25 @@ class Produit extends Model
         'updated_at',
     ];
 
+    // =========================
+    // 🔵 SYSTÈME VENDEUR
+    // =========================
     public function details(): HasMany
     {
         return $this->hasMany(DetailCommande::class);
     }
 
+    // =========================
+    // 🟣 SYSTÈME RESPONSABLE
+    // =========================
+    public function lignesSpeciales(): HasMany
+    {
+        return $this->hasMany(CommandeLigne::class);
+    }
+
+    // =========================
+    // 🔗 COMMUN
+    // =========================
     public function stocks(): HasMany
     {
         return $this->hasMany(StockBoutique::class);

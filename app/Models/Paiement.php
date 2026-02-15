@@ -27,4 +27,30 @@ class Paiement extends Model
     {
         return $this->belongsTo(User::class, 'cassier_id');
     }
+    protected static function booted()
+    {
+        static::creating(function ($paiement) {
+
+            $commande = Commande::find($paiement->commande_id);
+
+            if (!$commande) {
+                throw new \Exception('Commande introuvable.');
+            }
+
+            // 🔒 commande annulée
+            if ($commande->statut === 'annulee') {
+                throw new \Exception(
+                    'Impossible d\'ajouter un paiement sur une commande annulée.'
+                );
+            }
+
+            // 🔒 commande soldée
+            if ($commande->statut === 'soldee') {
+                throw new \Exception(
+                    'Cette commande est déjà soldée.'
+                );
+            }
+        });
+    }
+
 }

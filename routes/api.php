@@ -1,6 +1,9 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Broadcast;
+
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BoutiqueController;
 use App\Http\Controllers\CategorieController;
@@ -11,11 +14,6 @@ use App\Http\Controllers\CommandeController;
 use App\Http\Controllers\PaiementController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\UserController;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Broadcast;
-use Illuminate\Support\Facades\Mail;
-use App\Mail\UserCredentialsMail;
 use App\Http\Controllers\HistoriqueVenteController;
 use App\Http\Controllers\TransferController;
 use App\Http\Controllers\DecaissementController;
@@ -26,52 +24,102 @@ use App\Http\Controllers\FondCaisseController;
 use App\Http\Controllers\HistoriqueActionController;
 use App\Http\Controllers\MouvementSockController;
 use App\Http\Controllers\InventaireController;
+use App\Http\Controllers\MouvementSockController;
+use App\Http\Controllers\Api\RapportController;
 
+
+/*
+|--------------------------------------------------------------------------
+| AUTH
+|--------------------------------------------------------------------------
+*/
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
 
 Route::middleware('auth:sanctum')->post('/broadcasting/auth', function (Request $request) {
-    $user = $request->user();
-
-    Log::info('Broadcasting Auth Attempt', [
-        'user_id' => $user->id,
-        'user_boutique_id' => $user->boutique_id,
-        'user_role' => $user->role,
-        'socket_id' => $request->input('socket_id'),
-        'channel_name' => $request->input('channel_name'),
-    ]);
-
-    try {
-        $response = Broadcast::auth($request);
-        Log::info('Broadcasting Auth Success', ['response' => $response]);
-        return $response;
-    } catch (\Exception $e) {
-        Log::error('Broadcasting Auth Failed', [
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString(),
-        ]);
-        throw $e;
-    }
+    return Broadcast::auth($request);
 });
 
+/*
+|--------------------------------------------------------------------------
+| API PROTÉGÉE
+|--------------------------------------------------------------------------
+*/
 Route::middleware('auth:sanctum')->group(function () {
 
-    Route::get('montant-total-boutique', [BoutiqueController::class, 'montantTotalBoutique']);
-    Route::get('benefice-boutique', [BoutiqueController::class, 'BeneficeBoutique']);
-
+    // ---------------- PROFIL ----------------
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('mon-profil', [AuthController::class, 'monProfil']);
     Route::put('mon-profil', [AuthController::class, 'updateProfil']);
     Route::put('change-password', [AuthController::class, 'changePassword']);
 
-    Route::apiResource('categories',CategorieController::class);
+    // ---------------- DASHBOARD ----------------
+    Route::get('montant-total-boutique', [BoutiqueController::class, 'montantTotalBoutique']);
+    Route::get('benefice-boutique', [BoutiqueController::class, 'BeneficeBoutique']);
+
+    // ---------------- RESSOURCES ----------------
+    Route::apiResource('categories', CategorieController::class);
     Route::apiResource('produits', ProduitController::class);
     Route::apiResource('clients', ClientController::class);
-    Route::get('clients/{client}/paiements-tranches', [ClientController::class, 'paiementsTranches']);
     Route::apiResource('fournisseurs', FournisseurController::class);
+    Route::apiResource('utilisateurs', UserController::class);
 
+    // ---------------- CLIENTS ----------------
+    Route::get('clients/{client}/paiements-tranches', [ClientController::class, 'paiementsTranches']);
+    Route::get('clients/{client}/paiements', [ClientController::class, 'paiementsTranches']);
+
+    // ---------------- COMMANDES ----------------
+    Route::apiResource('commandes', CommandeController::class);
+    Route::get('commandes/pending', [CommandeController::class, 'pending']);
+    Route::post('commandes/{commande}/valider', [CommandeController::class, 'valider']);
+    Route::post('commandes/{commande}/annuler', [CommandeController::class, 'annuler']);
+
+    // ----- LIGNES (commande_lignes) -----
+    Route::get('commandes/{commande}/lignes', [CommandeController::class, 'lignes']);
+    Route::post('commandes/{commande}/lignes', [CommandeController::class, 'storeLigne']);
+    Route::put('commandes/lignes/{ligne}', [CommandeController::class, 'updateLigne']);
+    Route::delete('commandes/lignes/{ligne}', [CommandeController::class, 'deleteLigne']);
+
+    // ---------------- PAIEMENTS ----------------
+    Route::get('commandes/{commande}/paiements', [PaiementController::class, 'index']);
+    Route::post('commandes/{commande}/paiements', [PaiementController::class, 'store']);
+    Route::put('paiements/{paiement}', [PaiementController::class, 'update']);
+    Route::delete('paiements/{paiement}', [PaiementController::class, 'destroy']);
+
+    // ---------------- HISTORIQUES ----------------
+    Route::get('historique-ventes', [HistoriqueVenteController::class, 'index']);
+    Route::get('total-vente-par-jour', [HistoriqueVenteController::class, 'totalParJour']);
+    Route::get('inventaires-boutique', [HistoriqueVenteController::class, 'inventaireBoutique']);
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | RAPPORTS / AUDIT LOGS
+    |--------------------------------------------------------------------------
+    | Journal d'activité du responsable
+    | Fournisseurs & Clients spéciaux
+    */
+    Route::prefix('rapports')->group(function () {
+
+        // Journal fournisseurs
+        Route::get('fournisseurs', [RapportController::class, 'logsFournisseurs']);
+
+        // Journal clients spéciaux
+        Route::get('clients', [RapportController::class, 'logsClients']);
+
+    });
+
+
+    // ---------------- STOCK ----------------
+    Route::get('stocks', [StockController::class, 'index']);
+    Route::get('stocks/ruptures', [StockController::class, 'ruptures']);
+    Route::post('stocks/transfer', [StockController::class, 'transfer']);
+    Route::post('stocks/reapprovisionner', [StockController::class, 'reapprovisionner']);
+
+    Route::get('produits-ruptures', [ProduitController::class, 'produits_en_rupture']);
+
+    // ---------------- TRANSFERTS ----------------
     Route::get('transfers/boutique/{boutique_id}', [TransferController::class, 'produitsByBoutique']);
-
     Route::get('transfers/valide', [TransferController::class, 'getTransferValide']);
     Route::get('produits-transfer', [TransferController::class, 'index']);
     Route::put('valider-produits-transfer', [TransferController::class, 'valideTransfer']);
@@ -87,7 +135,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('produits-controle-depots', [TransferController::class, 'produitsControleDepots']);
 
 
+    // ---------------- DECAISSEMENTS ----------------
 
+    Route::get('decaissements/export', [DecaissementController::class, 'exportAll']);
 
     # Gestion des historiques de vente
     Route::get('historique-ventes', [HistoriqueVenteController::class, 'index']);
@@ -118,9 +168,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('montant-total-decaissement', [DecaissementController::class, 'montantTotalDecaissement']);
     Route::get('decaissements-attente', [DecaissementController::class, 'getDecaissemenentEnAttente']);
 
-    Route::get('stocks/ruptures', [StockController::class, 'ruptures']);
-    Route::get('produits-ruptures', [ProduitController::class, 'produits_en_rupture']);
-    Route::post('stocks/transfer', [StockController::class, 'transfer']);
 
     Route::post('stocks/reapprovisionner', [StockController::class, 'reapprovisionner']);
 
@@ -156,4 +203,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('enregistrer-versements', EnregistrerVersementController::class);
 
 
+    // ---------------- MOUVEMENTS ----------------
+    Route::apiResource('mouvements-stock', MouvementSockController::class);
 });

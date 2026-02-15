@@ -15,7 +15,7 @@ class Fournisseur extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'nom','contact','adresse','total_achats','date_dernier_livraison',
+        'nom','contact','adresse','total_achats','date_dernier_livraison','type_produit',
     ];
 
     public function produits(): HasMany

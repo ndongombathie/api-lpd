@@ -8,9 +8,10 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class Decaissement extends Model
 {
-    /** @use HasFactory<\Database\Factories\DecaissementFactory> */
-    use HasFactory,HasUuids;
+    use HasFactory, HasUuids;
+
     protected $fillable = [
+        // caissier (existant)
         'user_id',
         'caissier_id',
         'motif',
@@ -19,12 +20,18 @@ class Decaissement extends Model
         'methode_paiement',
         'date',
         'statut',
+         // responsable (ajoutés)
+        'motif_global',
+        'methode_prevue',
+        'date_prevue',
+        'montant_total',
     ];
     protected $casts = [
         'montant' => 'integer',
         'date' => 'date',
+        
     ];
-    
+
     // Ne pas utiliser $appends pour éviter les transformations automatiques
     // Les accesseurs seront utilisés seulement quand nécessaire (pour l'affichage)
 
@@ -68,6 +75,18 @@ class Decaissement extends Model
     {
         $this->attributes['motif'] = strtolower($value);
     }
+
+
+
+// App\Models\Decaissement.php
+public function lignes()
+{
+    return $this->hasMany(
+        \App\Models\DecaissementLigne::class,
+        'decaissement_id', // clé dans decaissement_lignes
+        'id'              // clé dans decaissements
+    );
+}
 
 
 }

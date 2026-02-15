@@ -19,7 +19,7 @@ class DecaissementController extends Controller
     {
         try {
 
-            
+
             $query = Decaissement::query()->with(['user', 'caissier'])
                 ->where('caissier_id', Auth::user()->id)
                 ->latest('updated_at');

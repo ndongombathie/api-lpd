@@ -8,7 +8,6 @@ use App\Models\Produit;
 use App\Events\CommandeValidee;
 use App\Events\CommandeAnnulee;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -35,8 +34,26 @@ class CommandeController extends Controller
             return response()->json($query->paginate(20));
         } catch (\Throwable $th) {
             return response()->json([
-                'message' => 'Erreur lors de la récupération des commandes',
-                'error' => $th->getMessage(),
+                'data' => $table->items(),
+                'current_page' => $table->currentPage(),
+                'last_page' => $table->lastPage(),
+                'total' => $table->total(),
+
+                'stats' => [
+                    'nb' => $statsCollection->count(),
+                    'annulees' => $statsCollection
+                        ->where('statut', 'annulee')
+                        ->count(),
+                    'totalTTC' => $totalTTC,
+                    'totalPaye' => $totalPaye,
+                    'dette' => $dette,
+                ],
+            ]);
+
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'Erreur chargement commandes',
+                'error'   => $e->getMessage(),
             ], 500);
         }
     }
@@ -155,9 +172,6 @@ class CommandeController extends Controller
         }
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(string $id)
     {
         try {

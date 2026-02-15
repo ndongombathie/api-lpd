@@ -78,7 +78,7 @@ class StockController extends Controller
 
                 $this->EntreeSortiesBoutique($produitId,$qte);
                 $this->Sorties($produitId,$qte);
-                
+
                 $src->decrement('quantite', $qte*$produit->unite_carton);
                 $src->decrement('nombre_carton',$qte);
                 $sourceLabel = 'boutique:' . Auth::user()->boutique_id;
