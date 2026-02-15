@@ -25,9 +25,10 @@ class TransferController extends Controller
             if($request->filled('search')){
                 $search = $request->input('search');
                 $transfers->where(function ($q) use ($search) {
-                    $q->where('produit.nom', 'like', "%{$search}%")
-                      ->orWhere('created_at', 'like', "%{$search}%")
-                      ->orWhere('produit.code', 'like', "%{$search}%");
+                    $q->whereHas('produit', function ($sub) use ($search) {
+                        $sub->where('nom', 'like', "%{$search}%")
+                            ->orWhere('code', 'like', "%{$search}%");
+                    })->orWhere('created_at', 'like', "%{$search}%");
                 });
             }
 
@@ -96,10 +97,12 @@ class TransferController extends Controller
         }
     }
 
-    public function produitsControleBoutique()
+    public function produitsControleBoutique(Request $request)
     {
         try {
-            $transfers = Transfer::with(['produit'])->where('status', 'valide')->paginate(15);
+            $transfers = Transfer::with(['produit'])->where('status', 'valide')
+
+            ->paginate(15);
             $transfers->each(function($transfer) {
                 $transfer->produit->etat_stock = $transfer->quantite < $transfer->seuil ? true : false;
                 $transfer->produit->entree_sortie = EntreeSortieBoutique::where('produit_id', $transfer->produit_id)->get()->first();
