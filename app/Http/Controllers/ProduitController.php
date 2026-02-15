@@ -224,7 +224,7 @@ class ProduitController extends Controller
         try {
             $nombreProduitsVendus = Commande::whereDate('created_at', date('Y-m-d'))
             ->with('details.produit')
-            ->where('statut', 'valide')
+            ->where('statut', 'payee')
             ->get()
             ->sum(function ($commande) {
                 return $commande->details->sum('quantite');
