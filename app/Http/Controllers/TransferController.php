@@ -18,7 +18,10 @@ class TransferController extends Controller
     public function index()
     {
         try {
-            $transfers = Transfer::with(['produit'])->where('status', 'en_attente')->paginate(10);
+            $transfers = Transfer::with(['produit'])
+            ->where('status', 'en_attente')
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
             return response()->json($transfers);
         } catch (\Throwable $th) {
             return response()->json(['error' => $th->getMessage()], 500);
@@ -168,7 +171,7 @@ class TransferController extends Controller
             $produit->prix_seuil_gros = $request->prix_seuil_gros;
             $produit->save();
             $transfer->save();
-            
+
             return response()->json($transfer);
       } catch (\Throwable $th) {
         return response()->json(['error' => $th->getMessage()], 500);
