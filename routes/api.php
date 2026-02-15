@@ -75,6 +75,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('transfers/valide', [TransferController::class, 'getTransferValide']);
     Route::get('produits-transfer', [TransferController::class, 'index']);
     Route::put('valider-produits-transfer', [TransferController::class, 'valideTransfer']);
+    Route::put('annuler-produits-transfer', [TransferController::class, 'annulerTransfer']);
     Route::get('produits-disponibles-boutique', [TransferController::class, 'produitsDisponibles']);
     #dramé
     Route::get('nombre-produits-total', [TransferController::class, 'nombreProduits']);
