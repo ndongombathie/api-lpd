@@ -64,7 +64,7 @@ class TransferController extends Controller
           });
         }
 
-        return response()->json($transfers->paginate(15));
+        return response()->json($transfers->paginate(10));
       } catch (\Throwable $th) {
         return response()->json(['error' => $th->getMessage()], 500);
       }
@@ -146,7 +146,7 @@ class TransferController extends Controller
                 $transfer->produit->etat_stock = $transfer->quantite < $transfer->seuil ? true : false;
                 $transfer->produit->entree_sortie = EntreeSortieBoutique::where('produit_id', $transfer->produit_id)->get()->first();
             });
-            return response()->json($transfers->paginate(15));
+            return response()->json($transfers->paginate(10));
         } catch (\Throwable $th) {
             return response()->json(['error' => $th->getMessage()], 500);
         }
@@ -169,7 +169,7 @@ class TransferController extends Controller
     public function produitsControleDepots()
     {
         try {
-            $produits = Produit::with(['entreees_sorties','fournisseur'])->paginate(15);
+            $produits = Produit::with(['entreees_sorties','fournisseur'])->paginate(10);
             $produits->each(function($produit) {
                 $produit->etat_stock = $produit->quantite < $produit->stock_seuil ? true : false;
             });
@@ -205,7 +205,7 @@ class TransferController extends Controller
               })->orWhere('created_at', 'like', "%{$search}%");
           });
         }
-        return response()->json($transfers->paginate(15));
+        return response()->json($transfers->paginate(10));
       } catch (\Throwable $th) {
         return response()->json(['error' => $th->getMessage()], 500);
       }
@@ -232,7 +232,7 @@ class TransferController extends Controller
                     })->orWhere('created_at', 'like', "%{$search}%");
                 });
             }
-            return response()->json($transfers->paginate(20));
+            return response()->json($transfers->paginate(10));
         } catch (\Throwable $th) {
             return response()->json(['error' => $th->getMessage()], 500);
         }
@@ -255,7 +255,7 @@ class TransferController extends Controller
                     })->orWhere('created_at', 'like', "%{$search}%");
                 });
             }
-            return response()->json($transfers->paginate(20));
+            return response()->json($transfers->paginate(10));
         } catch (\Throwable $th) {
             return response()->json(['error' => $th->getMessage()], 500);
         }
