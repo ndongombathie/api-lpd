@@ -130,7 +130,7 @@ class StockController extends Controller
     {
         try {
             $validated = $request->validate([
-                'transfer_id' => 'required|uuid|exists:transfers,id',
+                'transfer_id' => 'required|uuid|exists:transfert_en_attentes,id',
             ]);
             $id = $validated['transfer_id'];
 
@@ -150,7 +150,7 @@ class StockController extends Controller
 
             // Restaurer le stock boutique
             $src = StockBoutique::firstOrCreate([
-                'boutique_id' => $boutiqueId,
+                'boutique_id' => Auth::user()->boutique_id,
                 'produit_id'  => $transfer->produit_id,
             ]);
             $src->increment('quantite', $transfer->quantite);

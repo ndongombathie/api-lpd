@@ -55,13 +55,13 @@ class HistoriqueVenteController extends Controller
             //dd($request);
             // Récupérer les produits vendus à la date donnée avec la quantité totale vendue
             $query = DB::table('historique_ventes')
-                ->join('transfers', 'historique_ventes.produit_id', '=', 'transfers.produit_id')
+                ->join('transfert_en_attentes', 'historique_ventes.produit_id', '=', 'transfert_en_attentes.produit_id')
                 ->select(
-                    'transfers.produit_id',
-                    'transfers.quantite as stock_initial',
+                    'transfert_en_attentes.produit_id',
+                    'transfert_en_attentes.quantite as stock_initial',
                     DB::raw('SUM(historique_ventes.quantite) as quantite_vendue')
                 )
-                ->groupBy('transfers.produit_id', 'transfers.quantite');
+                ->groupBy('transfert_en_attentes.produit_id', 'transfert_en_attentes.quantite');
 
 
             if($request->filled('date_debut')) {
@@ -148,14 +148,14 @@ class HistoriqueVenteController extends Controller
         try {
             // Récupérer les produits vendus à la date donnée avec la quantité totale vendue
             $query = DB::table('historique_ventes')
-                ->join('transfers', 'historique_ventes.produit_id', '=', 'transfers.produit_id')
+                ->join('transfert_en_attentes', 'historique_ventes.produit_id', '=', 'transfert_en_attentes.produit_id')
                 ->select(
-                    'transfers.produit_id',
-                    'transfers.quantite as stock_initial',
+                    'transfert_en_attentes.produit_id',
+                    'transfert_en_attentes.quantite as stock_initial',
                     DB::raw('SUM(historique_ventes.quantite) as quantite_vendue')
                 )
                // ->whereDate('historique_ventes.created_at', $date)
-                ->groupBy('transfers.produit_id', 'transfers.quantite');
+                ->groupBy('transfert_en_attentes.produit_id', 'transfert_en_attentes.quantite');
             $produitsVendus = $query->paginate($perPage);
             // Ajouter la colonne écart (stock_initial - quantite_vendue)
             $produitsVendus->getCollection()->transform(function ($produit) {
