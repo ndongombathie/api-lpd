@@ -3,7 +3,7 @@
 namespace App\Policies;
 
 use App\Models\User;
-use App\Models\transfertEnAttente;
+use App\Models\TransfertEnAttente;
 use Illuminate\Auth\Access\Response;
 
 class TransfertEnAttentePolicy
@@ -19,7 +19,7 @@ class TransfertEnAttentePolicy
     /**
      * Determine whether the user can view the model.
      */
-    public function view(User $user, transfertEnAttente $transfertEnAttente): bool
+    public function view(User $user, TransfertEnAttente $TransfertEnAttente): bool
     {
         return false;
     }
@@ -35,7 +35,7 @@ class TransfertEnAttentePolicy
     /**
      * Determine whether the user can update the model.
      */
-    public function update(User $user, transfertEnAttente $transfertEnAttente): bool
+    public function update(User $user, TransfertEnAttente $TransfertEnAttente): bool
     {
         return false;
     }
@@ -43,7 +43,7 @@ class TransfertEnAttentePolicy
     /**
      * Determine whether the user can delete the model.
      */
-    public function delete(User $user, transfertEnAttente $transfertEnAttente): bool
+    public function delete(User $user, TransfertEnAttente $TransfertEnAttente): bool
     {
         return false;
     }
@@ -51,7 +51,7 @@ class TransfertEnAttentePolicy
     /**
      * Determine whether the user can restore the model.
      */
-    public function restore(User $user, transfertEnAttente $transfertEnAttente): bool
+    public function restore(User $user, TransfertEnAttente $TransfertEnAttente): bool
     {
         return false;
     }
@@ -59,7 +59,7 @@ class TransfertEnAttentePolicy
     /**
      * Determine whether the user can permanently delete the model.
      */
-    public function forceDelete(User $user, transfertEnAttente $transfertEnAttente): bool
+    public function forceDelete(User $user, TransfertEnAttente $TransfertEnAttente): bool
     {
         return false;
     }

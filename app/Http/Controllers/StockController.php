@@ -12,7 +12,7 @@ use App\Models\EntreeSortie;
 use App\Models\EntreeSortieBoutique;
 use App\Models\HistoriqueAction;
 use App\Models\Transfer;
-use App\Models\transfertEnAttente;
+use App\Models\TransfertEnAttente;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -73,7 +73,7 @@ class StockController extends Controller
                     'nombre_carton' => $qte,
                 ]);
 
-                transfertEnAttente::Create([
+                TransfertEnAttente::Create([
                     'produit_id'  => $produitId,
                     'quantite' => $qte*$produit->unite_carton, // provide a default value for the NOT NULL column
                     'nombre_carton' => $qte,
@@ -134,7 +134,7 @@ class StockController extends Controller
             ]);
             $id = $validated['transfer_id'];
 
-            $transfer = transfertEnAttente::findOrFail($id);
+            $transfer = TransfertEnAttente::findOrFail($id);
             if ($transfer->status != 'en_attente') {
                 abort(422, 'Transfert non en attente');
             }
