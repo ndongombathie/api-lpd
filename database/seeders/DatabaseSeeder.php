@@ -69,7 +69,7 @@ class DatabaseSeeder extends Seeder
         Client::factory()->count(200)->create();
         Fournisseur::factory()->count(50)->create();
         Transfer::factory()->count(2000)->create();
-        TransfertEnAttente::factory()->count(1000)->create();
+        TransfertEnAttente::factory()->count(100)->create();
 
 
         // Stock initial par boutique
