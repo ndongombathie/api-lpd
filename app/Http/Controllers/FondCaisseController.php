@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\fondCaisse;
 use App\Http\Requests\StorefondCaisseRequest;
 use App\Http\Requests\UpdatefondCaisseRequest;
+use App\Models\CaissierCaisseJournal;
 
 class FondCaisseController extends Controller
 {
@@ -31,6 +32,10 @@ class FondCaisseController extends Controller
         try {
             $request['date'] = now()->format('Y-m-d');
             $fondCaisse = fondCaisse::create($request->validated());
+            CaissierCaisseJournal::updateOrCreate(
+            ['date' => $request['date']],
+            ['fond_ouverture' => $request['montant']]
+        );
             return response()->json($fondCaisse, 201);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
