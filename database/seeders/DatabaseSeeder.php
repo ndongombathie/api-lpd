@@ -22,6 +22,7 @@ use App\Models\HistoriqueAction;
 use App\Models\HistoriqueVente;
 use App\Models\Transfer;
 use App\Models\Inventaire;
+use App\Models\transfertEnAttente;
 
 class DatabaseSeeder extends Seeder
 {
@@ -63,11 +64,12 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // Données de base
-        Categorie::factory()->count(10000)->create();
-        Produit::factory()->count(10000)->create();
-        Client::factory()->count(2000)->create();
-        Fournisseur::factory()->count(5000)->create();
+        Categorie::factory()->count(100)->create();
+        Produit::factory()->count(100)->create();
+        Client::factory()->count(200)->create();
+        Fournisseur::factory()->count(50)->create();
         Transfer::factory()->count(2000)->create();
+        transfertEnAttente::factory()->count(1000)->create();
 
 
         // Stock initial par boutique
@@ -123,16 +125,17 @@ class DatabaseSeeder extends Seeder
         });
 
         // Mouvements de stock
-        MouvementStock::factory()->count(8000)->create();
+        MouvementStock::factory()->count(100)->create();
 
         // Décaisements
-        Decaissement::factory()->count(1000)->create();
-        HistoriqueVente::factory()->count(5000)->create();
-        HistoriqueAction::factory()->count(5000)->create();
-        EntreeSortie::factory()->count(5000)->create();
-        EntreeSortieBoutique::factory()->count(5000)->create();
-        Inventaire::factory()->count(5000)->create();
-        CaissierCaisseJournal::factory()->count(5000)->create();
+        Decaissement::factory()->count(100)->create();
+        HistoriqueVente::factory()->count(100)->create();
+        HistoriqueAction::factory()->count(100)->create();
+        EntreeSortie::factory()->count(100)->create();
+        EntreeSortieBoutique::factory()->count(100)->create();
+        Inventaire::factory()->count(100)->create();
+        CaissierCaisseJournal::factory()->count(100)->create();
+
     }
 
 }

@@ -1,8 +1,12 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use App\Models\EntreeSortieBoutique;
+use App\Models\EntreeSortie;
+use Illuminate\Http\Request;
+use App\Models\Produit;
 use App\Models\transfertEnAttente;
+use App\Models\Transfer;
 use App\Http\Requests\StoretransfertEnAttenteRequest;
 use App\Http\Requests\UpdatetransfertEnAttenteRequest;
 
@@ -11,26 +15,275 @@ class TransfertEnAttenteController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+
+    public function index(Request $request)
     {
-        //
+        try {
+            $transfers = transfertEnAttente::with(['produit'])
+            ->where('status', 'en_attente')
+            ->latest();
+
+            if($request->filled('search')){
+                $search = $request->input('search');
+                $transfers->where(function ($q) use ($search) {
+                    $q->whereHas('produit', function ($sub) use ($search) {
+                        $sub->where('nom', 'like', "%{$search}%")
+                            ->orWhere('code', 'like', "%{$search}%");
+                    })
+                    ->orWhere('quantite', 'like', "%{$search}%")
+                    ->orWhere('seuil', 'like', "%{$search}%")
+                    ->orWhere('nombre_carton', 'like', "%{$search}%")
+                    ->orWhere('created_at', 'like', "%{$search}%");
+                });
+            }
+
+            return response()->json($transfers->paginate(10));
+        } catch (\Throwable $th) {
+            return response()->json(['error' => $th->getMessage()], 500);
+        }
+    }
+
+
+    public function alltransfert(Request $request){
+      try {
+        $transfers = transfertEnAttente::with(['produit'])
+        ->latest();
+
+        # Filter by search term if provided
+        if ($request->filled('search')) {
+          $search = $request->input('search');
+          $transfers->where(function ($q) use ($search) {
+              $q->whereHas('produit', function ($sub) use ($search) {
+                  $sub->where('nom', 'like', "%{$search}%")
+                      ->orWhere('code', 'like', "%{$search}%");
+              })
+            ->orWhere('status', 'like', "%{$search}%")
+            ->orWhere('quantite', 'like', "%{$search}%")
+            ->orWhere('seuil', 'like', "%{$search}%")
+            ->orWhere('nombre_carton', 'like', "%{$search}%")
+              ->orWhere('created_at', 'like', "%{$search}%");
+          });
+        }
+
+        return response()->json($transfers->paginate(10));
+      } catch (\Throwable $th) {
+        return response()->json(['error' => $th->getMessage()], 500);
+      }
+    }
+
+
+    /**
+     * Get the total count of products in transfers.
+     */
+    public function nombreProduits()
+    {
+        try {
+            $count = transfertEnAttente::where('status', 'valide')->count();
+            return response()->json(['total' => $count]);
+        } catch (\Throwable $th) {
+            return response()->json(['error' => $th->getMessage()], 500);
+        }
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Get the total quantity of products in transfers.
      */
-    public function store(StoretransfertEnAttenteRequest $request)
+    public function quantiteTotaleProduit()
     {
-        //
+        try {
+                $totalQuantity = transfertEnAttente::where('status', 'valide')->sum('quantite');
+                return response()->json(['total_quantity' => $totalQuantity]);
+        } catch (\Throwable $th) {
+                return response()->json(['error' => $th->getMessage()], 500);
+        }
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(transfertEnAttente $transfertEnAttente)
+    public function produitsDisponibles(Request $request)
     {
-        //
+        try {
+            $transfers = transfertEnAttente::with(['produit'])->where('status', 'valide')
+            ->latest();
+
+            if($request->filled('search')){
+                $search = $request->input('search');
+                $transfers->where(function ($q) use ($search) {
+                    $q->whereHas('produit', function ($sub) use ($search) {
+                        $sub->where('nom', 'like', "%{$search}%")
+                            ->orWhere('code', 'like', "%{$search}%");
+                    })
+                    ->orWhere('quantite', 'like', "%{$search}%")
+                    ->orWhere('seuil', 'like', "%{$search}%")
+                    ->orWhere('nombre_carton', 'like', "%{$search}%")
+                    ->orWhere('created_at', 'like', "%{$search}%");
+                });
+            }
+
+            return response()->json($transfers->paginate(10));
+        } catch (\Throwable $th) {
+            return response()->json(['error' => $th->getMessage()], 500);
+        }
     }
+
+    public function produitsControleBoutique(Request $request)
+    {
+        try {
+            $transfers = transfertEnAttente::with(['produit'])
+            ->where('status', 'valide')
+            ->latest();
+            if($request->filled('search')){
+                $search = $request->input('search');
+                $transfers->where(function ($q) use ($search) {
+                    $q->whereHas('produit', function ($sub) use ($search) {
+                        $sub->where('nom', 'like', "%{$search}%")
+                            ->orWhere('code', 'like', "%{$search}%");
+                    })
+                    ->orWhere('quantite', 'like', "%{$search}%")
+                    ->orWhere('seuil', 'like', "%{$search}%")
+                    ->orWhere('nombre_carton', 'like', "%{$search}%")
+                    ->orWhere('created_at', 'like', "%{$search}%");
+                });
+            }
+            $transfers->each(function($transfer) {
+                $transfer->produit->etat_stock = $transfer->quantite < $transfer->seuil ? true : false;
+                $transfer->produit->entree_sortie = EntreeSortieBoutique::where('produit_id', $transfer->produit_id)->get()->first();
+            });
+            return response()->json($transfers->paginate(10));
+        } catch (\Throwable $th) {
+            return response()->json(['error' => $th->getMessage()], 500);
+        }
+    }
+
+    public function showMouvementStockProduit($id)
+    {
+        try {
+            //dd($id);
+            $transfer = transfertEnAttente::where('status', 'valide')->where('produit_id', $id)->get()->first();
+            $transfer->produit->etat_stock = $transfer->quantite < $transfer->seuil ? true : false;
+            $transfer->produit->entree_sortie = EntreeSortieBoutique::where('produit_id', $transfer->produit_id)->get()->first();
+
+            return response()->json($transfer);
+        } catch (\Throwable $th) {
+            return response()->json(['error' => $th->getMessage()], 500);
+        }
+    }
+
+    public function produitsControleDepots()
+    {
+        try {
+            $produits = Produit::with(['entreees_sorties','fournisseur'])->paginate(10);
+            $produits->each(function($produit) {
+                $produit->etat_stock = $produit->quantite < $produit->stock_seuil ? true : false;
+            });
+            return response()->json($produits);
+        } catch (\Throwable $th) {
+            return response()->json(['error' => $th->getMessage()], 500);
+        }
+    }
+
+
+    public function getTransferValide(Request $request){
+      try {
+        $transfers = transfertEnAttente::with(['produit'])->where('status', 'valide')->latest();
+
+        if($request->filled('search')){
+          $search = $request->input('search');
+          $transfers->where(function ($q) use ($search) {
+              $q->whereHas('produit', function ($sub) use ($search) {
+                  $sub->where('nom', 'like', "%{$search}%")
+                      ->orWhere('code', 'like', "%{$search}%");
+              })->orWhere('created_at', 'like', "%{$search}%");
+          });
+        }
+        return response()->json($transfers->paginate(10));
+      } catch (\Throwable $th) {
+        return response()->json(['error' => $th->getMessage()], 500);
+      }
+    }
+
+
+    /**
+     * Get products below stock threshold
+     */
+    public function produitsSousSeuil(Request $request)
+    {
+        try {
+            $transfers = transfertEnAttente::with(['produit'])
+                ->where('status', 'valide')
+                ->whereRaw('quantite <= seuil')
+                ->latest();
+
+            if($request->filled('search')){
+                $search = $request->input('search');
+                $transfers->where(function ($q) use ($search) {
+                    $q->whereHas('produit', function ($sub) use ($search) {
+                        $sub->where('nom', 'like', "%{$search}%")
+                            ->orWhere('code', 'like', "%{$search}%");
+                    })->orWhere('created_at', 'like', "%{$search}%");
+                });
+            }
+            return response()->json($transfers->paginate(10));
+        } catch (\Throwable $th) {
+            return response()->json(['error' => $th->getMessage()], 500);
+        }
+    }
+
+    public function produitsRupture(Request $request)
+    {
+        try {
+            $transfers = transfertEnAttente::with(['produit'])
+                ->where('status', 'valide')
+                ->whereRaw('quantite <= 0')
+                ->latest();
+
+            if($request->filled('search')){
+                $search = $request->input('search');
+                $transfers->where(function ($q) use ($search) {
+                    $q->whereHas('produit', function ($sub) use ($search) {
+                        $sub->where('nom', 'like', "%{$search}%")
+                            ->orWhere('code', 'like', "%{$search}%");
+                    })->orWhere('created_at', 'like', "%{$search}%");
+                });
+            }
+            return response()->json($transfers->paginate(10));
+        } catch (\Throwable $th) {
+            return response()->json(['error' => $th->getMessage()], 500);
+        }
+    }
+
+
+    public function valideTransfer(Request $request){
+      try {
+            $transfer = transfertEnAttente::findOrFail($request->id);
+            $transfer->status = 'valide';
+            $transfer->seuil = $request->seuil;
+            $transfer->prix_vente_detail = $request->prix_vente_detail;
+            $transfer->prix_vente_gros = $request->prix_vente_gros;
+            $transfer->prix_seuil_detail = $request->prix_seuil_detail;
+            $transfer->prix_seuil_gros = $request->prix_seuil_gros;
+            $transfer->save();
+
+            return response()->json($transfer);
+      } catch (\Throwable $th) {
+        return response()->json(['error' => $th->getMessage()], 500);
+      }
+    }
+
+
+     public function MontantTotalStock()
+    {
+        try {
+           $total = 0;
+           foreach (transfertEnAttente::where('status', 'valide')->get() as $transfer) {
+            $total += $transfer->quantite * $transfer->prix_vente_detail;
+           }
+           return response()->json(['total' => $total]);
+        } catch (\Throwable $th) {
+            return response()->json(['error' => $th->getMessage()], 500);
+        }
+    }
+
+
+
 
     /**
      * Update the specified resource in storage.

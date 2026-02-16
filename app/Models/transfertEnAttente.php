@@ -19,10 +19,27 @@ class transfertEnAttente extends Model
         'nombre_carton',
         'seuil',
         'status',
+        'prix_unite_carton',
+        'prix_vente_detail',
+        'prix_vente_gros',
+        'prix_seuil_detail',
+        'prix_seuil_gros',
     ];
+
+
 
     public function produit(): BelongsTo
     {
         return $this->belongsTo(Produit::class);
+    }
+
+     public function boutique()
+    {
+        return $this->belongsTo(Boutique::class);
+    }
+
+    public function mouvementStock()
+    {
+        return $this->hasOne(MouvementStock::class);
     }
 }

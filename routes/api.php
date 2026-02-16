@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\UserCredentialsMail;
 use App\Http\Controllers\HistoriqueVenteController;
-use App\Http\Controllers\TransferController;
+use App\Http\Controllers\TransfertEnAttenteController;
 use App\Http\Controllers\DecaissementController;
 use App\Http\Controllers\CaissierDashboardController;
 use App\Http\Controllers\CaissierCaisseJournalController;
@@ -74,23 +74,23 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('clients/{client}/paiements-tranches', [ClientController::class, 'paiementsTranches']);
     Route::apiResource('fournisseurs', FournisseurController::class);
 
-    Route::get('transfers/boutique/{boutique_id}', [TransferController::class, 'produitsByBoutique']);
+    Route::get('transfers/boutique/{boutique_id}', [TransfertEnAttenteController::class, 'produitsByBoutique']);
 
-    Route::get('transfers/valide', [TransferController::class, 'getTransferValide']);
-    Route::get('produits-transfer', [TransferController::class, 'index']);
-    Route::get('all-produits-transfer', [TransferController::class, 'alltransfert']);
-    Route::put('valider-produits-transfer', [TransferController::class, 'valideTransfer']);
+    Route::get('transfers/valide', [TransfertEnAttenteController::class, 'getTransferValide']);
+    Route::get('produits-transfer', [TransfertEnAttenteController::class, 'index']);
+    Route::get('all-produits-transfer', [TransfertEnAttenteController::class, 'alltransfert']);
+    Route::put('valider-produits-transfer', [TransfertEnAttenteController::class, 'valideTransfer']);
     Route::put('annuler-produits-transfer', [StockController::class, 'annulerTransfert']);
-    Route::get('produits-disponibles-boutique', [TransferController::class, 'produitsDisponibles']);
+    Route::get('produits-disponibles-boutique', [TransfertEnAttenteController::class, 'produitsDisponibles']);
     #dramé
-    Route::get('nombre-produits-total', [TransferController::class, 'nombreProduits']);
-    Route::get('quantite-totale-produit', [TransferController::class, 'quantiteTotaleProduit']);
-    Route::get('produits-sous-seuil', [TransferController::class, 'produitsSousSeuil']);
-    Route::get('produits-rupture', [TransferController::class, 'produitsRupture']);
-    Route::get('montant-total-stock', [TransferController::class, 'MontantTotalStock']);
+    Route::get('nombre-produits-total', [TransfertEnAttenteController::class, 'nombreProduits']);
+    Route::get('quantite-totale-produit', [TransfertEnAttenteController::class, 'quantiteTotaleProduit']);
+    Route::get('produits-sous-seuil', [TransfertEnAttenteController::class, 'produitsSousSeuil']);
+    Route::get('produits-rupture', [TransfertEnAttenteController::class, 'produitsRupture']);
+    Route::get('montant-total-stock', [TransfertEnAttenteController::class, 'MontantTotalStock']);
     #dramé
-    Route::get('produits-controle-boutique', [TransferController::class, 'produitsControleBoutique']);
-    Route::get('produits-controle-depots', [TransferController::class, 'produitsControleDepots']);
+    Route::get('produits-controle-boutique', [TransfertEnAttenteController::class, 'produitsControleBoutique']);
+    Route::get('produits-controle-depots', [TransfertEnAttenteController::class, 'produitsControleDepots']);
 
 
 
@@ -167,7 +167,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('fond-caisse', [FondCaisseController::class, 'store']);
 
-    # Gestion des enregistrements de versement
+    # Gestion des enregPtPistrements de versement
     Route::apiResource('enregistrer-versements', EnregistrerVersementController::class);
 
 
