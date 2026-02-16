@@ -39,6 +39,7 @@ class Produit extends Model
     {
         return $this->hasMany(DetailCommande::class);
     }
+    
 
     public function stocks(): HasMany
     {

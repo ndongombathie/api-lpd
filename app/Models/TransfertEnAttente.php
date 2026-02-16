@@ -33,7 +33,7 @@ class TransfertEnAttente extends Model
         return $this->belongsTo(Produit::class);
     }
 
-     public function boutique()
+     public function boutique(): BelongsTo
     {
         return $this->belongsTo(Boutique::class);
     }
