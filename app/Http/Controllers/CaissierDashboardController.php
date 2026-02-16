@@ -137,7 +137,7 @@ class CaissierDashboardController extends Controller
     {
         //$veille = $date->copy()->subDay()->toDateString();
 
-        $rapportVeille = fondCaisse::where('date', $date)
+        $rapportVeille = fondCaisse::whereDate('date', $date)
             ->where('caissier_id', Auth::user()->id)
             ->first();
 
