@@ -6,6 +6,7 @@ use App\Models\fondCaisse;
 use App\Http\Requests\StorefondCaisseRequest;
 use App\Http\Requests\UpdatefondCaisseRequest;
 use App\Models\CaissierCaisseJournal;
+use Carbon\Carbon;
 
 class FondCaisseController extends Controller
 {
@@ -30,7 +31,7 @@ class FondCaisseController extends Controller
     public function store(StorefondCaisseRequest $request)
     {
         try {
-            $request['date'] = now()->format('Y-m-d');
+            $request['date'] = Carbon::today()->format('Y-m-d');
             $fondCaisse = fondCaisse::create($request->validated());
             CaissierCaisseJournal::updateOrCreate(
             ['date' => $request['date']],
