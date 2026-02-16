@@ -6,7 +6,7 @@ use App\Models\Produit;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\transfertEnAttente>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\TransfertEnAttente>
  */
 class TransfertEnAttenteFactory extends Factory
 {

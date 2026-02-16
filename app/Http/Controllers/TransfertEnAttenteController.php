@@ -5,10 +5,10 @@ use App\Models\EntreeSortieBoutique;
 use App\Models\EntreeSortie;
 use Illuminate\Http\Request;
 use App\Models\Produit;
-use App\Models\transfertEnAttente;
+use App\Models\TransfertEnAttente;
 use App\Models\Transfer;
-use App\Http\Requests\StoretransfertEnAttenteRequest;
-use App\Http\Requests\UpdatetransfertEnAttenteRequest;
+use App\Http\Requests\StoreTransfertEnAttenteRequest;
+use App\Http\Requests\UpdateTransfertEnAttenteRequest;
 
 class TransfertEnAttenteController extends Controller
 {
@@ -19,7 +19,7 @@ class TransfertEnAttenteController extends Controller
     public function index(Request $request)
     {
         try {
-            $transfers = transfertEnAttente::with(['produit'])
+            $transfers = TransfertEnAttente::with(['produit'])
             ->where('status', 'en_attente')
             ->latest();
 
@@ -46,7 +46,7 @@ class TransfertEnAttenteController extends Controller
 
     public function alltransfert(Request $request){
       try {
-        $transfers = transfertEnAttente::with(['produit'])
+        $transfers = TransfertEnAttente::with(['produit'])
         ->latest();
 
         # Filter by search term if provided
@@ -78,7 +78,7 @@ class TransfertEnAttenteController extends Controller
     public function nombreProduits()
     {
         try {
-            $count = transfertEnAttente::where('status', 'valide')->count();
+            $count = TransfertEnAttente::where('status', 'valide')->count();
             return response()->json(['total' => $count]);
         } catch (\Throwable $th) {
             return response()->json(['error' => $th->getMessage()], 500);
@@ -91,7 +91,7 @@ class TransfertEnAttenteController extends Controller
     public function quantiteTotaleProduit()
     {
         try {
-                $totalQuantity = transfertEnAttente::where('status', 'valide')->sum('quantite');
+                $totalQuantity = TransfertEnAttente::where('status', 'valide')->sum('quantite');
                 return response()->json(['total_quantity' => $totalQuantity]);
         } catch (\Throwable $th) {
                 return response()->json(['error' => $th->getMessage()], 500);
@@ -101,7 +101,7 @@ class TransfertEnAttenteController extends Controller
     public function produitsDisponibles(Request $request)
     {
         try {
-            $transfers = transfertEnAttente::with(['produit'])->where('status', 'valide')
+            $transfers = TransfertEnAttente::with(['produit'])->where('status', 'valide')
             ->latest();
 
             if($request->filled('search')){
@@ -127,7 +127,7 @@ class TransfertEnAttenteController extends Controller
     public function produitsControleBoutique(Request $request)
     {
         try {
-            $transfers = transfertEnAttente::with(['produit'])
+            $transfers = TransfertEnAttente::with(['produit'])
             ->where('status', 'valide')
             ->latest();
             if($request->filled('search')){
@@ -157,7 +157,7 @@ class TransfertEnAttenteController extends Controller
     {
         try {
             //dd($id);
-            $transfer = transfertEnAttente::where('status', 'valide')->where('produit_id', $id)->get()->first();
+            $transfer = TransfertEnAttente::where('status', 'valide')->where('produit_id', $id)->get()->first();
             $transfer->produit->etat_stock = $transfer->quantite < $transfer->seuil ? true : false;
             $transfer->produit->entree_sortie = EntreeSortieBoutique::where('produit_id', $transfer->produit_id)->get()->first();
 
@@ -183,7 +183,7 @@ class TransfertEnAttenteController extends Controller
 
     public function getTransferValide(Request $request){
       try {
-        $transfers = transfertEnAttente::with(['produit'])->where('status', 'valide')->latest();
+        $transfers = TransfertEnAttente::with(['produit'])->where('status', 'valide')->latest();
 
         if($request->filled('search')){
           $search = $request->input('search');
@@ -207,7 +207,7 @@ class TransfertEnAttenteController extends Controller
     public function produitsSousSeuil(Request $request)
     {
         try {
-            $transfers = transfertEnAttente::with(['produit'])
+            $transfers = TransfertEnAttente::with(['produit'])
                 ->where('status', 'valide')
                 ->whereRaw('quantite <= seuil')
                 ->latest();
@@ -230,7 +230,7 @@ class TransfertEnAttenteController extends Controller
     public function produitsRupture(Request $request)
     {
         try {
-            $transfers = transfertEnAttente::with(['produit'])
+            $transfers = TransfertEnAttente::with(['produit'])
                 ->where('status', 'valide')
                 ->whereRaw('quantite <= 0')
                 ->latest();
@@ -253,7 +253,7 @@ class TransfertEnAttenteController extends Controller
 
     public function valideTransfer(Request $request){
       try {
-            $transfer = transfertEnAttente::findOrFail($request->id);
+            $transfer = TransfertEnAttente::findOrFail($request->id);
             $transfer->status = 'valide';
             $transfer->seuil = $request->seuil;
             $transfer->prix_vente_detail = $request->prix_vente_detail;
@@ -273,7 +273,7 @@ class TransfertEnAttenteController extends Controller
     {
         try {
            $total = 0;
-           foreach (transfertEnAttente::where('status', 'valide')->get() as $transfer) {
+           foreach (TransfertEnAttente::where('status', 'valide')->get() as $transfer) {
             $total += $transfer->quantite * $transfer->prix_vente_detail;
            }
            return response()->json(['total' => $total]);
@@ -288,7 +288,7 @@ class TransfertEnAttenteController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdatetransfertEnAttenteRequest $request, transfertEnAttente $transfertEnAttente)
+    public function update(UpdateTransfertEnAttenteRequest $request, TransfertEnAttente $TransfertEnAttente)
     {
         //
     }
@@ -296,7 +296,7 @@ class TransfertEnAttenteController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(transfertEnAttente $transfertEnAttente)
+    public function destroy(TransfertEnAttente $TransfertEnAttente)
     {
         //
     }

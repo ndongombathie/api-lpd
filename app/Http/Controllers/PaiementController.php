@@ -168,7 +168,7 @@ class PaiementController extends Controller
             try {
             event(new PaiementCree($paiement));
             } catch (\Exception $e) {
-                // Log l'erreur mais ne bloque pas l'opération
+                // Log l'errTransfereeur mais ne bloque pas l'opération
                 Log::warning('Erreur lors de la diffusion du paiement: ' . $e->getMessage());
             }
 
@@ -193,10 +193,11 @@ class PaiementController extends Controller
                 // Traiter chaque détail avec gestion d'erreur individuelle
                 foreach ($commande->details as $detail) {
                     try {
+
                     // Décrémenter le stock de la boutique pour chaque produit
-                    $stock = Transfer::where('boutique_id', $boutiqueId)
-                        ->where('produit_id', $detail->produit_id)
+                    $stock = TransfertEnAttente::where('produit_id', $detail->produit_id)
                         ->first();
+
                     if ($stock) {
                         $stock->update(['quantite' => max(0, $stock->quantite - $detail->quantite)]);
                         if ($stock->quantite <= 0) {
