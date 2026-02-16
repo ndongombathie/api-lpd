@@ -22,7 +22,7 @@ use App\Models\HistoriqueAction;
 use App\Models\HistoriqueVente;
 use App\Models\Transfer;
 use App\Models\Inventaire;
-use App\Models\transfertEnAttente;
+use App\Models\TransfertEnAttente;
 
 class DatabaseSeeder extends Seeder
 {
@@ -69,7 +69,7 @@ class DatabaseSeeder extends Seeder
         Client::factory()->count(200)->create();
         Fournisseur::factory()->count(50)->create();
         Transfer::factory()->count(2000)->create();
-        transfertEnAttente::factory()->count(1000)->create();
+        TransfertEnAttente::factory()->count(1000)->create();
 
 
         // Stock initial par boutique
