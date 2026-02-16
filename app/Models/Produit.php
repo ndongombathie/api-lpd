@@ -72,4 +72,14 @@ class Produit extends Model
     {
         return $this->hasMany(HistoriqueAction::class);
     }
+
+    public function transferts(): HasMany
+    {
+        return $this->hasMany(Transfer::class);
+    }
+
+    public function transferts_en_attente(): HasMany
+    {
+        return $this->hasMany(TransfertEnAttente::class);
+    }
 }
