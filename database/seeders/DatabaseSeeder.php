@@ -63,11 +63,11 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // Données de base
-        Categorie::factory()->count(50)->create();
-        Produit::factory()->count(50)->create();
-        Client::factory()->count(20)->create();
-        Fournisseur::factory()->count(5)->create();
-        Transfer::factory()->count(100)->create();
+        Categorie::factory()->count(10000)->create();
+        Produit::factory()->count(10000)->create();
+        Client::factory()->count(2000)->create();
+        Fournisseur::factory()->count(5000)->create();
+        Transfer::factory()->count(2000)->create();
 
 
         // Stock initial par boutique
@@ -113,26 +113,26 @@ class DatabaseSeeder extends Seeder
             }
 
             // Statut basé sur paiements
-            if ($reste <= 0 && $total > 0) {
+            /* if ($reste <= 0 && $total > 0) {
                 $commande->statut = 'payee';
             } elseif ($total > 0) {
                 $commande->statut = 'valide';
-            }
+            } */
 
             $commande->save();
         });
 
         // Mouvements de stock
-        MouvementStock::factory()->count(80)->create();
+        MouvementStock::factory()->count(8000)->create();
 
         // Décaisements
-        Decaissement::factory()->count(10)->create();
-        HistoriqueVente::factory()->count(50)->create();
-        HistoriqueAction::factory()->count(50)->create();
-        EntreeSortie::factory()->count(50)->create();
-        EntreeSortieBoutique::factory()->count(50)->create();
-        Inventaire::factory()->count(50)->create();
-        CaissierCaisseJournal::factory()->count(50)->create();
+        Decaissement::factory()->count(1000)->create();
+        HistoriqueVente::factory()->count(5000)->create();
+        HistoriqueAction::factory()->count(5000)->create();
+        EntreeSortie::factory()->count(5000)->create();
+        EntreeSortieBoutique::factory()->count(5000)->create();
+        Inventaire::factory()->count(5000)->create();
+        CaissierCaisseJournal::factory()->count(5000)->create();
     }
 
 }

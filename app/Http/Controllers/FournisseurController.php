@@ -27,9 +27,9 @@ class FournisseurController extends Controller
                     ->orWhere('type_produit', 'like', "%{$search}%");
                 });
             }
-            return $query->paginate(20);
-       }
-        catch (\Throwable $th) {
+
+            return response()->json($query->paginate(10));
+        } catch (\Throwable $th) {
             return response()->json(['error' => $th->getMessage()], 500);
         }
     }

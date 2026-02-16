@@ -20,6 +20,7 @@ use App\Http\Controllers\DecaissementController;
 use App\Http\Controllers\CaissierDashboardController;
 use App\Http\Controllers\CaissierCaisseJournalController;
 use App\Http\Controllers\EnregistrerVersementController;
+use App\Http\Controllers\FactureController;
 use App\Http\Controllers\FondCaisseController;
 use App\Http\Controllers\HistoriqueActionController;
 use App\Http\Controllers\MouvementSockController;
@@ -46,7 +47,12 @@ Route::middleware('auth:sanctum')->post('/broadcasting/auth', function (Request 
 */
 Route::middleware('auth:sanctum')->group(function () {
 
-    // ---------------- PROFIL ----------------
+    Route::get('montant-total-boutique', [BoutiqueController::class, 'montantTotalBoutique']);
+    Route::get('benefice-boutique', [BoutiqueController::class, 'BeneficeBoutique']);
+    Route::get('montant-total-ventes-today', [BoutiqueController::class, 'montantTotalVentesToday']);
+
+
+
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('mon-profil', [AuthController::class, 'monProfil']);
     Route::put('mon-profil', [AuthController::class, 'updateProfil']);
@@ -121,7 +127,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('transfers/boutique/{boutique_id}', [TransferController::class, 'produitsByBoutique']);
     Route::get('transfers/valide', [TransferController::class, 'getTransferValide']);
     Route::get('produits-transfer', [TransferController::class, 'index']);
+    Route::get('all-produits-transfer', [TransferController::class, 'alltransfert']);
     Route::put('valider-produits-transfer', [TransferController::class, 'valideTransfer']);
+    Route::put('annuler-produits-transfer', [StockController::class, 'annulerTransfert']);
     Route::get('produits-disponibles-boutique', [TransferController::class, 'produitsDisponibles']);
     #dramé
     Route::get('nombre-produits-total', [TransferController::class, 'nombreProduits']);
@@ -143,12 +151,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('total-vente-par-jour', [HistoriqueVenteController::class, 'totalParJour']);
     Route::get('inventaires-boutique', [HistoriqueVenteController::class, 'inventaireBoutique']);
 
+    #impression de la facture
+    Route::get('factures/{id}', [FactureController::class, 'show']);
+
 
 
     Route::get('stocks', [StockController::class, 'index']);
     Route::apiResource('decaissements', DecaissementController::class);
     Route::get('decaissements-attente', [DecaissementController::class, 'getDecaissementsEnAttente']);
     Route::put('decaissements/{decaissement}/statut', [DecaissementController::class, 'updateStatusDecaissement']);
+    Route::get('decaissements-all', [DecaissementController::class, 'getDecaissements']);
 
     // Dashboard caissier (optimisé côté backend)
     Route::get('caissier/dashboard/stats', [CaissierDashboardController::class, 'stats']);
@@ -167,10 +179,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('montant-total-decaissement', [DecaissementController::class, 'montantTotalDecaissement']);
     Route::get('decaissements-attente', [DecaissementController::class, 'getDecaissemenentEnAttente']);
 
+    Route::get('stocks/ruptures', [StockController::class, 'ruptures']);
+    Route::get('produits-ruptures', [ProduitController::class, 'produits_en_rupture']);
+    Route::post('stocks/transfer', [StockController::class, 'transfer']);
+    #annulerTransfer
+    Route::post('stocks/transfer/annuler', [StockController::class, 'annulerTransfer']);
 
     Route::post('stocks/reapprovisionner', [StockController::class, 'reapprovisionner']);
 
     Route::apiResource('commandes', CommandeController::class);
+    # les commandes payee aujourduih
+    Route::get('commandes-payees-aujourdhui', [CommandeController::class, 'commandesPayeesAujourdhui']);
     Route::get('commandes-attente', [CommandeController::class, 'getCommandesEnAttente']);
     Route::get('commandes-payees', [CommandeController::class, 'getCommandesValidees']);
     Route::get('commandes-annulees', [CommandeController::class, 'getCommandesAnnulees']);
@@ -180,6 +199,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('commandes/{commande}/paiements', [PaiementController::class, 'store']);
     Route::get('paiements-rapport-journalier', [PaiementController::class, 'rapportJournalier']);
     Route::get('commandes/{commande}/paiements', [PaiementController::class, 'index']);
+    Route::get('nombre-produits-vendus-aujourdhui', [ProduitController::class, 'nombreProduitsVendusAujourdhui']);
     Route::apiResource('utilisateurs', UserController::class);
     Route::post('utilisateurs/{utilisateur}/reset-password', [UserController::class, 'resetPassword']);
 

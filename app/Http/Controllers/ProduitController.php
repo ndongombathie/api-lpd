@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Commande;
 use App\Models\EntreeSortie;
 use App\Models\Fournisseur;
 use App\Models\HistoriqueAction;
@@ -249,6 +250,26 @@ class ProduitController extends Controller
         $entree_sortie->increment('nombre_fois',1);
         $entree_sortie->save();
         return response()->json($produit);
+    }
+
+
+    #nombre de produits total vendu aujourduih
+    public function nombreProduitsVendusAujourdhui(){
+        try {
+            $nombreProduitsVendus = Commande::whereDate('created_at', date('Y-m-d'))
+            ->with('details.produit')
+            ->where('statut', 'payee')
+            ->get()
+            ->sum(function ($commande) {
+                return $commande->details->sum('quantite');
+            });
+            return response()->json(['nombre_produits_vendus' => $nombreProduitsVendus], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Erreur lors de la récupération du nombre de produits vendus aujourd\'hui',
+                'error' => $th->getMessage(),
+            ], 500);
+        }
     }
 }
 

@@ -63,8 +63,18 @@ class HistoriqueVenteController extends Controller
                 )
                // ->whereDate('historique_ventes.created_at', $date)
                 ->groupBy('transfers.produit_id', 'transfers.quantite');
+
+
+            if($request->filled('date_debut')) {
+                $query->whereDate('historique_ventes.date', '>=', $request->date_debut);
+            }
+
+            if ($request->filled('date_fin')) {
+                $query->whereDate('historique_ventes.date', '<=', $request->date_fin);
+            }
+
             $produitsVendus = $query->paginate(10);
-            // Ajouter la colonne écart (stock_initial - quantite_vendue)
+
             $produitsVendus->getCollection()->transform(function ($produit) {
                 $produit->ecart = $produit->stock_initial - $produit->quantite_vendue;
                 $produit->produit=Produit::query()->with('entreees_sorties')->where('id',$produit->produit_id)->get()->first();
