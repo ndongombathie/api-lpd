@@ -33,8 +33,7 @@ class UserController extends Controller
                       ->orWhere('email', 'like', "%{$search}%");
                 });
             }
-            return $query->paginate(20);
-
+            return $query->paginate($request->get('per_page', 20));
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la récupération des utilisateurs',

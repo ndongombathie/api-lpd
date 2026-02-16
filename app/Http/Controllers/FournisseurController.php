@@ -104,4 +104,11 @@ class FournisseurController extends Controller
 
         return response()->noContent();
     }
+    public function stats()
+    {
+        return response()->json([
+            'total' => Fournisseur::count(),
+        ]);
+    }
+
 }

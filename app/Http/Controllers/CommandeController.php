@@ -180,6 +180,9 @@ class CommandeController extends Controller
 
             // récupération non paginée pour stats
             $statsCollection = $statsQuery->get();
+            $commandesParStatut = $statsCollection
+                ->groupBy('statut')
+                ->map(fn ($items) => $items->count());
 
             // ===============================
             // LOGIQUE CLIENTS SPECIAUX
@@ -222,10 +225,15 @@ class CommandeController extends Controller
                     'annulees' => $statsCollection
                         ->where('statut', 'annulee')
                         ->count(),
+
                     'totalTTC' => $totalTTC,
                     'totalPaye' => $totalPaye,
                     'dette' => $dette,
+
+                    // ✅ AJOUT ICI
+                    'commandesParStatut' => $commandesParStatut,
                 ],
+
             ]);
 
         } catch (\Throwable $e) {
@@ -264,8 +272,7 @@ class CommandeController extends Controller
                 'total' => 0,
                 'date' => now(),
             ]);
-            $lastNumero = Commande::max('numero');
-
+            $lastNumero = Commande::lockForUpdate()->max('numero');
             $next = $lastNumero
                 ? ((int) substr($lastNumero, 4)) + 1
                 : 1;

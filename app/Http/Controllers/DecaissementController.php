@@ -14,7 +14,9 @@ class DecaissementController extends Controller
     // ==========================================================
     public function index(Request $request)
     {
-        $query = Decaissement::query()->with('lignes')->latest();
+        $query = Decaissement::query()
+    ->with(['lignes', 'caissier'])
+    ->latest();
 
         // Filtre statut
         if ($request->filled('statut') && $request->statut !== 'tous') {
@@ -67,11 +69,19 @@ class DecaissementController extends Controller
                 'datePrevue' => $date,
                 'montantTotal' => (int) $total,
                 'statut' => $d->statut,
+
+                'caissier' => $d->caissier ? [
+                    'id' => $d->caissier->id,
+                    'nom' => $d->caissier->nom,
+                    'prenom' => "",
+                ] : null,
+
                 'lignes' => $lignes->map(fn ($l) => [
                     'libelle' => $l['libelle'] ?? $l->libelle,
                     'montant' => (int) ($l['montant'] ?? $l->montant),
                 ])->values(),
             ];
+
         });
 
         $paginator->setCollection($mapped);
@@ -115,29 +125,30 @@ class DecaissementController extends Controller
             // -----------------------------
             if ($user->role === 'responsable') {
 
-                $data = $request->validate([
-                    'motifGlobal' => 'required|string|min:3',
-                    'methodePrevue' => 'required|string',
-                    'datePrevue' => 'required|date',
-                    'lignes' => 'required|array|min:1',
-                    'lignes.*.libelle' => 'required|string',
-                    'lignes.*.montant' => 'required|numeric|min:1',
-                ]);
+            $data = $request->validate([
+                'motifGlobal' => 'required|string|min:3',
+                'methodePrevue' => 'required|string',
+                'datePrevue' => 'required|date',
+                'caissier_id' => 'required|exists:users,id',
+                'lignes' => 'required|array|min:1',
+                'lignes.*.montant' => 'required|numeric|min:1',
+            ]);
+
+
 
                 $total = collect($data['lignes'])->sum('montant');
 
                 $decaissement = Decaissement::create([
                     'user_id' => $user->id,
+                    'caissier_id' => $data['caissier_id'],
                     'statut' => 'en_attente',
 
-                    // Compatibilité caisse
                     'motif' => $data['motifGlobal'],
                     'libelle' => 'Demande Responsable',
                     'montant' => $total,
                     'methode_paiement' => $data['methodePrevue'],
                     'date' => $data['datePrevue'],
 
-                    // Responsable
                     'motif_global' => $data['motifGlobal'],
                     'methode_prevue' => $data['methodePrevue'],
                     'date_prevue' => $data['datePrevue'],
@@ -147,12 +158,14 @@ class DecaissementController extends Controller
                 foreach ($data['lignes'] as $ligne) {
                     DB::table('decaissement_lignes')->insert([
                         'decaissement_id' => $decaissement->id,
-                        'libelle' => $ligne['libelle'],
+                        'libelle' => $data['motifGlobal'], // 🔥 auto
                         'montant' => $ligne['montant'],
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);
                 }
+
+                $decaissement->load(['lignes', 'caissier']);
 
                 return response()->json([
                     'decaissement' => $decaissement,
@@ -209,8 +222,9 @@ class DecaissementController extends Controller
     // ==========================================================
     public function exportAll(Request $request)
     {
-        $query = Decaissement::query()->with('lignes')->latest();
-
+        $query = Decaissement::query()
+        ->with(['lignes', 'caissier'])
+        ->latest();
         if ($request->filled('statut') && $request->statut !== 'tous') {
             $query->where('statut', $request->statut);
         }
@@ -238,13 +252,23 @@ class DecaissementController extends Controller
                 $motif = $d->motif_global ?? $d->motif;
                 $date  = $d->date_prevue ?? $d->date;
 
-                $total = $d->montant_total > 0
-                    ? $d->montant_total
-                    : ($d->lignes->sum('montant') ?: $d->montant);
+                $total = (int) (
+                    $d->montant_total
+                    ?? $d->lignes->sum('montant')
+                    ?? $d->montant
+                    ?? 0
+                );
+
 
                 return [
                     'datePrevue' => $date,
                     'motifGlobal' => $motif,
+                    'caissier' => $d->caissier ? [
+                    'id' => $d->caissier->id,
+                    'nom' => $d->caissier->nom,
+                    'prenom' => "",
+                ] : null,
+
                     'methodePrevue' => $d->methode_prevue ?? $d->methode_paiement,
                     'statut' => $d->statut,
                     'montantTotal' => (int) $total,

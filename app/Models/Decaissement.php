@@ -27,7 +27,6 @@ class Decaissement extends Model
         'date_prevue',
         'montant_total',
     ];
-// App\Models\Decaissement.php
 public function lignes()
 {
     return $this->hasMany(
@@ -36,6 +35,14 @@ public function lignes()
         'id'              // clé dans decaissements
     );
 }
+public function caissier()
+{
+    return $this->belongsTo(
+        \App\Models\User::class,
+        'caissier_id'
+    );
+}
+
 
 
 }
