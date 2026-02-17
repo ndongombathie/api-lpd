@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\UserCredentialsMail;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Commande;
 
 class UserController extends Controller
 {
@@ -111,19 +112,99 @@ class UserController extends Controller
 
     public function destroy(string $id)
     {
+            try {
+                $user = User::findOrFail($id);
+                $user->delete();
+                return response()->noContent();
+
+            return response()->json([
+                'message' => 'Utilisateur supprimé avec succès'
+            ], 200);
+            } catch (\Throwable $th) {
+                return response()->json([
+                    'message' => 'Erreur lors de la suppression de l\'utilisateur',
+                    'error' => $th->getMessage()
+                ], 500);
+            }
+    }
+
+    public function vendeursStats()
+    {
         try {
-            $user = User::findOrFail($id);
-            $user->delete();
-            return response()->noContent();
+
+            $vendeurs = User::where('role', 'vendeur')
+                ->with(['ventes' => function ($q) {
+                    $q->where('statut', 'soldee');
+                }])
+                ->get()
+                ->map(function ($u) {
+
+                    $totalVentes = $u->ventes->count();
+                    $montantTotal = $u->ventes->sum('total');
+
+                    return [
+                        'id' => $u->id,
+                        'name' => $u->prenom . ' ' . $u->nom,
+                        'email' => $u->email,
+                        'status' => 'actif',
+                        'stats' => [
+                            'totalVentes' => $totalVentes,
+                            'montantTotal' => $montantTotal,
+                        ]
+                    ];
+                });
+
+            return response()->json($vendeurs);
+
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Erreur récupération vendeurs',
+                'error' => $th->getMessage()
+            ], 500);
+        }
+    }
+public function caissiersStats()
+{
+    try {
+
+        // ✅ TOTAL CAISSE GLOBAL (cartes du haut)
+        $encaissementsTotal = \App\Models\Paiement::sum('montant');
+
+        $caissiers = User::where('role', 'caissier')
+            ->get()
+            ->map(function ($u) {
+
+                // ✅ uniquement décaissements validés
+                $decaissements = \App\Models\Decaissement::where('caissier_id', $u->id)
+                    ->where('statut', 'valide')
+                    ->sum('montant_total');
+
+                return [
+                    'id' => $u->id,
+                    'name' => $u->prenom.' '.$u->nom,
+                    'email' => $u->email,
+                    'status' => 'actif',
+                    'stats' => [
+                        // ⚠️ pas d'encaissement individuel pour l’instant
+                        'encaissementsTotal' => 0,
+                        'decaissementsTotal' => (int) $decaissements,
+                        'soldeNet' => -(int) $decaissements,
+                        'fondOuverture' => 0,
+                    ]
+                ];
+            });
 
         return response()->json([
-            'message' => 'Utilisateur supprimé avec succès'
-        ], 200);
+            'encaissementsGlobal' => (int) $encaissementsTotal,
+            'data' => $caissiers
+        ]);
+
     } catch (\Throwable $th) {
         return response()->json([
-            'message' => 'Erreur lors de la suppression de l\'utilisateur',
+            'message' => 'Erreur récupération caissiers',
             'error' => $th->getMessage()
         ], 500);
     }
 }
+
 }

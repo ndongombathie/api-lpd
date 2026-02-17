@@ -56,6 +56,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('clients', ClientController::class);
     Route::apiResource('fournisseurs', FournisseurController::class);
     Route::apiResource('utilisateurs', UserController::class);
+    Route::get('vendeurs', [UserController::class, 'vendeursStats']);
+    Route::get('/caissiers', [UserController::class, 'caissiersStats']);
+
+
 
     // ---------------- CLIENTS ----------------
     Route::get('clients/{client}/paiements-tranches', [ClientController::class, 'paiementsTranches']);

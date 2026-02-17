@@ -180,6 +180,55 @@ class CommandeController extends Controller
 
             // récupération non paginée pour stats
             $statsCollection = $statsQuery->get();
+            // ===============================
+            // TOP PRODUITS (hors annulées)
+            // ===============================
+            $topProduits = DetailCommande::whereHas('commande', function ($q) use ($request) {
+
+                // même logique que les stats
+                if ($request->filled('type_client') && $request->type_client === 'special') {
+                    $q->whereHas('client', fn($c) =>
+                        $c->where('type_client', 'special')
+                    );
+                }
+
+                if ($request->filled('client_id')) {
+                    $q->where('client_id', $request->client_id);
+                }
+
+                $q->where('statut', '!=', 'annulee');
+
+            })
+            ->selectRaw('produit_id, SUM(quantite) as total_vendu')
+            ->with('produit:id,nom')
+            ->groupBy('produit_id')
+            ->orderByDesc('total_vendu')
+            ->limit(5)
+            ->get();
+
+            $produitsMoinsVendus = DetailCommande::whereHas('commande', function ($q) use ($request) {
+
+                if ($request->filled('type_client') && $request->type_client === 'special') {
+                    $q->whereHas('client', fn($c) =>
+                        $c->where('type_client', 'special')
+                    );
+                }
+
+                if ($request->filled('client_id')) {
+                    $q->where('client_id', $request->client_id);
+                }
+
+                $q->where('statut', '!=', 'annulee');
+
+            })
+            ->selectRaw('produit_id, SUM(quantite) as total_vendu')
+            ->with('produit:id,nom')
+            ->groupBy('produit_id')
+            ->orderBy('total_vendu')
+            ->limit(5)
+            ->get();
+
+
             $commandesParStatut = $statsCollection
                 ->groupBy('statut')
                 ->map(fn ($items) => $items->count());
@@ -232,6 +281,9 @@ class CommandeController extends Controller
 
                     // ✅ AJOUT ICI
                     'commandesParStatut' => $commandesParStatut,
+                    'topProduits' => $topProduits,
+                    'produitsMoinsVendus' => $produitsMoinsVendus,
+
                 ],
 
             ]);
@@ -260,6 +312,20 @@ class CommandeController extends Controller
         ]);
 
         $user = $request->user();
+        $client = null;
+
+        if (!empty($validated['client_id'])) {
+            $client = \App\Models\Client::find($validated['client_id']);
+        }
+
+        if ($client && $client->type_client === 'normal' && $user->role !== 'vendeur') {
+            abort(403, 'Seul un vendeur peut créer une commande pour un client normal.');
+        }
+
+        if ($client && $client->type_client === 'special' && $user->role !== 'responsable') {
+            abort(403, 'Seul un responsable peut créer une commande spéciale.');
+        }
+
         $tva = $validated['tva'] ?? 0.18;
 
         return DB::transaction(function () use ($validated, $user, $tva) {
