@@ -47,7 +47,10 @@ Route::middleware('auth:sanctum')->post('/broadcasting/auth', function (Request 
 */
 Route::middleware('auth:sanctum')->group(function () {
 
+<<<<<<< HEAD
     // ---------------- PROFIL ----------------
+=======
+>>>>>>> ecd951f1fdcf7d355ca2476e489109cb30cd7570
     Route::get('montant-total-boutique', [BoutiqueController::class, 'montantTotalBoutique']);
     Route::get('benefice-boutique', [BoutiqueController::class, 'BeneficeBoutique']);
     Route::get('montant-total-ventes-today', [BoutiqueController::class, 'montantTotalVentesToday']);
@@ -185,6 +188,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('montant-total-decaissement', [DecaissementController::class, 'montantTotalDecaissement']);
     Route::get('decaissements-attente', [DecaissementController::class, 'getDecaissemenentEnAttente']);
 
+    Route::get('stocks/ruptures', [StockController::class, 'ruptures']);
+    Route::get('produits-ruptures', [ProduitController::class, 'produits_en_rupture']);
+    Route::post('stocks/transfer', [StockController::class, 'transfer']);
+    #annulerTransfer
+    Route::post('stocks/transfer/annuler', [StockController::class, 'annulerTransfer']);
 
     Route::post('stocks/reapprovisionner', [StockController::class, 'reapprovisionner']);
 
