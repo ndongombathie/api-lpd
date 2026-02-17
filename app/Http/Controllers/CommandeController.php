@@ -108,7 +108,7 @@ class CommandeController extends Controller
                 'items.*.quantite' => 'required|integer|min:1',
                 'items.*.prix_unitaire' => 'nullable|numeric',
             ]);
-           // return $request->all();
+          
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la validation des données',
