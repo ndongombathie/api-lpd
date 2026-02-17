@@ -17,7 +17,8 @@ class CommandeController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = Commande::with('details', 'client', 'vendeur')
+            $query = Commande::with('details.produit', 'client', 'vendeur')
+               ->orderBy('created_at', 'desc')
                ->where('vendeur_id', Auth::user()->id);
 
             if ($request->filled('date')) {
@@ -32,7 +33,7 @@ class CommandeController extends Controller
                 $query->where('type_vente', $request->type);
             }
 
-            return response()->json($query->paginate(20));
+            return response()->json($query->paginate(10));
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la récupération des commandes',
@@ -47,7 +48,7 @@ class CommandeController extends Controller
                 ->where('statut', 'attente')
                 ->with(['details.produit', 'client', 'vendeur', 'paiements'])
                 ->latest()
-                ->paginate(20));
+                ->paginate(10));
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la récupération des commandes en attente',
@@ -60,11 +61,12 @@ class CommandeController extends Controller
         try {
             return response()->json(Commande::query()
                 ->where('statut', 'payee')
+                ->where('caissier_id', Auth::user()->id)
                 ->with(['details','client','vendeur', 'paiements' => function($q) {
                     $q->orderBy('date', 'desc'); // Trier les paiements par date décroissante
                 }])
                 ->latest()
-                ->paginate(15));
+                ->paginate(10));
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la récupération des commandes validées',
@@ -78,9 +80,10 @@ class CommandeController extends Controller
             return response()->json(Commande::query()
                 ->where('statut', 'annulee')
                 ->where('created_at','>=',now()->subMonth())
+                ->where('caissier_id', Auth::user()->id)
                 ->with(['details.produit', 'client', 'vendeur'])
                 ->latest()
-                ->paginate(20));
+                ->paginate(10));
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la récupération des commandes annulées',
@@ -180,7 +183,9 @@ class CommandeController extends Controller
             $data = $request->validate([
                 'statut' => 'sometimes|in:brouillon,validee,payee,annulee',
             ]);
+
             $commande->update($data);
+
             return $commande->load('details');
         } catch (\Throwable $th) {
             return response()->json([
@@ -231,7 +236,7 @@ class CommandeController extends Controller
     public function annuler(string $id)
     {
         $commande = Commande::findOrFail($id);
-        $commande->update(['statut' => 'annulee']);
+        $commande->update(['statut' => 'annulee','caissier_id'=>Auth::user()->id]);
         $commande->load('details', 'vendeur', 'client');
 
         // Diffuser l'événement (sans bloquer si Reverb n'est pas disponible)
@@ -251,6 +256,21 @@ class CommandeController extends Controller
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de l\'annulation de la commande',
+                'error' => $th->getMessage(),
+            ], 500);
+        }
+    }
+
+    # les commandes payee aujourduih
+    public function commandesPayeesAujourdhui(){
+        try {
+            $commandes = Commande::where('statut', 'payee')
+            ->whereDate('created_at', date('Y-m-d'))
+            ->count();
+            return response()->json($commandes);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Erreur lors de la récupération des commandes payées aujourd\'hui',
                 'error' => $th->getMessage(),
             ], 500);
         }

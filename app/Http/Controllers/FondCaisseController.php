@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\fondCaisse;
 use App\Http\Requests\StorefondCaisseRequest;
 use App\Http\Requests\UpdatefondCaisseRequest;
+use App\Models\CaissierCaisseJournal;
+use Carbon\Carbon;
 
 class FondCaisseController extends Controller
 {
@@ -14,7 +16,9 @@ class FondCaisseController extends Controller
     public function index()
     {
         try {
-            $fondCaisses = fondCaisse::with('caissier')->get();
+            $fondCaisses = fondCaisse::with('caissier')
+            ->orderBy('created_at', 'desc')
+            ->get();
             return response()->json($fondCaisses, 200);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
@@ -27,8 +31,12 @@ class FondCaisseController extends Controller
     public function store(StorefondCaisseRequest $request)
     {
         try {
-            $request['date'] = now()->format('Y-m-d');
+            $request['date'] = Carbon::today()->format('Y-m-d');
             $fondCaisse = fondCaisse::create($request->validated());
+            CaissierCaisseJournal::updateOrCreate(
+            ['date' => $request['date']],
+            ['fond_ouverture' => $request['montant']]
+        );
             return response()->json($fondCaisse, 201);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);

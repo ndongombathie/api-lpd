@@ -15,7 +15,7 @@ class CategorieController extends Controller
     public function index()
     {
         try {
-            return response()->json(Categorie::query()->latest()->paginate(20));
+            return response()->json(Categorie::query()->latest()->paginate(10));
         } catch (\Throwable $th) {
             //throw $th;
         }

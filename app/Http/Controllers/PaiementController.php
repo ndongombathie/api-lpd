@@ -32,8 +32,12 @@ class PaiementController extends Controller
 
     public function index(string $commandeId)
     {
-        $commande = Commande::findOrFail($commandeId);
-        return Paiement::where('commande_id', $commande->id)->orderBy('date')->get();
+        try {
+            $commande = Commande::findOrFail($commandeId);
+            return Paiement::where('commande_id', $commande->id)->orderBy('date')->get();
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
 
@@ -164,7 +168,7 @@ class PaiementController extends Controller
             try {
             event(new PaiementCree($paiement));
             } catch (\Exception $e) {
-                // Log l'erreur mais ne bloque pas l'opération
+                // Log l'errTransfereeur mais ne bloque pas l'opération
                 Log::warning('Erreur lors de la diffusion du paiement: ' . $e->getMessage());
             }
 
@@ -172,6 +176,7 @@ class PaiementController extends Controller
             // Même en cas d'erreur, on retourne le paiement car il est déjà créé
             if ($reste <= 0) {
                 $commande->update(['statut' => 'payee']);
+                $commande->update(['caissier_id' => Auth::user()->id]);
 
                 // Créer la facture
                 $facture = Facture::create([
@@ -188,10 +193,11 @@ class PaiementController extends Controller
                 // Traiter chaque détail avec gestion d'erreur individuelle
                 foreach ($commande->details as $detail) {
                     try {
+
                     // Décrémenter le stock de la boutique pour chaque produit
-                    $stock = Transfer::where('boutique_id', $boutiqueId)
-                        ->where('produit_id', $detail->produit_id)
+                    $stock = TransfertEnAttente::where('produit_id', $detail->produit_id)
                         ->first();
+
                     if ($stock) {
                         $stock->update(['quantite' => max(0, $stock->quantite - $detail->quantite)]);
                         if ($stock->quantite <= 0) {

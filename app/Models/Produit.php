@@ -42,6 +42,7 @@ class Produit extends Model
     {
         return $this->hasMany(DetailCommande::class);
     }
+    
 
     // =========================
     // 🟣 SYSTÈME RESPONSABLE
@@ -85,5 +86,15 @@ class Produit extends Model
     public function historique_actions(): HasMany
     {
         return $this->hasMany(HistoriqueAction::class);
+    }
+
+    public function transferts(): HasMany
+    {
+        return $this->hasMany(Transfer::class);
+    }
+
+    public function transferts_en_attente(): HasMany
+    {
+        return $this->hasMany(TransfertEnAttente::class);
     }
 }

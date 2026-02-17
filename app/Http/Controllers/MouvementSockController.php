@@ -21,7 +21,9 @@ class MouvementSockController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = MouvementStock::query()->with('produit');
+            $query = MouvementStock::query()
+            ->orderBy('created_at', 'desc')
+            ->with('produit');
 
             if ($request->filled('date_debut')) {
                 $query->whereDate('date', '>=', $request->date_debut);
@@ -76,7 +78,7 @@ class MouvementSockController extends Controller
                 $query->whereDate('mouvement_stocks.date', '<=', $request->date_fin);
             }
 
-            $inventaire = $query->paginate(15);
+            $inventaire = $query->paginate(10);
 
             $inventaire->getCollection()->transform(function ($item) {
                 $entrees=EntreeSortie::where('produit_id',$item->id)->get()->first();

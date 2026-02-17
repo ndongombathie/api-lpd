@@ -12,6 +12,6 @@ class TransfertEnAttenteSeeder extends Seeder
      */
     public function run(): void
     {
-        $table = 'transfert_en_attente';
+
     }
 }

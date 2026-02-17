@@ -38,6 +38,7 @@ class CaissierDashboardController extends Controller
         // Tickets traités = commandes passées à "payee" ce jour-là (updated_at)
         $ticketsTraites = (int) Commande::whereRaw('LOWER(statut) = ?', ['payee'])
             ->whereDate('updated_at', $dateStr)
+            ->where('caissier_id', Auth::user()->id)
             ->count();
 
         return response()->json([
@@ -136,7 +137,7 @@ class CaissierDashboardController extends Controller
     {
         //$veille = $date->copy()->subDay()->toDateString();
 
-        $rapportVeille = fondCaisse::where('date', $date)
+        $rapportVeille = fondCaisse::whereDate('date', $date)
             ->where('caissier_id', Auth::user()->id)
             ->first();
 

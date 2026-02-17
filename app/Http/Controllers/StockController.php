@@ -12,6 +12,7 @@ use App\Models\EntreeSortie;
 use App\Models\EntreeSortieBoutique;
 use App\Models\HistoriqueAction;
 use App\Models\Transfer;
+use App\Models\TransfertEnAttente;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -21,7 +22,9 @@ class StockController extends Controller
     public function index()
     {
         try {
-            return StockBoutique::with('produit')->paginate(50);
+            return StockBoutique::with('produit')
+            ->orderBy('created_at', 'desc')
+            ->paginate(50);
         } catch (\Throwable $th) {
             return response()->json(['error' => $th->getMessage()], 500);
         }
@@ -33,7 +36,7 @@ class StockController extends Controller
         return StockBoutique::with('produit')
             ->where('quantite', '<=', 'stock_seuil')
             ->when($boutiqueId, fn($q) => $q->where('boutique_id', $boutiqueId))
-            ->paginate(20);
+            ->paginate(10);
     }
 
     public function transfer(Request $request)
@@ -65,6 +68,12 @@ class StockController extends Controller
 
                 Transfer::Create([
                     'boutique_id' => Auth::user()->boutique_id,
+                    'produit_id'  => $produitId,
+                    'quantite' => $qte*$produit->unite_carton, // provide a default value for the NOT NULL column
+                    'nombre_carton' => $qte,
+                ]);
+
+                TransfertEnAttente::Create([
                     'produit_id'  => $produitId,
                     'quantite' => $qte*$produit->unite_carton, // provide a default value for the NOT NULL column
                     'nombre_carton' => $qte,
@@ -121,11 +130,11 @@ class StockController extends Controller
     {
         try {
             $validated = $request->validate([
-                'transfer_id' => 'required|uuid|exists:transfers,id',
+                'transfer_id' => 'required|uuid|exists:transfert_en_attentes,id',
             ]);
             $id = $validated['transfer_id'];
 
-            $transfer = Transfer::findOrFail($id);
+            $transfer = TransfertEnAttente::findOrFail($id);
             if ($transfer->status != 'en_attente') {
                 abort(422, 'Transfert non en attente');
             }
@@ -141,7 +150,7 @@ class StockController extends Controller
 
             // Restaurer le stock boutique
             $src = StockBoutique::firstOrCreate([
-                'boutique_id' => $boutiqueId,
+                'boutique_id' => Auth::user()->boutique_id,
                 'produit_id'  => $transfer->produit_id,
             ]);
             $src->increment('quantite', $transfer->quantite);
