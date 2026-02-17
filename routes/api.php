@@ -47,10 +47,7 @@ Route::middleware('auth:sanctum')->post('/broadcasting/auth', function (Request 
 */
 Route::middleware('auth:sanctum')->group(function () {
 
-<<<<<<< HEAD
     // ---------------- PROFIL ----------------
-=======
->>>>>>> ecd951f1fdcf7d355ca2476e489109cb30cd7570
     Route::get('montant-total-boutique', [BoutiqueController::class, 'montantTotalBoutique']);
     Route::get('benefice-boutique', [BoutiqueController::class, 'BeneficeBoutique']);
     Route::get('montant-total-ventes-today', [BoutiqueController::class, 'montantTotalVentesToday']);
