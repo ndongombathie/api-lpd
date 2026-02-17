@@ -47,11 +47,7 @@ Route::middleware('auth:sanctum')->post('/broadcasting/auth', function (Request 
 */
 Route::middleware('auth:sanctum')->group(function () {
 
-<<<<<<< HEAD
-    // ---------------- PROFIL ----------------
-=======
->>>>>>> ecd951f1fdcf7d355ca2476e489109cb30cd7570
-    Route::get('montant-total-boutique', [BoutiqueController::class, 'montantTotalBoutique']);
+    //Route::get('montant-total-boutique', [BoutiqueController::class, 'montantTotalBoutique']);
     Route::get('benefice-boutique', [BoutiqueController::class, 'BeneficeBoutique']);
     Route::get('montant-total-ventes-today', [BoutiqueController::class, 'montantTotalVentesToday']);
 
@@ -71,14 +67,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('produits', ProduitController::class);
     Route::apiResource('clients', ClientController::class);
     Route::apiResource('fournisseurs', FournisseurController::class);
-    Route::apiResource('utilisateurs', UserController::class);
+    //Route::apiResource('utilisateurs', UserController::class);
 
     // ---------------- CLIENTS ----------------
     Route::get('clients/{client}/paiements-tranches', [ClientController::class, 'paiementsTranches']);
     Route::get('clients/{client}/paiements', [ClientController::class, 'paiementsTranches']);
 
     // ---------------- COMMANDES ----------------
-    Route::apiResource('commandes', CommandeController::class);
+    //Route::apiResource('commandes', CommandeController::class);
     Route::get('commandes/pending', [CommandeController::class, 'pending']);
     Route::post('commandes/{commande}/valider', [CommandeController::class, 'valider']);
     Route::post('commandes/{commande}/annuler', [CommandeController::class, 'annuler']);
@@ -91,7 +87,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ---------------- PAIEMENTS ----------------
     Route::get('commandes/{commande}/paiements', [PaiementController::class, 'index']);
-    Route::post('commandes/{commande}/paiements', [PaiementController::class, 'store']);
+    //Route::post('commandes/{commande}/paiements', [PaiementController::class, 'store']);
     Route::put('paiements/{paiement}', [PaiementController::class, 'update']);
     Route::delete('paiements/{paiement}', [PaiementController::class, 'destroy']);
 
@@ -120,7 +116,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
     // ---------------- STOCK ----------------
-    Route::get('stocks', [StockController::class, 'index']);
+    //Route::get('stocks', [StockController::class, 'index']);
     Route::get('stocks/ruptures', [StockController::class, 'ruptures']);
     Route::post('stocks/transfer', [StockController::class, 'transfer']);
     Route::post('stocks/reapprovisionner', [StockController::class, 'reapprovisionner']);
