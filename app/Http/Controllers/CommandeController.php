@@ -145,7 +145,7 @@ class CommandeController extends Controller
                     }
 
                     $montantTva = $totalHt * $tva;
-                    $commande->update(['total' => $totalHt + $montantTva]);
+                    $commande->update(['total' => intval($totalHt + $montantTva)]);
                     $commande->load('details', 'vendeur','client');
                     event(new CommandeValidee($commande));
                     return response()->json($commande);
