@@ -148,6 +148,61 @@ class DecaissementController extends Controller
                         'prenom' => $dec->caissier->prenom,
                         'email' => $dec->caissier->email,
                     ] : null,
+    // ==========================================================
+    // 📤 EXPORT COMPLET (toutes les pages, mêmes filtres)
+    // ==========================================================
+    public function exportAll(Request $request)
+    {
+        $query = Decaissement::query()
+        ->with(['lignes', 'caissier'])
+        ->latest();
+        if ($request->filled('statut') && $request->statut !== 'tous') {
+            $query->where('statut', $request->statut);
+        }
+
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(function ($q) use ($s) {
+                $q->where('motif_global', 'like', "%$s%")
+                  ->orWhere('motif', 'like', "%$s%")
+                  ->orWhere('libelle', 'like', "%$s%");
+            });
+        }
+
+        if ($request->filled('start_date')) {
+            $query->whereDate('date_prevue', '>=', $request->start_date);
+        }
+
+        if ($request->filled('end_date')) {
+            $query->whereDate('date_prevue', '<=', $request->end_date);
+        }
+
+        return response()->json(
+            $query->get()->map(function ($d) {
+
+                $motif = $d->motif_global ?? $d->motif;
+                $date  = $d->date_prevue ?? $d->date;
+
+                $total = (int) (
+                    $d->montant_total
+                    ?? $d->lignes->sum('montant')
+                    ?? $d->montant
+                    ?? 0
+                );
+
+
+                return [
+                    'datePrevue' => $date,
+                    'motifGlobal' => $motif,
+                    'caissier' => $d->caissier ? [
+                    'id' => $d->caissier->id,
+                    'nom' => $d->caissier->nom,
+                    'prenom' => "",
+                ] : null,
+
+                    'methodePrevue' => $d->methode_prevue ?? $d->methode_paiement,
+                    'statut' => $d->statut,
+                    'montantTotal' => (int) $total,
                 ];
             });
 
