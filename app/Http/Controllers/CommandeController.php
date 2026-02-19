@@ -127,6 +127,13 @@ class CommandeController extends Controller
                         'total' => 0,
                         'date' => now(),
                     ]);
+                    $lastNumero = Commande::lockForUpdate()->max('numero');
+                    $next = $lastNumero
+                        ? ((int) substr($lastNumero, 4)) + 1
+                        : 1;
+
+                    $commande->numero = 'CMD-' . str_pad($next, 6, '0', STR_PAD_LEFT);
+                    $commande->save();
 
                     $totalHt = 0;
                     foreach ($validated['items'] as $item) {
@@ -148,7 +155,6 @@ class CommandeController extends Controller
                     $commande->load('details', 'vendeur','client');
                     event(new CommandeValidee($commande));
                     return response()->json($commande);
-
 
        }catch (\Throwable $th) {
             return response()->json([
