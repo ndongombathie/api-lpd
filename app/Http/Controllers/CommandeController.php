@@ -33,7 +33,7 @@ class CommandeController extends Controller
                 $query->where('type_vente', $request->type);
             }
 
-            return response()->json($query->paginate(100));
+            return response()->json($query->paginate(10));
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la récupération des commandes',
@@ -124,7 +124,7 @@ class CommandeController extends Controller
                         'client_id' => $validated['client_id'] ?? null,
                         'vendeur_id' => $user->id,
                         'tva_appliquee' => $validated['tva_appliquee'],
-                        'type_vente' => $validated['type_vente'],   
+                        'type_vente' => $validated['type_vente'],
                         'statut' => 'attente',
                         'total' => 0,
                         'date' => now(),
