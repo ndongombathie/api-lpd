@@ -29,7 +29,7 @@ class Decaissement extends Model
     protected $casts = [
         'montant' => 'integer',
         'date' => 'date',
-        
+
     ];
 
     // Ne pas utiliser $appends pour éviter les transformations automatiques
@@ -85,8 +85,7 @@ public function lignes()
         \App\Models\DecaissementLigne::class,
         'decaissement_id', // clé dans decaissement_lignes
         'id'              // clé dans decaissements
-    );
-}
-
+        );
+    }
 
 }

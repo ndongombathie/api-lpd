@@ -13,10 +13,8 @@ return new class extends Migration {
             $table->foreignUuid('decaissement_id')
                 ->constrained('decaissements')
                 ->cascadeOnDelete();
-
             $table->string('libelle');
             $table->bigInteger('montant');
-
             $table->timestamps();
         });
     }

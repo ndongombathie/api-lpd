@@ -55,10 +55,10 @@ class HistoriqueVenteController extends Controller
             //dd($request);
             // Récupérer les produits vendus à la date donnée avec la quantité totale vendue
             $query = DB::table('historique_ventes')
-                ->join('transfers', 'historique_ventes.produit_id', '=', 'transfers.produit_id')
+                ->join('transfert_en_attentes', 'historique_ventes.produit_id', '=', 'transfert_en_attentes.produit_id')
                 ->select(
-                    'transfers.produit_id',
-                    'transfers.quantite as stock_initial',
+                    'transfert_en_attentes.produit_id',
+                    'transfert_en_attentes.quantite as stock_initial',
                     DB::raw('SUM(historique_ventes.quantite) as quantite_vendue')
                 )
                // ->whereDate('historique_ventes.created_at', $date)
@@ -135,41 +135,6 @@ class HistoriqueVenteController extends Controller
         } catch (\Throwable $th) {
             return response()->json(['error' => $th->getMessage()], 500);
         }
-    }
-
-     public function inventaireDepot(Request $request)
-    {
-
-        $validated = $request->validate([
-            'date' => 'nullable|date',
-            'per_page' => 'nullable|integer|min:1|max:200',
-        ]);
-        $date = $validated['date'] ?? Carbon::now()->format('Y-m-d');
-        $perPage = $validated['per_page'] ?? 50;
-        try {
-            // Récupérer les produits vendus à la date donnée avec la quantité totale vendue
-            $query = DB::table('historique_ventes')
-                ->join('transfers', 'historique_ventes.produit_id', '=', 'transfers.produit_id')
-                ->select(
-                    'transfers.produit_id',
-                    'transfers.quantite as stock_initial',
-                    DB::raw('SUM(historique_ventes.quantite) as quantite_vendue')
-                )
-               // ->whereDate('historique_ventes.created_at', $date)
-                ->groupBy('transfers.produit_id', 'transfers.quantite');
-            $produitsVendus = $query->paginate($perPage);
-            // Ajouter la colonne écart (stock_initial - quantite_vendue)
-            $produitsVendus->getCollection()->transform(function ($produit) {
-                $produit->ecart = $produit->stock_initial - $produit->quantite_vendue;
-                $produit->produit=Produit::find($produit->produit_id);
-                return $produit;
-            });
-
-            return response()->json(['date' => $date, 'produits' => $produitsVendus]);
-        } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
-        }
-
     }
 
 

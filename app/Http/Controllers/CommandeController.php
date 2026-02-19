@@ -17,9 +17,9 @@ class CommandeController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = Commande::with('details', 'client', 'vendeur')
-               ->orderBy('created_at', 'desc')
-               ->where('vendeur_id', Auth::user()->id);
+            $query = Commande::with('details.produit', 'client', 'vendeur')
+               ->orderBy('created_at', 'desc');
+               //->where('vendeur_id', Auth::user()->id);
 
             if ($request->filled('date')) {
                 $query->whereDate('date', $request->date);
@@ -33,7 +33,7 @@ class CommandeController extends Controller
                 $query->where('type_vente', $request->type);
             }
 
-            return response()->json($query->paginate(10));
+            return response()->json($query->paginate(100));
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la récupération des commandes',
@@ -102,12 +102,13 @@ class CommandeController extends Controller
             $validated = $request->validate([
                 'client_id' => 'nullable|uuid|exists:clients,id',
                 'type_vente' => 'required|in:detail,gros',
-                'tva' => 'nullable|numeric',
+                'tva_appliquee' => 'required|boolean',
                 'items' => 'required|array|min:1',
                 'items.*.produit_id' => 'required|uuid|exists:produits,id',
                 'items.*.quantite' => 'required|integer|min:1',
                 'items.*.prix_unitaire' => 'nullable|numeric',
             ]);
+
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la validation des données',
@@ -117,12 +118,13 @@ class CommandeController extends Controller
 
         try {
                 $user = $request->user();
-                $tva = $validated['tva'] ?? 0;
+                $tva = $validated['tva_appliquee'] ? 0.18 : 0;
 
                     $commande = Commande::create([
                         'client_id' => $validated['client_id'] ?? null,
                         'vendeur_id' => $user->id,
-                        'type_vente' => $validated['type_vente'],
+                        'tva_appliquee' => $validated['tva_appliquee'],
+                        'type_vente' => $validated['type_vente'],   
                         'statut' => 'attente',
                         'total' => 0,
                         'date' => now(),
@@ -151,7 +153,7 @@ class CommandeController extends Controller
                     }
 
                     $montantTva = $totalHt * $tva;
-                    $commande->update(['total' => $totalHt + $montantTva]);
+                    $commande->update(['total' => intval($totalHt + $montantTva)]);
                     $commande->load('details', 'vendeur','client');
                     event(new CommandeValidee($commande));
                     return response()->json($commande);

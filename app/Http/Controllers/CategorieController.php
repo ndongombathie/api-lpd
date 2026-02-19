@@ -12,12 +12,31 @@ class CategorieController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Response $request)
     {
         try {
-            return response()->json(Categorie::query()->latest()->paginate(10));
+            $query= Categorie::query()
+            ->orderBy('created_at', 'desc')
+            ->latest();
+            if($request->filled('search'))
+            {
+                $search = $request->input('search');
+                $query->where(function ($q) use ($search) {
+                    $q->where('nom', 'like', "%{$search}%");
+                });
+            }
+            return response()->json($query->paginate(10));
         } catch (\Throwable $th) {
             //throw $th;
+        }
+    }
+
+    public function nombreCategorie()
+    {
+        try {
+            return response()->json(Categorie::count());
+        } catch (\Throwable $th) {
+            return response()->json(['message' => $th->getMessage()], 500);
         }
     }
 

@@ -17,7 +17,12 @@ return new class extends Migration
             $table->bigInteger('quantite')->default(0);
             $table->bigInteger('nombre_carton')->default(0);
             $table->bigInteger('seuil')->default(0);
-            $table->enum('status', ['en_attente', 'valide'])->default('en_attente');
+            $table->bigInteger('prix_unite_carton')->default(0);
+            $table->bigInteger('prix_vente_detail')->default(0);
+            $table->bigInteger('prix_vente_gros')->default(0);
+            $table->bigInteger('prix_seuil_detail')->nullable()->default(0);
+            $table->bigInteger('prix_seuil_gros')->nullable()->default(0);
+            $table->enum('status', ['en_attente', 'valide','annuler'])->default('en_attente');
             $table->timestamps();
         });
     }

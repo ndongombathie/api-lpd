@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('fond_caisses', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('caissier_id')->nullable()->foreignId('users')->cascadeOnDelete();
-            $table->date('date')->default(now()->format('Y-m-d'));
+            $table->date('date');
             $table->bigInteger('montant')->default(0);
             $table->timestamps();
         });

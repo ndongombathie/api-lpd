@@ -263,12 +263,20 @@ class ProduitController extends Controller
             ->sum(function ($commande) {
                 return $commande->details->sum('quantite');
             });
-            return response()->json(['nombre_produits_vendus' => $nombreProduitsVendus], 200);
+            return response()->json($nombreProduitsVendus);
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la récupération du nombre de produits vendus aujourd\'hui',
                 'error' => $th->getMessage(),
             ], 500);
+        }
+    }
+
+    public function nombreProduits(){
+        try {
+            return response()->json(Produit::count());
+        } catch (\Throwable $th) {
+            return response()->json(['message' => $th->getMessage()], 500);
         }
     }
 }
