@@ -85,9 +85,7 @@ public function lignes()
         \App\Models\DecaissementLigne::class,
         'decaissement_id', // clé dans decaissement_lignes
         'id'              // clé dans decaissements
-    );
-}
-
-
+        );
+    }
 
 }

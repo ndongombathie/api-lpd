@@ -282,6 +282,32 @@ class TransfertEnAttenteController extends Controller
         }
     }
 
+    #nombre de transferts en attente
+    public function nombreTransferEnAttente(){
+        try {
+            return response()->json(TransfertEnAttente::where('status','en_attente')->count());
+        } catch (\Throwable $th) {
+            return response()->json(['message' => $th->getMessage()], 500);
+        }
+    }
+    #nombre de transfert annuler
+    public function nombreTransfertAnnuler(){
+        try {
+            return response()->json(TransfertEnAttente::where('status','annuler')->count());
+        } catch (\Throwable $th) {
+            return response()->json(['message' => $th->getMessage()], 500);
+        }
+    }
+
+    #liste des transfert annulers
+    public function transfertAnnuler(){
+        try {
+            return response()->json(TransfertEnAttente::where('status','annuler')->paginate(10));
+        } catch (\Throwable $th) {
+            return response()->json(['message' => $th->getMessage()], 500);
+        }
+    }
+
 
 
 

@@ -139,7 +139,7 @@ class StockController extends Controller
                 abort(422, 'Transfert non en attente');
             }
 
-            $transfer->status = 'valide';
+            $transfer->status = 'annuler';
             $transfer->updated_at = now();
             $transfer->save();
 

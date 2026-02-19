@@ -271,5 +271,13 @@ class ProduitController extends Controller
             ], 500);
         }
     }
+
+    public function nombreProduits(){
+        try {
+            return response()->json(Produit::count());
+        } catch (\Throwable $th) {
+            return response()->json(['message' => $th->getMessage()], 500);
+        }
+    }
 }
 

@@ -22,7 +22,7 @@ return new class extends Migration
             $table->bigInteger('prix_vente_gros')->default(0);
             $table->bigInteger('prix_seuil_detail')->nullable()->default(0);
             $table->bigInteger('prix_seuil_gros')->nullable()->default(0);
-            $table->enum('status', ['en_attente', 'valide'])->default('en_attente');
+            $table->enum('status', ['en_attente', 'valide','annuler'])->default('en_attente');
             $table->timestamps();
         });
     }

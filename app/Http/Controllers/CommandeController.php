@@ -33,7 +33,7 @@ class CommandeController extends Controller
                 $query->where('type_vente', $request->type);
             }
 
-            return response()->json($query->paginate(10));
+            return response()->json($query->paginate(100));
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la récupération des commandes',
@@ -108,7 +108,7 @@ class CommandeController extends Controller
                 'items.*.quantite' => 'required|integer|min:1',
                 'items.*.prix_unitaire' => 'nullable|numeric',
             ]);
-          
+
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la validation des données',
@@ -123,7 +123,8 @@ class CommandeController extends Controller
                     $commande = Commande::create([
                         'client_id' => $validated['client_id'] ?? null,
                         'vendeur_id' => $user->id,
-                        'type_vente' => $validated['type_vente'],
+                        'tva_appliquee' => $validated['tva_appliquee'],
+                        'type_vente' => $validated['type_vente'],   
                         'statut' => 'attente',
                         'total' => 0,
                         'date' => now(),
