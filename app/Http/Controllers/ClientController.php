@@ -8,8 +8,24 @@
     use Illuminate\Http\Request;
     use Illuminate\Support\Facades\Auth;
 
+    
     class ClientController extends Controller
     {
+        private function normalizeContact(?string $contact): ?string
+        {
+            if (!$contact) return null;
+
+            // garder uniquement les chiffres
+            $contact = preg_replace('/\D/', '', $contact);
+
+            // retirer indicatif Sénégal si présent
+            if (str_starts_with($contact, '221')) {
+                $contact = substr($contact, -9);
+            }
+
+            return $contact;
+        }
+
         // ============================================================
         // LISTE DES CLIENTS
         public function index(Request $request)
@@ -41,6 +57,10 @@
         // ============================================================
         public function store(Request $request)
         {
+            $request->merge([
+                'contact' => $this->normalizeContact($request->contact),
+            ]);
+
             $isResponsable = Auth::user()->role === 'responsable';
 
             $data = $request->validate([
@@ -100,6 +120,10 @@
         // ============================================================
         public function update(Request $request, string $id)
         {
+            $request->merge([
+                'contact' => $this->normalizeContact($request->contact),
+            ]);
+
             $client = Client::findOrFail($id);
             $isResponsable = Auth::user()->role === 'responsable';
 
@@ -183,6 +207,7 @@
         }
 
 
+
         // ============================================================
         // TRANCHES
         // ============================================================
@@ -248,6 +273,15 @@
                     'last_page' => $paginator->lastPage(),
                     'total' => $paginator->total(),
                 ],
+            ]);
+        }
+        
+        public function stats()
+        {
+            return response()->json([
+                'total' => Client::count(),
+                'speciaux' => Client::where('type_client', 'special')->count(),
+                'normaux' => Client::where('type_client', 'normal')->count(),
             ]);
         }
     }

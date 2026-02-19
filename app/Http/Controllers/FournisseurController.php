@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Fournisseur;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class FournisseurController extends Controller
 {
@@ -40,6 +41,14 @@ class FournisseurController extends Controller
      * POST /api/fournisseurs
      * Création fournisseur (Responsable)
      */
+    public function nombreFournisseur(){
+        try {
+            return response()->json(Fournisseur::count());
+        } catch (\Throwable $th) {
+            //throw $th;
+        }
+    }
+
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -113,4 +122,11 @@ class FournisseurController extends Controller
 
         return response()->noContent();
     }
+    public function stats()
+    {
+        return response()->json([
+            'total' => Fournisseur::count(),
+        ]);
+    }
+
 }

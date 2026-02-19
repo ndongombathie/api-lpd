@@ -16,7 +16,7 @@ class EnregistrerVersementController extends Controller
     public function index(Request $request)
     {
         try {
-            
+
             $query = EnregistrerVersement::query()->with('caissier')->orderByDesc('date');
 
             if ($request->filled('date_debut')) {
@@ -80,5 +80,44 @@ class EnregistrerVersementController extends Controller
     public function destroy(EnregistrerVersement $enregistrerVersement)
     {
         //
+    }
+
+    public function nombreTotalVersement(){
+        try {
+            $versement=EnregistrerVersement::count();
+            return response()->json($versement);
+        } catch (\Throwable $th) {
+            //throw $th;
+        }
+    }
+
+    #nombreTotalVersement filter by date
+    public function nombreTotalVersementByDate(Request $request){
+        try {
+            $versement=EnregistrerVersement::whereDate('date',$request->date)->count();
+            return response()->json($versement);
+        } catch (\Throwable $th) {
+            //throw $th;
+        }
+    }
+
+    #la somme total versement
+    public function sommeTotalVersement(){
+        try {
+            $versement=EnregistrerVersement::sum('montant');
+            return response()->json($versement);
+        } catch (\Throwable $th) {
+            //throw $th;
+        }
+    }
+
+    #la somme total versement filter by date
+    public function sommeTotalVersementByDate(Request $request){
+        try {
+            $versement=EnregistrerVersement::whereDate('date',$request->date)->sum('montant');
+            return response()->json($versement);
+        } catch (\Throwable $th) {
+            //throw $th;
+        }
     }
 }
