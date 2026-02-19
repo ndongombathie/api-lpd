@@ -17,7 +17,6 @@ class UpdateLastSeen
                 $user->forceFill(['last_seen_at' => now()])->save();
             }
         }
-
         return $response;
     }
 }

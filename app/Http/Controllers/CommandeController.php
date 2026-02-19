@@ -99,6 +99,7 @@ class CommandeController extends Controller
     {
 
         try {
+            
             $validated = $request->validate([
                 'client_id' => 'nullable|uuid|exists:clients,id',
                 'type_vente' => 'required|in:detail,gros',
