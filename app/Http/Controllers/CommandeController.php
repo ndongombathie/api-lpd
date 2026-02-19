@@ -123,7 +123,8 @@ class CommandeController extends Controller
                     $commande = Commande::create([
                         'client_id' => $validated['client_id'] ?? null,
                         'vendeur_id' => $user->id,
-                        'type_vente' => $validated['type_vente'],
+                        'tva_appliquee' => $validated['tva_appliquee'],
+                        'type_vente' => $validated['type_vente'],   
                         'statut' => 'attente',
                         'total' => 0,
                         'date' => now(),

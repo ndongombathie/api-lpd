@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Fournisseur;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class FournisseurController extends Controller
 {
@@ -24,6 +25,14 @@ class FournisseurController extends Controller
             return response()->json($query->paginate(10));
         } catch (\Throwable $th) {
             return response()->json(['error' => $th->getMessage()], 500);
+        }
+    }
+
+    public function nombreFournisseur(){
+        try {
+            return response()->json(Fournisseur::count());
+        } catch (\Throwable $th) {
+            //throw $th;
         }
     }
 
@@ -67,4 +76,5 @@ class FournisseurController extends Controller
         $row->delete();
         return response()->noContent();
     }
+    
 }

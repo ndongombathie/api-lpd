@@ -13,7 +13,7 @@ use App\Events\FactureCree;
 use App\Events\StockRupture;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Models\Transfer;
+use App\Models\TransfertEnAttente;
 use App\Models\HistoriqueVente;
 use Illuminate\Support\Facades\Log;
 
@@ -269,5 +269,15 @@ class PaiementController extends Controller
     public function destroy(string $id)
     {
         abort(405);
+    }
+
+    #la somme total des paiements
+    public function sommeTotalPaiements(){
+        try {
+            $paiement=Paiement::sum('montant');
+            return response()->json($paiement);
+        } catch (\Throwable $th) {
+            //throw $th;
+        }
     }
 }

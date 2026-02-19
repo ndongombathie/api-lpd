@@ -73,14 +73,19 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('clients', ClientController::class);
     Route::get('clients/{client}/paiements-tranches', [ClientController::class, 'paiementsTranches']);
     Route::apiResource('fournisseurs', FournisseurController::class);
+    Route::get('nombre-fournisseurs', [FournisseurController::class, 'nombreFournisseur']);
 
     Route::get('transfers/boutique/{boutique_id}', [TransfertEnAttenteController::class, 'produitsByBoutique']);
+    Route::get('transfers-en-attente', [TransfertEnAttenteController::class, 'getTransferEnAttente']);
+    Route::get('transfers-annuler', [TransfertEnAttenteController::class, 'getTransferAnnuler']);
+    Route::get('liste-transfers-annuler',[TransfertEnAttenteController::class,'transfertAnnuler']);
 
     Route::get('transfers/valide', [TransfertEnAttenteController::class, 'getTransferValide']);
     Route::get('produits-transfer', [TransfertEnAttenteController::class, 'index']);
     Route::get('all-produits-transfer', [TransfertEnAttenteController::class, 'alltransfert']);
     Route::put('valider-produits-transfer', [TransfertEnAttenteController::class, 'valideTransfer']);
     Route::put('annuler-produits-transfer', [StockController::class, 'annulerTransfert']);
+
     Route::get('produits-disponibles-boutique', [TransfertEnAttenteController::class, 'produitsDisponibles']);
     #dramé
     Route::get('nombre-produits-total', [TransfertEnAttenteController::class, 'nombreProduits']);
@@ -130,6 +135,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('stocks/ruptures', [StockController::class, 'ruptures']);
     Route::get('produits-ruptures', [ProduitController::class, 'produits_en_rupture']);
+    Route::get('nombre-produits', [ProduitController::class, 'nombreProduits']);
     Route::post('stocks/transfer', [StockController::class, 'transfer']);
     #annulerTransfer
     Route::post('stocks/transfer/annuler', [StockController::class, 'annulerTransfer']);
@@ -148,12 +154,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('commandes/{commande}/paiements', [PaiementController::class, 'store']);
     Route::get('paiements-rapport-journalier', [PaiementController::class, 'rapportJournalier']);
     Route::get('commandes/{commande}/paiements', [PaiementController::class, 'index']);
+    #la somme total des paiements
+    Route::get('somme-paiements-total', [PaiementController::class, 'sommeTotalPaiements']);
     Route::get('nombre-produits-vendus-aujourdhui', [ProduitController::class, 'nombreProduitsVendusAujourdhui']);
     Route::apiResource('utilisateurs', UserController::class);
     Route::post('utilisateurs/{utilisateur}/reset-password', [UserController::class, 'resetPassword']);
 
     Route::get('mouvements-stock/inventaire-depot', [MouvementSockController::class, 'inventaireDepot']);
+    Route::get('nombre-mouvements-stock-today', [MouvementSockController::class, 'nombreMouvementStockToday']);
+    Route::get('nombre-mouvements-stock-total', [MouvementSockController::class, 'nombreMouvementStockTotal']);
     Route::post('enregistrer-inventaire-depot', [MouvementSockController::class, 'enregistrerInventaireDepot']);
+    #le nombre d'entre dans le  stock
+    Route::get('nombre-entree-stock-total', [MouvementSockController::class, 'nombreEntreeStockTotal']);
+    #le nombre de sortie dans le  stock
+    Route::get('nombre-sortie-stock-total', [MouvementSockController::class, 'nombreSortieStockTotal']);
     Route::post('enregistrer-inventaire-boutique', [HistoriqueVenteController::class, 'enregistrerInventaireBoutique']);
     Route::get('historique-inventaires', [InventaireController::class, 'index']);
 
@@ -169,6 +183,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     # Gestion des enregPtPistrements de versement
     Route::apiResource('enregistrer-versements', EnregistrerVersementController::class);
+    Route::get('nombre-versement-total', [EnregistrerVersementController::class, 'nombreTotalVersement']);
+    Route::get('nombre-versement-total-by-date', [EnregistrerVersementController::class, 'nombreTotalVersementByDate']);
+    Route::get('somme-versement-total', [EnregistrerVersementController::class, 'sommeTotalVersement']);
+    Route::get('somme-versement-total-by-date', [EnregistrerVersementController::class, 'sommeTotalVersementByDate']);
 
 
 });

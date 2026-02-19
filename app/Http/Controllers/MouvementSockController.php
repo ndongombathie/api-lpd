@@ -181,4 +181,43 @@ class MouvementSockController extends Controller
     {
         //
     }
+
+    public function nombreMouvementStockToday(){
+        try {
+            return response()->json(MouvementStock::whereDate('date', now())->count());
+        } catch (\Throwable $th) {
+            return response()->json(['message' => $th->getMessage()], 500);
+        }
+    }
+
+    #le nombre de mouvement de stock total
+    public function nombreMouvementStockTotal(){
+        try {
+            return response()->json(MouvementStock::count());
+        } catch (\Throwable $th) {
+            return response()->json(['message' => $th->getMessage()], 500);
+        }
+    }
+
+    #le nombre d'entre dans le  stock
+    public function nombreEntreeStockTotal(){
+        try {
+            return response()->json(MouvementStock::where('type','entree')->count());
+        } catch (\Throwable $th) {
+            return response()->json(['message' => $th->getMessage()], 500);
+        }
+    }
+
+
+    #le nombre de sortie dans le  stock
+    public function nombreSortieStockTotal(){
+        try {
+            return response()->json(MouvementStock::where('type','sortie')->count());
+        } catch (\Throwable $th) {
+            return response()->json(['message' => $th->getMessage()], 500);
+        }
+    }
+
+
+
 }
