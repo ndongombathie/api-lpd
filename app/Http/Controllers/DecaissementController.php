@@ -28,6 +28,16 @@ class DecaissementController extends Controller
                 $query->where('cassier_id', $request->input('cassier_id'));
             }
 
+            // Filter by date if provided
+            if ($request->filled('date')) {
+                $date = $request->input('date');
+                $query->where(function ($q) use ($date) {
+                    $q->whereDate('updated_at', $date)
+                      ->orWhereDate('date', $date)
+                      ->orWhereDate('created_at', $date);
+                });
+            }
+
             // Filter by search term if provided
             if ($request->filled('search')) {
                 $search = $request->input('search');
@@ -39,16 +49,31 @@ class DecaissementController extends Controller
             }
 
             $perPage = (int) $request->input('per_page', 15);
-            $perPage = min(max($perPage, 1), 200);
+            $perPage = min(max($perPage, 1), 500);
             return response()->json($query->paginate($perPage));
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
-    public function getDecaissemenentEnAttente(){
+    public function getDecaissemenentEnAttente(Request $request){
         try {
-            return response()->json(Decaissement::query()->where('statut', 'en_attente')->with('user')->latest()->paginate(20));
+            $perPage = min(max((int) $request->input('per_page', 15), 1), 100);
+            $page = max((int) $request->input('page', 1), 1);
+            $query = Decaissement::query()
+                ->where('statut', 'en_attente')
+                ->with(['user', 'caissier'])
+                ->latest();
+            $totalAmount = (int) (clone $query)->sum('montant');
+            $paginator = $query->paginate($perPage, ['*'], 'page', $page);
+            return response()->json([
+                'data' => $paginator->items(),
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+                'total_amount' => $totalAmount,
+            ]);
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la récupération des décaissements en attente',

@@ -49,10 +49,10 @@ class DonneesTestCaissierSeeder extends Seeder
             $clients = Client::factory()->count(15)->create();
         }
 
-        $this->command->info('Création de 50 commandes en attente...');
+        $this->command->info('Création de 300 commandes en attente...');
         
-        // Créer 50 commandes en attente
-        for ($i = 0; $i < 50; $i++) {
+        // Créer 300 commandes en attente (données de test pour la pagination)
+        for ($i = 0; $i < 300; $i++) {
             $vendeur = $vendeurs->random();
             $client = fake()->boolean(60) ? $clients->random() : null;
             
@@ -96,11 +96,37 @@ class DonneesTestCaissierSeeder extends Seeder
             $tva = $totalHT * 0.18;
             $commande->total = (int)($totalHT + $tva);
             $commande->save();
+
+            // Pour quelques commandes (5%), créer des paiements pour l'historique - le reste reste en attente pour tester la pagination
+            if (fake()->boolean(5)) {
+                $caissier = User::where('role', 'caissier')->first();
+                if ($caissier) {
+                    $typePaiement = fake()->randomElement(['especes', 'carte', 'wave', 'om', 'cheque']);
+                    $montantPaye = fake()->boolean(80) ? $commande->total : (int)($commande->total * fake()->randomFloat(2, 0.5, 0.9));
+                    
+                    Paiement::create([
+                        'commande_id' => $commande->id,
+                        'caissier_id' => $caissier->id,
+                        'montant' => $montantPaye,
+                        'reste_du' => max(0, $commande->total - $montantPaye),
+                        'type_paiement' => $typePaiement,
+                        'date' => now()->subHours(fake()->numberBetween(0, 24)),
+                    ]);
+
+                    // Mettre à jour le statut de la commande
+                    if ($montantPaye >= $commande->total) {
+                        $commande->statut = 'payee';
+                    } else {
+                        $commande->statut = 'validee';
+                    }
+                    $commande->save();
+                }
+            }
         }
 
-        $this->command->info('Création de 30 décaissements en attente...');
+        $this->command->info('Création de 300 décaissements en attente...');
         
-        // Créer 30 décaissements en attente
+        // Créer 300 décaissements en attente (données de test pour la pagination)
         $motifs = [
             'Achat de matériel de bureau',
             'Frais de transport',
@@ -139,7 +165,7 @@ class DonneesTestCaissierSeeder extends Seeder
 
         $methodesPaiement = ['caisse', 'banque', 'wave', 'om', 'carte'];
 
-        for ($i = 0; $i < 30; $i++) {
+        for ($i = 0; $i < 300; $i++) {
             Decaissement::create([
                 'user_id' => $responsable->id,
                 'caissier_id' => null,
@@ -152,8 +178,30 @@ class DonneesTestCaissierSeeder extends Seeder
             ]);
         }
 
-        $this->command->info('✅ 50 commandes en attente créées !');
-        $this->command->info('✅ 30 décaissements en attente créés !');
+        // Créer quelques décaissements validés pour l'historique (statut "valide")
+        $caissier = User::where('role', 'caissier')->first();
+        if ($caissier) {
+            $this->command->info('Création de 20 décaissements validés pour l\'historique...');
+            for ($i = 0; $i < 20; $i++) {
+                Decaissement::create([
+                    'user_id' => $responsable->id,
+                    'caissier_id' => $caissier->id,
+                    'motif' => fake()->randomElement($motifs),
+                    'libelle' => fake()->randomElement($libelles),
+                    'montant' => fake()->numberBetween(20000, 500000),
+                    'methode_paiement' => fake()->randomElement($methodesPaiement),
+                    'date' => now()->subDays(fake()->numberBetween(0, 3))->format('Y-m-d'),
+                    'statut' => 'valide',
+                    'updated_at' => now()->subHours(fake()->numberBetween(0, 72)),
+                ]);
+            }
+        }
+
+        $this->command->info('✅ 300 commandes en attente créées !');
+        $this->command->info('✅ 300 décaissements en attente créés !');
+        if ($caissier) {
+            $this->command->info('✅ 20 décaissements validés créés pour l\'historique !');
+        }
     }
 }
 

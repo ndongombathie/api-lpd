@@ -40,13 +40,44 @@ class CommandeController extends Controller
         }
     }
 
-    public function getCommandesEnAttente(){
+    public function getCommandesEnAttente(Request $request){
         try {
-            return response()->json(Commande::query()
+            $perPage = min(max((int) $request->input('per_page', 15), 1), 100);
+            $page = max((int) $request->input('page', 1), 1);
+            $search = $request->input('search', '');
+
+            $query = Commande::query()
                 ->where('statut', 'attente')
                 ->with(['details.produit', 'client', 'vendeur', 'paiements'])
-                ->latest()
-                ->paginate(20));
+                ->latest();
+
+            // Recherche par N° ticket, ID, vendeur ou client
+            if (strlen(trim($search)) >= 2) {
+                $searchTerm = '%' . trim($search) . '%';
+                $query->where(function ($q) use ($searchTerm) {
+                    $q->where('id', 'like', $searchTerm)
+                      ->orWhereHas('vendeur', function ($v) use ($searchTerm) {
+                          $v->where('prenom', 'like', $searchTerm)
+                            ->orWhere('nom', 'like', $searchTerm);
+                      })
+                      ->orWhereHas('client', function ($c) use ($searchTerm) {
+                          $c->where('prenom', 'like', $searchTerm)
+                            ->orWhere('nom', 'like', $searchTerm);
+                      });
+                });
+            }
+
+            $totalAmount = (int) (clone $query)->sum('total');
+            $paginator = $query->paginate($perPage, ['*'], 'page', $page);
+
+            return response()->json([
+                'data' => $paginator->items(),
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+                'total_amount' => $totalAmount,
+            ]);
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la récupération des commandes en attente',
