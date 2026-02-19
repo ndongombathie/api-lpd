@@ -15,9 +15,9 @@ class Commande extends Model
 
     public $incrementing = false;
     protected $keyType = 'string';
-
+    
     protected $fillable = [
-        'client_id','vendeur_id','total','statut','type_vente','date','caissier_id',
+        'client_id','vendeur_id','total','statut','type_vente','date','caissier_id','tva_appliquee'
     ];
 
     public function details()

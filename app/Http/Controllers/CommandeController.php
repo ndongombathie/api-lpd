@@ -124,7 +124,7 @@ class CommandeController extends Controller
                         'client_id' => $validated['client_id'] ?? null,
                         'vendeur_id' => $user->id,
                         'tva_appliquee' => $validated['tva_appliquee'],
-                        'type_vente' => $validated['type_vente'],   
+                        'type_vente' => $validated['type_vente'],
                         'statut' => 'attente',
                         'total' => 0,
                         'date' => now(),
