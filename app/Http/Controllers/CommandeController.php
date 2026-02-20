@@ -59,14 +59,23 @@ class CommandeController extends Controller
 
     public function getCommandesValidees(){
         try {
-            return response()->json(Commande::query()
+            if(Auth::user()->role=="comptable"){
+                $commandes = Commande::query()
+                ->where('statut', 'payee')
+                ->with(['details','client','vendeur', 'paiements' => function($q) {
+                    $q->orderBy('date', 'desc'); // Trier les paiements par date décroissante
+                }]);
+            }else
+            {
+                $commandes = Commande::query()
                 ->where('statut', 'payee')
                 ->where('caissier_id', Auth::user()->id)
                 ->with(['details','client','vendeur', 'paiements' => function($q) {
                     $q->orderBy('date', 'desc'); // Trier les paiements par date décroissante
                 }])
-                ->latest()
-                ->paginate(10));
+                ->latest();
+            }
+            return response()->json($commandes->paginate(10));
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la récupération des commandes validées',
@@ -74,6 +83,8 @@ class CommandeController extends Controller
             ], 500);
         }
     }
+
+
 
     public function getCommandesAnnulees(){
         try {
@@ -99,7 +110,7 @@ class CommandeController extends Controller
     {
 
         try {
-            
+
             $validated = $request->validate([
                 'client_id' => 'nullable|uuid|exists:clients,id',
                 'type_vente' => 'required|in:detail,gros',
