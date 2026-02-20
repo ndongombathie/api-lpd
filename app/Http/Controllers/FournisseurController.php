@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Fournisseur;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Database\QueryException;
 
 class FournisseurController extends Controller
 {
@@ -51,27 +52,34 @@ class FournisseurController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate([
-            'nom' => 'required|string|max:255',
-            'contact' => 'nullable|string|max:50',
-            'adresse' => 'nullable|string|max:255',
+        try {
+            $data = $request->validate([
+                'nom' => 'required|string|max:255',
+                'contact' => 'nullable|numeric|unique:fournisseurs,contact',
+                'adresse' => 'nullable|string|max:255',
+                'type_produit' => 'nullable|string|max:255',
+                'derniere_livraison' => 'nullable|date',
+                'total_achats' => 'nullable|numeric|min:0',
+            ], [
+                'contact.unique' => 'Le contact existe déjà pour un autre fournisseur.',
+            ]);
 
-            // Champs métier Responsable
-            'type_produit' => 'nullable|string|max:255',
-            'derniere_livraison' => 'nullable|date',
+            if (!isset($data['total_achats'])) {
+                $data['total_achats'] = 0;
+            }
 
-            // Champ stock (Gestionnaire dépôt)
-            'total_achats' => 'nullable|numeric|min:0',
-        ]);
+            $row = Fournisseur::create($data);
 
-        // valeur par défaut si non fournie
-        if (!isset($data['total_achats'])) {
-            $data['total_achats'] = 0;
+            return response()->json($row, 201);
+
+        } catch (QueryException $e) {
+            if ($e->getCode() == 23000) { // doublon unique
+                return response()->json([
+                    'error' => 'Le contact existe déjà pour un autre fournisseur.'
+                ], 422);
+            }
+            return response()->json(['error' => $e->getMessage()], 500);
         }
-
-        $row = Fournisseur::create($data);
-
-        return response()->json($row, 201);
     }
 
     /**
@@ -94,22 +102,30 @@ class FournisseurController extends Controller
     {
         $row = Fournisseur::findOrFail($id);
 
-        $data = $request->validate([
-            'nom' => 'sometimes|string|max:255',
-            'contact' => 'nullable|string|max:50',
-            'adresse' => 'nullable|string|max:255',
+        try {
+            $data = $request->validate([
+                'nom' => 'required|string|max:255',
+                'contact' => 'nullable|numeric|unique:fournisseurs,contact,' . $id,
+                'adresse' => 'nullable|string|max:255',
+                'type_produit' => 'nullable|string|max:255',
+                'derniere_livraison' => 'nullable|date',
+                'total_achats' => 'nullable|numeric|min:0',
+            ], [
+                'contact.unique' => 'Le contact existe déjà pour un autre fournisseur.',
+            ]);
 
-            // Champs Responsable
-            'type_produit' => 'nullable|string|max:255',
-            'derniere_livraison' => 'nullable|date',
+            $row->update($data);
 
-            // Champ stock
-            'total_achats' => 'nullable|numeric|min:0',
-        ]);
+            return $row;
 
-        $row->update($data);
-
-        return $row;
+        } catch (QueryException $e) {
+            if ($e->getCode() == 23000) { // doublon unique
+                return response()->json([
+                    'error' => 'Le contact existe déjà pour un autre fournisseur.'
+                ], 422);
+            }
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
     /**
