@@ -33,7 +33,7 @@ class CommandeController extends Controller
                 $query->where('type_vente', $request->type);
             }
 
-            return response()->json($query->paginate(100));
+            return response()->json($query->paginate(10));
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la récupération des commandes',
@@ -124,11 +124,18 @@ class CommandeController extends Controller
                         'client_id' => $validated['client_id'] ?? null,
                         'vendeur_id' => $user->id,
                         'tva_appliquee' => $validated['tva_appliquee'],
-                        'type_vente' => $validated['type_vente'],   
+                        'type_vente' => $validated['type_vente'],
                         'statut' => 'attente',
                         'total' => 0,
                         'date' => now(),
                     ]);
+                    $lastNumero = Commande::lockForUpdate()->max('numero');
+                    $next = $lastNumero
+                        ? ((int) substr($lastNumero, 4)) + 1
+                        : 1;
+
+                    $commande->numero = 'CMD-' . str_pad($next, 6, '0', STR_PAD_LEFT);
+                    $commande->save();
 
                     $totalHt = 0;
                     foreach ($validated['items'] as $item) {
@@ -150,7 +157,6 @@ class CommandeController extends Controller
                     $commande->load('details', 'vendeur','client');
                     event(new CommandeValidee($commande));
                     return response()->json($commande);
-
 
        }catch (\Throwable $th) {
             return response()->json([
