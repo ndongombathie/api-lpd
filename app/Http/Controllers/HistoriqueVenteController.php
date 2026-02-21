@@ -48,7 +48,7 @@ class HistoriqueVenteController extends Controller
         }
     }
 
-    #Nombre total de ventes par vendeur et les info du vendeur
+    #Nombre total de ventes par vendeur et les info du vendeur et o	Total encaissé par vendeur
     public function totalVentesParVendeur(Request $request)
     {
         try {
@@ -57,7 +57,15 @@ class HistoriqueVenteController extends Controller
                 ->groupBy('vendeur_id')
                 ->get();
 
-            return response()->json($totalVentes);
+            $totalEncaisses = HistoriqueVente::with('vendeur')
+                ->select('vendeur_id', DB::raw('SUM(montant) as total_encaisses'))
+                ->groupBy('vendeur_id')
+                ->get();
+
+            return response()->json([
+                'total_ventes' => $totalVentes,
+                'total_encaisses' => $totalEncaisses
+            ]);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
