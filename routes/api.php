@@ -161,9 +161,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('historique-ventes', [HistoriqueVenteController::class, 'index']);
     Route::get('total-vente-par-jour', [HistoriqueVenteController::class, 'totalParJour']);
     Route::get('inventaires-boutique', [HistoriqueVenteController::class, 'inventaireBoutique']);
+    #Nombre total de ventes par vendeur et les info du vendeur
+    Route::get('total-ventes-par-vendeur', [HistoriqueVenteController::class, 'totalVentesParVendeur']);
 
     #impression de la facture
     Route::get('factures/{id}', [FactureController::class, 'show']);
+
+
 
 
 
@@ -207,15 +211,35 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('commandes-annulees', [CommandeController::class, 'getCommandesAnnulees']);
     Route::post('commandes/{commande}/valider', [CommandeController::class, 'valider']);
     Route::post('commandes/{commande}/annuler', [CommandeController::class, 'annuler']);
+    #•Montant total des commandes (clients normaux + spéciaux).
+    Route::get('montant-total-commandes', [CommandeController::class, 'montantTotalCommandes']);
+    #la liste des commsndes effectuer par un vendeur donnee
+    Route::get('commandes-par-vendeur/{id}', [CommandeController::class, 'commandesParVendeur']);
+    #Total commandes payées
+    Route::get('total-commandes-payees', [CommandeController::class, 'totalCommandesPayees']);
+    # o	Commandes en attente caisse
+    Route::get('commandes-en-attente-caisse', [CommandeController::class, 'commandesEnAttenteCaisse']);
+
+
 
     Route::post('commandes/{commande}/paiements', [PaiementController::class, 'store']);
     Route::get('paiements-rapport-journalier', [PaiementController::class, 'rapportJournalier']);
     Route::get('commandes/{commande}/paiements', [PaiementController::class, 'index']);
     #la somme total des paiements
     Route::get('somme-paiements-total', [PaiementController::class, 'sommeTotalPaiements']);
+    #•	Reste total à encaisser.
+    Route::get('reste-total-encaisser', [PaiementController::class, 'resteTotalEncaisser']);
     Route::get('nombre-produits-vendus-aujourdhui', [ProduitController::class, 'nombreProduitsVendusAujourdhui']);
     Route::apiResource('utilisateurs', UserController::class);
     Route::post('utilisateurs/{utilisateur}/reset-password', [UserController::class, 'resetPassword']);
+    #Nombre total de vendeurs
+    Route::get('vendeurs-count', [UserController::class, 'vendeursCount']);
+    #Nombre total de caissier
+    Route::get('caissiers-count', [UserController::class, 'caissiersCount']);
+    #nombre total de gestionnaire boutique
+    Route::get('gestionnaires-count', [UserController::class, 'gestionnairesCount']);
+
+
 
     Route::get('mouvements-stock/inventaire-depot', [MouvementSockController::class, 'inventaireDepot']);
     Route::get('nombre-mouvements-stock-today', [MouvementSockController::class, 'nombreMouvementStockToday']);
@@ -232,9 +256,20 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::apiResource('mouvements-stock', MouvementSockController::class);
     Route::put('produits/{produit}/reduire-stock', [ProduitController::class, 'reduireStockProduit']);
+    #•	Nombre de produits en rupture (nombre_carton==0)
+    Route::get('nombre-produits-en-rupture', [ProduitController::class, 'nombreProduitsEnRupture']);
+    #nombre de produits sous seuil
+    Route::get('nombre-produits-sous-seuil', [ProduitController::class, 'nombreProduitsSousSeuil']);
+    #nombre de produits en normaux.
+    Route::get('nombre-produits-en-normaux', [ProduitController::class, 'nombreProduitsEnNormaux']);
+
+
 
 
     Route::apiResource('historique-actions', HistoriqueActionController::class);
+
+
+
 
     Route::post('fond-caisse', [FondCaisseController::class, 'store']);
 

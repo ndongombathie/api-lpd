@@ -245,6 +245,19 @@ class PaiementController extends Controller
             return $paiement;
     }
 
+    #•	Reste total à encaisser.
+    public function resteTotalEncaisser(){
+        try {
+            $resteTotal = Paiement::sum('reste_du');
+            return response()->json($resteTotal);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Erreur lors de la récupération du reste total à encaisser',
+                'error' => $th->getMessage(),
+            ], 500);
+        }
+    }
+
 
 
     /**
@@ -280,4 +293,5 @@ class PaiementController extends Controller
             //throw $th;
         }
     }
+
 }

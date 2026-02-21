@@ -69,11 +69,56 @@ class ProduitController extends Controller
     public function produits_en_rupture()
     {
         try {
-            return Produit::whereColumn('nombre_carton', '<=', 'stock_seuil')->paginate(50);
+            return Produit::where('nombre_carton', 0)->paginate(10);
         } catch (\Throwable $th) {
             return response()->json(['message' => $th->getMessage()], 500);
         }
     }
+
+    #sous seuil
+    public function produits_sous_seuil(){
+        try {
+            return Produit::whereColumn('nombre_carton', '<', 'stock_seuil')->paginate(10);
+        } catch (\Throwable $th) {
+            return response()->json(['message' => $th->getMessage()], 500);
+        }
+    }
+
+    #nombre sous seuil
+    public function nombreProduitsSousSeuil(){
+        try {
+            $nombreProduitsSousSeuil = Produit::whereColumn('nombre_carton', '<', 'stock_seuil')->count();
+            return response()->json($nombreProduitsSousSeuil);
+        } catch (\Throwable $th) {
+            return response()->json(['message' => $th->getMessage()], 500);
+        }
+    }
+    # nombre en normaux.
+    public function nombreProduitsEnNormaux(){
+        try {
+            $nombreProduitsEnNormaux = Produit::whereColumn('nombre_carton', '>', 'stock_seuil')->count();
+            return response()->json($nombreProduitsEnNormaux);
+        } catch (\Throwable $th) {
+            return response()->json(['message' => $th->getMessage()], 500);
+        }
+    }
+
+
+
+    #•	Nombre de produits en rupture (nombre_carton==0)
+    public function nombreProduitsEnRupture(){
+        try {
+            $nombreProduitsEnRupture = Produit::where('nombre_carton', 0)->count();
+            return response()->json($nombreProduitsEnRupture);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Erreur lors de la récupération du nombre de produits en rupture',
+                'error' => $th->getMessage(),
+            ], 500);
+        }
+    }
+
+
 
     public function store(Request $request)
     {
