@@ -220,10 +220,31 @@ class CommandeController extends Controller
     }
 
     #la liste des commsndes effectuer par un vendeur donnee
-    public function commandesParVendeur(string $id)
+    public function commandesParVendeur(string $id, Request $request)
     {
         try {
-            return response()->json(Commande::with(['details','client'])->where('vendeur_id', $id)->get());
+            $commandes = Commande::with(['details','client','vendeur'])->where('vendeur_id', $id);
+            #filtrer par statut
+            if ($request->filled('statut')) {
+                $statut = $request->input('statut');
+                $commandes->where('statut', $statut);
+            }
+            #par type de vente
+            if ($request->filled('type_vente')) {
+                $typeVente = $request->input('type_vente');
+                $commandes->where('type_vente', $typeVente);
+            }
+            #par nom,prenom ,email du client
+            if ($request->filled('search')) {
+                $search = $request->input('search');
+                $commandes->whereHas('client', function ($q) use ($search) {
+                    $q->where('nom', 'like', "%{$search}%")
+                      ->orWhere('prenom', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%");
+                });
+            }
+
+            return response()->json($commandes->paginate(10));
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la récupération des commandes',
