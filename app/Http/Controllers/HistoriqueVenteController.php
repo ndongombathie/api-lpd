@@ -48,30 +48,6 @@ class HistoriqueVenteController extends Controller
         }
     }
 
-    #Nombre total de ventes par vendeur et les info du vendeur et o	Total encaissé par vendeur
-    public function totalVentesParVendeur(Request $request)
-    {
-        try {
-            $totalVentes = HistoriqueVente::with('vendeur')
-                ->select('vendeur_id', DB::raw('SUM(quantite) as total_ventes'))
-                ->groupBy('vendeur_id')
-                ->get();
-
-            $totalEncaisses = HistoriqueVente::with('vendeur')
-                ->select('vendeur_id', DB::raw('SUM(montant) as total_encaisses'))
-                ->groupBy('vendeur_id')
-                ->get();
-
-            return response()->json([
-                'total_ventes' => $totalVentes,
-                'total_encaisses' => $totalEncaisses
-            ]);
-        } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
-        }
-    }
-
-
 
     public function inventaireBoutique(Request $request)
     {
@@ -169,11 +145,19 @@ class HistoriqueVenteController extends Controller
     public function totalParJour(Request $request)
     {
 
+
         $date = $request->input('date') ?? Carbon::now()->format('Y-m-d');
 
         try {
-            $total = HistoriqueVente::whereDate('created_at', $date)->sum('montant');
-            return response()->json(['date' => $date, 'total' => $total]);
+            $total = HistoriqueVente::query();
+            if($request->filled('date')){
+                $total = $total->whereDate('created_at', $date)->sum('montant');
+            }
+            else{
+                $total = $total->sum('montant');
+            }
+
+            return response()->json($total);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
@@ -201,6 +185,36 @@ class HistoriqueVenteController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
+
+    #Nombre total de ventes par vendeur et Total encaissé par vendeur
+    public function totalVentesParVendeur(Request $request)
+    {
+        try {
+            $totalVentes = HistoriqueVente::with('vendeur')
+                ->select('vendeur_id', DB::raw('COUNT(quantite) as total_ventes')
+                ,DB::raw('SUM(montant) as total_encaisses'))
+                ->groupBy('vendeur_id');
+                
+             # appliquer des filtre par nom ,prenom ,email
+            if ($request->filled('search')) {
+                $search = $request->input('search');
+                $totalVentes->where(function ($q) use ($search) {
+                    $q->whereHas('vendeur', function ($q) use ($search) {
+                        $q->where('nom', 'like', "%{$search}%")
+                          ->orWhere('prenom', 'like', "%{$search}%")
+                          ->orWhere('email', 'like', "%{$search}%");
+                    });
+                });
+            }
+            return response()->json([
+                'total_ventes' => $totalVentes->paginate(10),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+
 
     /**
      * Display the specified resource.

@@ -57,7 +57,8 @@ class CommandeController extends Controller
         }
     }
 
-    public function getCommandesValidees(){
+    #appliquer des filtre par date
+    public function getCommandesValidees(Request $request){
         try {
             if(Auth::user()->role=="comptable"){
                 $commandes = Commande::query()
@@ -75,6 +76,15 @@ class CommandeController extends Controller
                 }])
                 ->latest();
             }
+
+            if ($request->filled('date')) {
+                $commandes->whereDate('date', $request->date);
+            }
+
+            if ($request->filled('type')) {
+                $commandes->where('type_vente', $request->type);
+            }
+
             return response()->json($commandes->paginate(10));
         } catch (\Throwable $th) {
             return response()->json([
@@ -209,6 +219,19 @@ class CommandeController extends Controller
         }
     }
 
+    #la liste des commsndes effectuer par un vendeur donnee
+    public function commandesParVendeur(string $id)
+    {
+        try {
+            return response()->json(Commande::with(['details','client'])->where('vendeur_id', $id)->get());
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Erreur lors de la récupération des commandes',
+                'error' => $th->getMessage(),
+            ], 500);
+        }
+    }
+
     /**
      * Remove the specified resource from storage.
      */
@@ -285,6 +308,48 @@ class CommandeController extends Controller
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la récupération des commandes payées aujourd\'hui',
+                'error' => $th->getMessage(),
+            ], 500);
+        }
+    }
+
+    #•Montant total des commandes (clients normaux + spéciaux).
+    public function montantTotalCommandes(){
+        try {
+            $montantTotal = Commande::where('statut', 'payee')
+            ->sum('montant_total');
+            return response()->json($montantTotal);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Erreur lors de la récupération du montant total des commandes',
+                'error' => $th->getMessage(),
+            ], 500);
+        }
+    }
+
+    #Total commandes payées
+    public function totalCommandesPayees(){
+        try {
+            $totalCommandesPayees = Commande::where('statut', 'payee')
+            ->count();
+            return response()->json($totalCommandesPayees);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Erreur lors de la récupération du total des commandes payées',
+                'error' => $th->getMessage(),
+            ], 500);
+        }
+    }
+
+    # o	Commandes en attente caisse
+    public function commandesEnAttenteCaisse(){
+        try {
+            $commandes = Commande::where('statut', 'attente')
+            ->count();
+            return response()->json($commandes);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Erreur lors de la récupération des commandes en attente de caisse',
                 'error' => $th->getMessage(),
             ], 500);
         }
