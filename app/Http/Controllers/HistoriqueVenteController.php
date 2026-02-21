@@ -48,6 +48,23 @@ class HistoriqueVenteController extends Controller
         }
     }
 
+    #Nombre total de ventes par vendeur et les info du vendeur
+    public function totalVentesParVendeur(Request $request)
+    {
+        try {
+            $totalVentes = HistoriqueVente::with('vendeur')
+                ->select('vendeur_id', DB::raw('SUM(quantite) as total_ventes'))
+                ->groupBy('vendeur_id')
+                ->get();
+
+            return response()->json($totalVentes);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+
+
     public function inventaireBoutique(Request $request)
     {
 

@@ -178,6 +178,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
     Route::apiResource('historique-actions', HistoriqueActionController::class);
+    #Nombre total de ventes par vendeur et les info du vendeur
+    Route::get('total-ventes-par-vendeur', [HistoriqueVenteController::class, 'totalVentesParVendeur']);
+
+
 
     Route::post('fond-caisse', [FondCaisseController::class, 'store']);
 
