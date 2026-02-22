@@ -276,4 +276,17 @@ public function caissiersStats()
             ], 500);
         }
     }
+    public function allCaissiers()
+    {
+        try {
+            return User::where('role', 'caissier')
+                ->orderBy('prenom')
+                ->get();
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Erreur récupération caissiers',
+                'error' => $th->getMessage()
+            ], 500);
+        }
+    }
 }
