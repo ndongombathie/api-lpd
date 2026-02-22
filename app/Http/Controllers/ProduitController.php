@@ -87,8 +87,11 @@ class ProduitController extends Controller
     #nombre sous seuil
     public function nombreProduitsSousSeuil(){
         try {
-            $nombreProduitsSousSeuil = Produit::whereColumn('nombre_carton', '<', 'stock_seuil')->count();
-            return response()->json($nombreProduitsSousSeuil);
+            $count = Produit::where('stock_global', '>', 0)
+                ->whereColumn('stock_global', '<', 'stock_seuil')
+                ->count();
+
+            return response()->json($count);
         } catch (\Throwable $th) {
             return response()->json(['message' => $th->getMessage()], 500);
         }
@@ -96,28 +99,26 @@ class ProduitController extends Controller
     # nombre en normaux.
     public function nombreProduitsEnNormaux(){
         try {
-            $nombreProduitsEnNormaux = Produit::whereColumn('nombre_carton', '>', 'stock_seuil')->count();
-            return response()->json($nombreProduitsEnNormaux);
+            $count = Produit::whereColumn('stock_global', '>=', 'stock_seuil')
+                ->count();
+
+            return response()->json($count);
         } catch (\Throwable $th) {
             return response()->json(['message' => $th->getMessage()], 500);
         }
     }
 
 
-
     #•	Nombre de produits en rupture (nombre_carton==0)
     public function nombreProduitsEnRupture(){
         try {
-            $nombreProduitsEnRupture = Produit::where('nombre_carton', 0)->count();
-            return response()->json($nombreProduitsEnRupture);
+            $count = Produit::where('stock_global', 0)->count();
+
+            return response()->json($count);
         } catch (\Throwable $th) {
-            return response()->json([
-                'message' => 'Erreur lors de la récupération du nombre de produits en rupture',
-                'error' => $th->getMessage(),
-            ], 500);
+            return response()->json(['message' => $th->getMessage()], 500);
         }
     }
-
 
 
     public function store(Request $request)

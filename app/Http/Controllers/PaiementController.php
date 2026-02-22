@@ -248,11 +248,20 @@ class PaiementController extends Controller
     #•	Reste total à encaisser.
     public function resteTotalEncaisser(){
         try {
-            $resteTotal = Paiement::sum('reste_du');
-            return response()->json($resteTotal);
+            $montantTotal = Commande::where('statut', '!=', 'annulee')
+                ->sum('total');
+
+            $totalPaiements = Paiement::whereHas('commande', function ($q) {
+                $q->whereIn('statut', ['validee', 'payee']);
+            })->sum('montant');
+
+            $reste = $montantTotal - $totalPaiements;
+
+            return response()->json($reste);
+
         } catch (\Throwable $th) {
             return response()->json([
-                'message' => 'Erreur lors de la récupération du reste total à encaisser',
+                'message' => 'Erreur reste total',
                 'error' => $th->getMessage(),
             ], 500);
         }
@@ -287,10 +296,17 @@ class PaiementController extends Controller
     #la somme total des paiements
     public function sommeTotalPaiements(){
         try {
-            $paiement=Paiement::sum('montant');
-            return response()->json($paiement);
+            $totalPaiements = Paiement::whereHas('commande', function ($q) {
+                $q->whereIn('statut', ['validee', 'payee']);
+            })->sum('montant');
+
+            return response()->json($totalPaiements);
+
         } catch (\Throwable $th) {
-            //throw $th;
+            return response()->json([
+                'message' => 'Erreur total paiements',
+                'error' => $th->getMessage(),
+            ], 500);
         }
     }
 

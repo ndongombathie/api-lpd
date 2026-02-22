@@ -343,17 +343,18 @@ class CommandeController extends Controller
     #•Montant total des commandes (clients normaux + spéciaux).
     public function montantTotalCommandes(){
         try {
-            $montantTotal = Commande::where('statut', 'payee')
-            ->sum('montant_total');
+            $montantTotal = Commande::where('statut', '!=', 'annulee')
+                ->sum('total');
+
             return response()->json($montantTotal);
+
         } catch (\Throwable $th) {
             return response()->json([
-                'message' => 'Erreur lors de la récupération du montant total des commandes',
+                'message' => 'Erreur montant total commandes',
                 'error' => $th->getMessage(),
             ], 500);
         }
     }
-
     #Total commandes payées
     public function totalCommandesPayees(){
         try {
