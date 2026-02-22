@@ -248,11 +248,12 @@ class PaiementController extends Controller
     #•	Reste total à encaisser.
     public function resteTotalEncaisser(){
         try {
+
             $montantTotal = Commande::where('statut', '!=', 'annulee')
                 ->sum('total');
 
             $totalPaiements = Paiement::whereHas('commande', function ($q) {
-                $q->whereIn('statut', ['validee', 'payee']);
+                $q->whereNotIn('statut', ['annulee', 'attente']);
             })->sum('montant');
 
             $reste = $montantTotal - $totalPaiements;
@@ -297,7 +298,7 @@ class PaiementController extends Controller
     public function sommeTotalPaiements(){
         try {
             $totalPaiements = Paiement::whereHas('commande', function ($q) {
-                $q->whereIn('statut', ['validee', 'payee']);
+                $q->whereNotIn('statut', ['annulee', 'attente']);
             })->sum('montant');
 
             return response()->json($totalPaiements);
@@ -309,5 +310,4 @@ class PaiementController extends Controller
             ], 500);
         }
     }
-
 }
