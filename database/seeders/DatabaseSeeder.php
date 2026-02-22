@@ -42,7 +42,7 @@ class DatabaseSeeder extends Seeder
             'nom' => 'Admin',
             'prenom' => 'Global',
             'email' => 'ndongo@example.com',
-            'role' => 'admin',
+            'role' => 'comptable',
             'boutique_id' => optional($premiereBoutique)->id,
             'adresse' => 'Siège',
             'telephone' => '+237600000000',
