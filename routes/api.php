@@ -131,7 +131,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ---------------- TRANSFERTS ----------------
     Route::get('transfers/boutique/{boutique_id}', [TransfertEnAttenteController::class, 'produitsByBoutique']);
-    Route::get('transfers-en-attente', [TransfertEnAttenteController::class, 'getTransferEnAttente']);
     Route::get('transfers-annuler', [TransfertEnAttenteController::class, 'getTransferAnnuler']);
     Route::get('liste-transfers-annuler',[TransfertEnAttenteController::class,'transfertAnnuler']);
 
