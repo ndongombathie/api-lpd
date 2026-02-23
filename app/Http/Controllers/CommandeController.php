@@ -42,13 +42,44 @@ class CommandeController extends Controller
         }
     }
 
-    public function getCommandesEnAttente(){
+    public function getCommandesEnAttente(Request $request){
         try {
-            return response()->json(Commande::query()
+            $perPage = min(max((int) $request->input('per_page', 15), 1), 100);
+            $page = max((int) $request->input('page', 1), 1);
+            $search = $request->input('search', '');
+
+            $query = Commande::query()
                 ->where('statut', 'attente')
                 ->with(['details.produit', 'client', 'vendeur', 'paiements'])
-                ->latest()
-                ->paginate(10));
+                ->latest();
+
+            // Recherche par N° ticket, ID, vendeur ou client
+            if (strlen(trim($search)) >= 2) {
+                $searchTerm = '%' . trim($search) . '%';
+                $query->where(function ($q) use ($searchTerm) {
+                    $q->where('id', 'like', $searchTerm)
+                      ->orWhereHas('vendeur', function ($v) use ($searchTerm) {
+                          $v->where('prenom', 'like', $searchTerm)
+                            ->orWhere('nom', 'like', $searchTerm);
+                      })
+                      ->orWhereHas('client', function ($c) use ($searchTerm) {
+                          $c->where('prenom', 'like', $searchTerm)
+                            ->orWhere('nom', 'like', $searchTerm);
+                      });
+                });
+            }
+
+            $totalAmount = (int) (clone $query)->sum('total');
+            $paginator = $query->paginate($perPage, ['*'], 'page', $page);
+
+            return response()->json([
+                'data' => $paginator->items(),
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+                'total_amount' => $totalAmount,
+            ]);
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la récupération des commandes en attente',
@@ -65,7 +96,11 @@ class CommandeController extends Controller
                 ->where('statut', 'payee')
                 ->with(['details','client','vendeur', 'paiements' => function($q) {
                     $q->orderBy('date', 'desc'); // Trier les paiements par date décroissante
-                }]);
+                }])->latest();
+
+                if ($request->filled('type')) {
+                $commandes->where('type_vente', $request->input('type_vente'));
+            }
             }else
             {
                 $commandes = Commande::query()
@@ -73,17 +108,14 @@ class CommandeController extends Controller
                 ->where('caissier_id', Auth::user()->id)
                 ->with(['details','client','vendeur', 'paiements' => function($q) {
                     $q->orderBy('date', 'desc'); // Trier les paiements par date décroissante
-                }])
-                ->latest();
+                }])->latest();
             }
-
             if ($request->filled('date')) {
                 $commandes->whereDate('date', $request->date);
             }
 
-            if ($request->filled('type')) {
-                $commandes->where('type_vente', $request->type);
-            }
+            // Filter by boutique_id if provided
+
 
             return response()->json($commandes->paginate(10));
         } catch (\Throwable $th) {
@@ -300,6 +332,11 @@ class CommandeController extends Controller
     public function annuler(string $id)
     {
         $commande = Commande::findOrFail($id);
+        if($commande->statut !== 'attente'){
+            return response()->json([
+                'message' => 'Seules les commandes en attente peuvent être annulées',
+            ], 400);
+        }
         $commande->update(['statut' => 'annulee','caissier_id'=>Auth::user()->id]);
         $commande->load('details', 'vendeur', 'client');
 
@@ -314,6 +351,7 @@ class CommandeController extends Controller
         try {
             $commande = Commande::findOrFail($id);
             $commande->update(['statut' => 'annulee']);
+            $commande->update(['total' => 0]);
             $commande->load('details', 'vendeur','client');
             event(new CommandeAnnulee($commande));
             return $commande;

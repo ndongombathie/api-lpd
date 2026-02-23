@@ -23,7 +23,7 @@ class StoreDecaissementRequest extends FormRequest
     {
         return [
             'motif' => 'required|string|max:255',
-            'libelle'=> 'required|string|max:255',
+            'caissier_id' => 'required|uuid|exists:users,id',
             'date' => 'required|date',
             'montant' => 'required|numeric|min:0',
             'methode_paiement' => 'required|string|max:255',

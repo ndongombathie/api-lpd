@@ -18,7 +18,6 @@ use App\Models\HistoriqueVente;
 use Illuminate\Support\Facades\Log;
 
 
-
 use App\Models\Decaissement;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -113,56 +112,34 @@ class PaiementController extends Controller
      */
     public function store(Request $request, string $commandeId)
     {
-        $commande = Commande::findOrFail($commandeId);
-
-        // Pour les clients spéciaux, vérifier si un paiement existe déjà avec un type_paiement
-        $commande->loadMissing('client');
-        $isClientSpecial = optional($commande->client)->type_client === 'special';
-
-        // Récupérer tous les paiements existants pour cette commande
-        $paiementsExistants = Paiement::where('commande_id', $commande->id)->get();
-
-        // Si client spécial et paiements existants, utiliser le type_paiement du premier paiement
-        $typePaiementParDefaut = null;
-        if ($isClientSpecial && $paiementsExistants->isNotEmpty()) {
-            // Prendre le type_paiement du premier paiement (créé par le responsable)
-            $typePaiementParDefaut = $paiementsExistants->first()->type_paiement;
-        }
+        # les validations
 
         $data = $request->validate([
             'montant' => 'required|numeric|min:0.01',
-            'type_paiement' => $isClientSpecial && $typePaiementParDefaut
-                ? 'nullable|string'
-                : 'required|string',
+            'type_paiement' => 'required|string',
         ]);
 
-        // Utiliser le type_paiement du paiement existant pour les clients spéciaux si non fourni ou vide
-        if ($isClientSpecial && $typePaiementParDefaut) {
-            if (empty($data['type_paiement']) || $data['type_paiement'] === '' || $data['type_paiement'] === null) {
-                $data['type_paiement'] = $typePaiementParDefaut;
-            }
-        }
-
-        // Validation finale : le type_paiement doit être présent
-        if (empty($data['type_paiement']) || $data['type_paiement'] === null) {
+        $commande = Commande::findOrFail($commandeId);
+        if($commande->statut !== 'attente'){
             return response()->json([
-                'message' => 'Le type de paiement est requis. Pour les clients spéciaux, le responsable doit définir le moyen de paiement.',
-                'error' => 'type_paiement_required'
-            ], 422);
+                'message' => 'Seules les commandes en attente peuvent être payées',
+            ], 400);
+            abort(400, 'Seules les commandes en attente peuvent être payées');
+        }
+        // Pour les clients spéciaux, vérifier si un paiement existe déjà avec un type_paiement
+        $commande->loadMissing('client');
+        $isClientSpecial = optional($commande->client)->type_client === 'special';
+        //dd($isClientSpecial);
+        $reste = $commande->total - $request->input('montant') > 0 ? $commande->total - $request->input('montant') : 0 ;
+
+        # si le client n'est pas special il doit tout payer en une fois
+        if(!$isClientSpecial && $reste != 0){
+            return response()->json([
+                'message' => 'Seul les clients specials peuvent payer par tranche.',
+            ], 400);
+            abort(400, 'Seul les clients spéciaux peuvent payer par tranche.');
         }
 
-
-            $totalPaye = Paiement::where('commande_id', $commande->id)->sum('montant');
-            $reste = max(0, $commande->total - $totalPaye - $data['montant']);
-
-            $paiement = Paiement::create([
-                'commande_id' => $commande->id,
-                'montant' => $data['montant'],
-                'type_paiement' => $data['type_paiement'],
-                'date' => now(),
-                'reste_du' => $reste,
-                'caissier_id' => Auth::user()->id ?? $commande->vendeur_id, // Fallback to vendeur if no auth user
-            ]);
 
             // Diffuser l'événement de paiement (sans bloquer si Reverb n'est pas disponible)
             try {
@@ -174,9 +151,31 @@ class PaiementController extends Controller
 
             // Traiter la finalisation de la commande (mise à jour du statut, stock, etc.)
             // Même en cas d'erreur, on retourne le paiement car il est déjà créé
-            if ($reste <= 0) {
+            if ($reste == 0) {
                 $commande->update(['statut' => 'payee']);
-                $commande->update(['caissier_id' => Auth::user()->id]);
+                #recuperer le client et changer son statut en paye
+                $client = $commande->client;
+                $client->update(['statut' => 'paye']);
+                $client->update(['solde' => 0]);
+            }
+            else{
+                $commande->update(['statut' => 'partiellement_payee']);
+                #recuperer le client et changer son statut en en_dette
+                $client = $commande->client;
+                $client->update(['statut' => 'en_dette']);
+                $client->update(['solde' => $reste]);
+            }
+
+            $paiement = Paiement::create([
+                'commande_id' => $commande->id,
+                'montant' => $data['montant'],
+                'type_paiement' => $data['type_paiement'],
+                'date' => now(),
+                'reste_du' => $reste,
+                'caissier_id' => Auth::user()->id ?? $commande->vendeur_id, // Fallback to vendeur if no auth user
+            ]);
+
+            $commande->update(['caissier_id' => Auth::user()->id]);
 
                 // Créer la facture
                 $facture = Facture::create([
@@ -188,18 +187,18 @@ class PaiementController extends Controller
 
                 // Mettre à jour le stock de la boutique et enregistrer le mouvement
                 $commande->loadMissing(['details', 'vendeur']);
-                $boutiqueId = optional($commande->vendeur)->boutique_id;
 
                 // Traiter chaque détail avec gestion d'erreur individuelle
                 foreach ($commande->details as $detail) {
                     try {
 
                     // Décrémenter le stock de la boutique pour chaque produit
-                    $stock = TransfertEnAttente::where('produit_id', $detail->produit_id)
-                        ->first();
+                    $stock_boutique=StockBoutique::where('produit_id', $detail->produit_id)->first();
+                    $stock = TransfertEnAttente::where('produit_id', $stock_boutique->produit_id)->first();
 
                     if ($stock) {
                         $stock->update(['quantite' => max(0, $stock->quantite - $detail->quantite)]);
+                        $stock_boutique->update(['quantite' => max(0, $stock->quantite - $detail->quantite)]);
                         if ($stock->quantite <= 0) {
                                 try {
                             event(new StockRupture($stock->fresh()));
@@ -215,34 +214,80 @@ class PaiementController extends Controller
                         'produit_id' => $detail->produit_id,
                         'quantite' => $detail->quantite,
                         'prix_unitaire' => $detail->prix_unitaire ?? 0,
-                        // Montant pour ce produit spécifique
                         'montant' => ($detail->prix_unitaire ?? 0) * $detail->quantite,
                         'date' => now()
-                    ]);
+                                        ]);
 
-                    MouvementStock::create([
-                        'source' => 'boutique:' . $boutiqueId,
-                        'destination' => null,
-                        'produit_id' => $detail->produit_id,
-                        'quantite' => $detail->quantite,
-                            'type' => 'sortie', // 'sortie' pour une vente (sortie de stock)
-                        'date' => now(),
-                    ]);
                     } catch (\Exception $e) {
                         // Log l'erreur pour ce produit mais continue avec les autres
                         Log::error('Erreur lors de la mise à jour du stock pour le produit ' . $detail->produit_id . ': ' . $e->getMessage());
                         // On continue avec les autres produits
                     }
                 }
-
                 // Diffuser l'événement de facture
                 try {
                 event(new FactureCree($facture));
                 } catch (\Exception $e) {
                     Log::warning('Erreur lors de la diffusion de la facture: ' . $e->getMessage());
                 }
-            }
+
             return $paiement;
+    }
+   #payer par tranche pour une commande donnee jusqu'a atteindre le montant total de la commande
+    public function payementParTranche(Request $request, string $commandeId){
+        # les validtions
+        $request->validate([
+            'montant' => 'required|numeric|min:0',
+            'type_paiement' => 'required|string',
+        ]);
+
+        $commande = Commande::findOrFail($commandeId);
+        if($commande->statut !== 'partiellement_payee'){
+            return response()->json([
+                'message' => 'Seules les commandes partiellement payées peuvent être payées',
+            ], 400);
+        }
+
+        $montantPaye = $request->input('montant');
+        if($montantPaye > $commande->total){
+            return response()->json([
+                'message' => 'Le montant payé ne peut pas dépasser le montant total de la commande',
+            ], 400);
+        }
+
+        if($commande->total == Paiement::where('commande_id', $commande->id)->sum('montant')){
+            $commande->update(['statut' => 'payee']);
+            #recuperer le client et changer son statut en paye
+            $client = $commande->client;
+            $client->update(['statut' => 'paye']);
+            $client->update(['solde' => 0]);
+
+            return response()->json([
+                'message' => 'La commande a été payée entièrement',
+            ], 400);
+        }
+        // Créer le paiement
+
+        #le dernier montant payer pour la commande
+        $dernierPaiement = Paiement::where('commande_id', $commande->id)->latest()->first();
+
+        $paiement = Paiement::create([
+            'caissier_id' => Auth::user()->id,
+            'commande_id' => $commande->id,
+            'montant' => $montantPaye,
+            'type_paiement' => $request->input('type_paiement'),
+            'reste_du' => $commande->total - ($montantPaye + $dernierPaiement->montant),
+        ]);
+        // Mettre à jour le reste du montant à payer pour la commande
+        return $paiement;
+    }
+
+    #la liste des paiement associer a une commande
+    public function listePaiements(string $commandeId){
+        $commande = Commande::findOrFail($commandeId);
+        $paiements = Paiement::where('commande_id', $commande->id);
+
+        return response()->json($paiements->paginate(10));
     }
 
     #•	Reste total à encaisser.
