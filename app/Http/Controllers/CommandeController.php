@@ -65,7 +65,11 @@ class CommandeController extends Controller
                 ->where('statut', 'payee')
                 ->with(['details','client','vendeur', 'paiements' => function($q) {
                     $q->orderBy('date', 'desc'); // Trier les paiements par date décroissante
-                }]);
+                }])->latest();
+                
+                if ($request->filled('type')) {
+                $commandes->where('type_vente', $request->input('type_vente'));
+            }
             }else
             {
                 $commandes = Commande::query()
@@ -73,17 +77,14 @@ class CommandeController extends Controller
                 ->where('caissier_id', Auth::user()->id)
                 ->with(['details','client','vendeur', 'paiements' => function($q) {
                     $q->orderBy('date', 'desc'); // Trier les paiements par date décroissante
-                }])
-                ->latest();
+                }])->latest();
             }
-
             if ($request->filled('date')) {
                 $commandes->whereDate('date', $request->date);
             }
 
-            if ($request->filled('type')) {
-                $commandes->where('type_vente', $request->type);
-            }
+            // Filter by boutique_id if provided
+
 
             return response()->json($commandes->paginate(10));
         } catch (\Throwable $th) {
