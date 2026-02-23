@@ -284,4 +284,13 @@
                 'normaux' => Client::where('type_client', 'normal')->count(),
             ]);
         }
+        // ============================================================
+        // LISTE COMPLETE CLIENTS SPECIAUX (sans pagination)
+        // ============================================================
+        public function allSpeciaux()
+        {
+            return Client::where('type_client', 'special')
+                ->orderBy('nom')
+                ->get();
+        }
     }

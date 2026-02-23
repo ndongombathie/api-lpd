@@ -65,8 +65,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ---------------- RESSOURCES ----------------
     Route::apiResource('categories', CategorieController::class);
+    Route::get('produits/catalogue', [ProduitController::class, 'all']);
     Route::apiResource('produits', ProduitController::class);
     Route::apiResource('clients', ClientController::class);
+    Route::get('clients/speciaux/all', [ClientController::class, 'allSpeciaux']);
     Route::apiResource('fournisseurs', FournisseurController::class);
     Route::apiResource('utilisateurs', UserController::class);
     Route::get('vendeurs', [UserController::class, 'vendeursStats']);
