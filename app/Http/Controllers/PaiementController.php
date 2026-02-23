@@ -142,12 +142,7 @@ class PaiementController extends Controller
 
 
             // Diffuser l'événement de paiement (sans bloquer si Reverb n'est pas disponible)
-            try {
-            event(new PaiementCree($paiement));
-            } catch (\Exception $e) {
-                // Log l'errTransfereeur mais ne bloque pas l'opération
-                Log::warning('Erreur lors de la diffusion du paiement: ' . $e->getMessage());
-            }
+
 
             // Traiter la finalisation de la commande (mise à jour du statut, stock, etc.)
             // Même en cas d'erreur, on retourne le paiement car il est déjà créé
@@ -174,6 +169,13 @@ class PaiementController extends Controller
                 'reste_du' => $reste,
                 'caissier_id' => Auth::user()->id ?? $commande->vendeur_id, // Fallback to vendeur if no auth user
             ]);
+            
+            try {
+            event(new PaiementCree($paiement));
+            } catch (\Exception $e) {
+                // Log l'errTransfereeur mais ne bloque pas l'opération
+                Log::warning('Erreur lors de la diffusion du paiement: ' . $e->getMessage());
+            }
 
             $commande->update(['caissier_id' => Auth::user()->id]);
 
