@@ -97,6 +97,12 @@ Route::middleware('auth:sanctum')->group(function () {
     //Route::post('commandes/{commande}/paiements', [PaiementController::class, 'store']);
     Route::put('paiements/{paiement}', [PaiementController::class, 'update']);
     Route::delete('paiements/{paiement}', [PaiementController::class, 'destroy']);
+    #paiement par tranche
+    Route::post('commandes/{commande}/paiements-tranches', [PaiementController::class, 'payementParTranche']);
+    #la liste des paiement associer a une commande
+    Route::get('commandes/{commande}/paiements', [PaiementController::class, 'listePaiements']);
+
+
 
     // ---------------- HISTORIQUES ----------------
     Route::get('historique-ventes', [HistoriqueVenteController::class, 'index']);

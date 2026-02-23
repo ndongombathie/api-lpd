@@ -319,6 +319,7 @@ class CommandeController extends Controller
         try {
             $commande = Commande::findOrFail($id);
             $commande->update(['statut' => 'annulee']);
+            $commande->update(['total' => 0]);
             $commande->load('details', 'vendeur','client');
             event(new CommandeAnnulee($commande));
             return $commande;
