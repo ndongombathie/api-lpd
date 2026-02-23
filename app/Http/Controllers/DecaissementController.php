@@ -116,8 +116,9 @@ class DecaissementController extends Controller
             // Le statut peut être stocké avec une majuscule, donc on utilise whereRaw ou LOWER
             $decaissements = Decaissement::with(['user', 'caissier'])
                 ->whereRaw('LOWER(statut) = ?', ['en_attente'])
+                ->where('caissier_id', Auth::user()->id)
                 ->orderBy('created_at', 'asc')
-                ->get();
+                ->paginate(10);
 
             // Retourner les valeurs brutes directement depuis la base de données
             $decaissementsArray = $decaissements->map(function ($dec) {

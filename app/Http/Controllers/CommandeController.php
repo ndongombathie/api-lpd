@@ -300,6 +300,11 @@ class CommandeController extends Controller
     public function annuler(string $id)
     {
         $commande = Commande::findOrFail($id);
+        if($commande->statut !== 'en_attente'){
+            return response()->json([
+                'message' => 'Seules les commandes en attente peuvent être annulées',
+            ], 400);
+        }
         $commande->update(['statut' => 'annulee','caissier_id'=>Auth::user()->id]);
         $commande->load('details', 'vendeur', 'client');
 
@@ -314,6 +319,7 @@ class CommandeController extends Controller
         try {
             $commande = Commande::findOrFail($id);
             $commande->update(['statut' => 'annulee']);
+            $commande->update(['total' => 0]);
             $commande->load('details', 'vendeur','client');
             event(new CommandeAnnulee($commande));
             return $commande;

@@ -66,30 +66,20 @@ class StockController extends Controller
                 $produit->decrement('stock_global', $qte*$produit->unite_carton);
                 $produit->save();
 
-                Transfer::Create([
-                    'boutique_id' => Auth::user()->boutique_id,
-                    'produit_id'  => $produitId,
-                    'quantite' => $qte*$produit->unite_carton, // provide a default value for the NOT NULL column
-                    'nombre_carton' => $qte,
-                ]);
-
-                TransfertEnAttente::Create([
-                    'produit_id'  => $produitId,
-                    'quantite' => $qte*$produit->unite_carton, // provide a default value for the NOT NULL column
-                    'nombre_carton' => $qte,
-                ]);
-
-               /*  $transfer->increment('quantite', $qte*$produit->unite_carton);
-                $transfer->increment('nombre_carton', $qte);
-                $transfer->status = 'en_attente';
-                $transfer->updated_at = now();
-                $transfer->save(); */
+                $transfer = TransfertEnAttente::Create([
+                        'produit_id'  => $produitId,
+                        'quantite' => $qte*$produit->unite_carton, // provide a default value for the NOT NULL column
+                        'nombre_carton' => $qte,
+                    ]);
 
                 $this->EntreeSortiesBoutique($produitId,$qte);
                 $this->Sorties($produitId,$qte);
 
                 $src->decrement('quantite', $qte*$produit->unite_carton);
                 $src->decrement('nombre_carton',$qte);
+                $src->transfert_en_attente_id = $transfer->id;
+                $src->save();
+
                 $sourceLabel = 'boutique:' . Auth::user()->boutique_id;
 
                 MouvementStock::firstOrCreate([
