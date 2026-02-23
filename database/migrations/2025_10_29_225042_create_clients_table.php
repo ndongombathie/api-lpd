@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('numero_cni')->nullable();
             $table->string('telephone')->nullable();
             $table->enum('type_client', ['normal', 'special'])->default('normal');
-            $table->bigIncrements('solde')->default(0);
+            $table->bigInteger('solde')->default(0);
             $table->string('contact')->nullable();
             $table->timestamps();
         });

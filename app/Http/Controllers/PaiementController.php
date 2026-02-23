@@ -18,7 +18,6 @@ use App\Models\HistoriqueVente;
 use Illuminate\Support\Facades\Log;
 
 
-
 use App\Models\Decaissement;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -120,7 +119,7 @@ class PaiementController extends Controller
         ]);
 
         $commande = Commande::findOrFail($commandeId);
-        if($commande->statut !== 'en_attente'){
+        if($commande->statut !== 'attente'){
             return response()->json([
                 'message' => 'Seules les commandes en attente peuvent être payées',
             ], 400);
@@ -128,14 +127,14 @@ class PaiementController extends Controller
         // Pour les clients spéciaux, vérifier si un paiement existe déjà avec un type_paiement
         $commande->loadMissing('client');
         $isClientSpecial = optional($commande->client)->type_client === 'special';
+        //dd($isClientSpecial);
         $reste = $commande->total - $request->input('montant') > 0 ? $commande->total - $request->input('montant') : 0 ;
 
         # si le client n'est pas special il doit tout payer en une fois
         if(!$isClientSpecial && $reste != 0){
             return response()->json([
-                'message' => 'Le montant payé ne peut pas dépasser le total de la commande.',
-            ], 201);
-            abort(400);
+                'message' => 'Seul les clients specials peuvent payer par tranche.',
+            ], 400);
         }
 
             $paiement = Paiement::create([
@@ -146,6 +145,7 @@ class PaiementController extends Controller
                 'reste_du' => $reste,
                 'caissier_id' => Auth::user()->id ?? $commande->vendeur_id, // Fallback to vendeur if no auth user
             ]);
+            // dd($paiement);
 
             // Diffuser l'événement de paiement (sans bloquer si Reverb n'est pas disponible)
             try {
@@ -283,7 +283,7 @@ class PaiementController extends Controller
     public function listePaiements(string $commandeId){
         $commande = Commande::findOrFail($commandeId);
         $paiements = Paiement::where('commande_id', $commande->id);
-        
+
         return response()->json($paiements->paginate(10));
     }
 

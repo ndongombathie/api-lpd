@@ -66,7 +66,7 @@ class CommandeController extends Controller
                 ->with(['details','client','vendeur', 'paiements' => function($q) {
                     $q->orderBy('date', 'desc'); // Trier les paiements par date décroissante
                 }])->latest();
-                
+
                 if ($request->filled('type')) {
                 $commandes->where('type_vente', $request->input('type_vente'));
             }
@@ -301,7 +301,7 @@ class CommandeController extends Controller
     public function annuler(string $id)
     {
         $commande = Commande::findOrFail($id);
-        if($commande->statut !== 'en_attente'){
+        if($commande->statut !== 'attente'){
             return response()->json([
                 'message' => 'Seules les commandes en attente peuvent être annulées',
             ], 400);
