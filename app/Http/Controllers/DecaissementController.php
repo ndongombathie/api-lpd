@@ -117,7 +117,7 @@ class DecaissementController extends Controller
             $decaissements = Decaissement::with(['user', 'caissier'])
                 ->whereRaw('LOWER(statut) = ?', ['en_attente'])
                 ->orderBy('created_at', 'asc')
-                ->get();
+                ->paginate(10);
 
             // Retourner les valeurs brutes directement depuis la base de données
             $decaissementsArray = $decaissements->map(function ($dec) {
