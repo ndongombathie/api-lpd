@@ -258,4 +258,22 @@
                 'normaux' => Client::where('type_client', 'normal')->count(),
             ]);
         }
+
+           #la liste des clients en dette
+           public function clientsDette()
+           {
+            try {
+               $clients = Client::where('type_client', 'special')
+                   ->where('statut','en_dette')
+                   ->paginate(10);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'message' => 'Erreur lors de la récupération des clients en dette: ' . $e->getMessage(),
+                ], 500);
+            }
+               return $clients;
+           }
     }
+
+
+

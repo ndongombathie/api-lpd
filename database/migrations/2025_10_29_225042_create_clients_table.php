@@ -20,6 +20,8 @@ return new class extends Migration
             $table->string('telephone')->nullable();
             $table->enum('type_client', ['normal', 'special'])->default('normal');
             $table->bigInteger('solde')->default(0);
+            $table->bigInteger('dette')->default(0);
+            $table->bigInteger('total_paye')->default(0);
             $table->string('contact')->nullable();
             $table->timestamps();
         });
