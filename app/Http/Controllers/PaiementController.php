@@ -113,7 +113,6 @@ class PaiementController extends Controller
     public function store(Request $request, string $commandeId)
     {
         # les validations
-
         $data = $request->validate([
             'montant' => 'required|numeric|min:0.01',
             'type_paiement' => 'required|string',
