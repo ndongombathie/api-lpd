@@ -70,7 +70,7 @@
                 'contact' => 'nullable|string',
             ]);
 
-            if(Auth::user()->role=='reponsable')
+            if(Auth::user()->role == 'responsable')
             {
                 $data['type_client'] = 'special';
             }
@@ -259,6 +259,15 @@
                 'speciaux' => Client::where('type_client', 'special')->count(),
                 'normaux' => Client::where('type_client', 'normal')->count(),
             ]);
+        }
+        // ============================================================
+        // LISTE COMPLETE CLIENTS SPECIAUX (sans pagination)
+        // ============================================================
+        public function allSpeciaux()
+        {
+            return Client::where('type_client', 'special')
+                ->orderBy('nom')
+                ->get();
         }
 
            #la liste des clients en dette

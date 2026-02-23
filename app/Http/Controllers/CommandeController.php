@@ -420,4 +420,84 @@ class CommandeController extends Controller
             ], 500);
         }
     }
+    public function statsCommandesSpeciales(Request $request)
+    {
+        try {
+
+            $query = Commande::query()
+                ->whereHas('client', function ($q) {
+                    $q->where('type_client', 'special');
+                });
+
+            // ===============================
+            // FILTRES IDENTIQUES AU FRONT
+            // ===============================
+
+            if ($request->filled('client_id')) {
+                $query->where('client_id', $request->client_id);
+            }
+
+            if ($request->filled('statut')) {
+                $query->where('statut', $request->statut);
+            }
+
+            if ($request->filled('start_date')) {
+                $query->whereDate('created_at', '>=', $request->start_date);
+            }
+
+            if ($request->filled('end_date')) {
+                $query->whereDate('created_at', '<=', $request->end_date);
+            }
+
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->where(function ($q) use ($search) {
+                    $q->where('numero', 'like', "%{$search}%")
+                    ->orWhereHas('client', function ($sub) use ($search) {
+                        $sub->where('nom', 'like', "%{$search}%");
+                    });
+                });
+            }
+
+            // ===============================
+            // ANNULÉES (compteur séparé)
+            // ===============================
+
+            $annuleesQuery = clone $query;
+            $annulees = $annuleesQuery
+                ->where('statut', 'annulee')
+                ->count();
+            $statsQuery = clone $query;
+
+            // Exclure annulées sauf si filtre annulée
+            if (!$request->filled('statut') || $request->statut !== 'annulee') {
+                $statsQuery->where('statut', '!=', 'annulee');
+            }
+
+            $nb = $statsQuery->count();
+            $totalTTC = $statsQuery->sum('total');
+
+            $commandeIds = $statsQuery->pluck('id');
+
+            $totalPaye = DB::table('paiements')
+                ->whereIn('commande_id', $commandeIds)
+                ->sum('montant');
+
+            $dette = $totalTTC - $totalPaye;
+
+            return response()->json([
+                'nb' => $nb,
+                'annulees' => $annulees,
+                'totalTTC' => $totalTTC,
+                'totalPaye' => $totalPaye,
+                'dette' => $dette,
+            ]);
+
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Erreur stats commandes spéciales',
+                'error' => $th->getMessage(),
+            ], 500);
+        }
+    }
 }
