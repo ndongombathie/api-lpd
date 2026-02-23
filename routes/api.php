@@ -71,6 +71,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('utilisateurs', UserController::class);
     Route::get('vendeurs', [UserController::class, 'vendeursStats']);
     Route::get('/caissiers', [UserController::class, 'caissiersStats']);
+    Route::get('caissiers/all', [UserController::class, 'allCaissiers']);
     Route::get('nombre-fournisseurs', [FournisseurController::class, 'nombreFournisseur']);
 
 
