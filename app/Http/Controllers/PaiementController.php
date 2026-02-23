@@ -113,6 +113,7 @@ class PaiementController extends Controller
     public function store(Request $request, string $commandeId)
     {
         # les validations
+
         $data = $request->validate([
             'montant' => 'required|numeric|min:0.01',
             'type_paiement' => 'required|string',
@@ -123,6 +124,7 @@ class PaiementController extends Controller
             return response()->json([
                 'message' => 'Seules les commandes en attente peuvent être payées',
             ], 400);
+            abort(400, 'Seules les commandes en attente peuvent être payées');
         }
         // Pour les clients spéciaux, vérifier si un paiement existe déjà avec un type_paiement
         $commande->loadMissing('client');
@@ -135,17 +137,9 @@ class PaiementController extends Controller
             return response()->json([
                 'message' => 'Seul les clients specials peuvent payer par tranche.',
             ], 400);
+            abort(400, 'Seul les clients spéciaux peuvent payer par tranche.');
         }
 
-            $paiement = Paiement::create([
-                'commande_id' => $commande->id,
-                'montant' => $data['montant'],
-                'type_paiement' => $data['type_paiement'],
-                'date' => now(),
-                'reste_du' => $reste,
-                'caissier_id' => Auth::user()->id ?? $commande->vendeur_id, // Fallback to vendeur if no auth user
-            ]);
-            // dd($paiement);
 
             // Diffuser l'événement de paiement (sans bloquer si Reverb n'est pas disponible)
             try {
@@ -160,7 +154,6 @@ class PaiementController extends Controller
             if ($reste == 0) {
                 $commande->update(['statut' => 'payee']);
                 #recuperer le client et changer son statut en paye
-                $client = $commande->client;
                 $client->update(['statut' => 'paye']);
                 $client->update(['solde' => 0]);
             }
@@ -168,9 +161,19 @@ class PaiementController extends Controller
                 $commande->update(['statut' => 'partiellement_payee']);
                 #recuperer le client et changer son statut en en_dette
                 $client = $commande->client;
+                 dd($client);
                 $client->update(['statut' => 'en_dette']);
                 $client->update(['solde' => $reste]);
             }
+
+            $paiement = Paiement::create([
+                'commande_id' => $commande->id,
+                'montant' => $data['montant'],
+                'type_paiement' => $data['type_paiement'],
+                'date' => now(),
+                'reste_du' => $reste,
+                'caissier_id' => Auth::user()->id ?? $commande->vendeur_id, // Fallback to vendeur if no auth user
+            ]);
 
             $commande->update(['caissier_id' => Auth::user()->id]);
 

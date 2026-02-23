@@ -151,6 +151,8 @@ class CommandeController extends Controller
     public function store(Request $request)
     {
 
+        
+
         try {
 
             $validated = $request->validate([
