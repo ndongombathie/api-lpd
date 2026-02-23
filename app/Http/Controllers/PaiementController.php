@@ -154,6 +154,7 @@ class PaiementController extends Controller
             if ($reste == 0) {
                 $commande->update(['statut' => 'payee']);
                 #recuperer le client et changer son statut en paye
+                $client = $commande->client;
                 $client->update(['statut' => 'paye']);
                 $client->update(['solde' => 0]);
             }
@@ -161,7 +162,6 @@ class PaiementController extends Controller
                 $commande->update(['statut' => 'partiellement_payee']);
                 #recuperer le client et changer son statut en en_dette
                 $client = $commande->client;
-                 dd($client);
                 $client->update(['statut' => 'en_dette']);
                 $client->update(['solde' => $reste]);
             }

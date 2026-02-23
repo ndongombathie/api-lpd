@@ -163,9 +163,10 @@ class DecaissementController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreDecaissementRequest $request)
+    public function store(Request $request)
     {
         try {
+            dd($request->all());
             $data=$request->validated();
             $data['user_id'] = Auth::user()->id;
             $decaissement = Decaissement::create($data);

@@ -8,7 +8,7 @@
     use Illuminate\Http\Request;
     use Illuminate\Support\Facades\Auth;
 
-    
+
     class ClientController extends Controller
     {
         private function normalizeContact(?string $contact): ?string
@@ -57,53 +57,27 @@
         // ============================================================
         public function store(Request $request)
         {
-            $request->merge([
-                'contact' => $this->normalizeContact($request->contact),
-            ]);
-
-            $isResponsable = Auth::user()->role === 'responsable';
-
             $data = $request->validate([
-                'nom'        => 'required|string',
-                'entreprise' => 'nullable|string',
-                'prenom'     => $isResponsable ? 'nullable|string' : 'required|string',
-                'adresse'    => 'nullable|string',
+                'nom' => 'required|string',
+                'prenom' => 'required|string',
+                'adresse' => 'nullable|string',
                 'numero_cni' => 'nullable|string',
                 'telephone' => 'nullable|string',
-                'contact' => [
-                    'required',
-                    'string',
-                    'max:20',
-                    function ($attribute, $value, $fail) use ($isResponsable) {
-
-                        // uniquement pour les clients spéciaux
-                        if ($isResponsable) {
-
-                            $exists = Client::where('contact', $value)
-                                ->where('type_client', 'special')
-                                ->exists();
-
-                            if ($exists) {
-                                $fail('Un client spécial avec ce numéro existe déjà.');
-                            }
-                        }
-                    },
-                ],
-
-                'solde'      => 'nullable|numeric',
+                'type_client' => 'required|in:normal,special',
+                'solde' => 'nullable|numeric',
+                'contact' => 'nullable|string',
             ]);
-            $data['entreprise'] = $data['entreprise'] ?? null;
 
-            // Règle métier
-            $data['type_client'] = $isResponsable ? 'special' : 'normal';
-
-            // Si responsable → on force prenom = null
-            if ($isResponsable) {
-                $data['prenom'] = null;
+            if(Auth::user()->role=='reponsable')
+            {
+                $data['type_client'] = 'special';
+            }
+            else
+            {
+                $data['type_client'] = 'normal';
             }
 
             $client = Client::create($data);
-
             return response()->json($client, 201);
         }
 
@@ -275,7 +249,7 @@
                 ],
             ]);
         }
-        
+
         public function stats()
         {
             return response()->json([
