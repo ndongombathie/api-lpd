@@ -17,7 +17,6 @@ return new class extends Migration
             $table->bigInteger('quantite')->default(0);
             $table->bigInteger('nombre_carton')->default(0);
             $table->bigInteger('seuil')->default(0);
-            $table->bigInteger('prix_unite_carton')->default(0);
             $table->bigInteger('prix_vente_detail')->default(0);
             $table->bigInteger('prix_vente_gros')->default(0);
             $table->bigInteger('prix_seuil_detail')->nullable()->default(0);
