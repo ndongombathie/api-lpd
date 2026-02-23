@@ -81,6 +81,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // ---------------- CLIENTS ----------------
     Route::get('clients/{client}/paiements-tranches', [ClientController::class, 'paiementsTranches']);
     Route::get('clients/{client}/paiements', [ClientController::class, 'paiementsTranches']);
+    Route::get('clients/dette', [ClientController::class, 'clientsDette']);
+
+
 
     // ---------------- COMMANDES ----------------
     //Route::apiResource('commandes', CommandeController::class);

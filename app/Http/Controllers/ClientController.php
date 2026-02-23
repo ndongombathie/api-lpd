@@ -68,7 +68,7 @@
                 'contact' => 'nullable|string',
             ]);
 
-            if(Auth::user()->role=='reponsable')
+            if(Auth::user()->role == 'responsable')
             {
                 $data['type_client'] = 'special';
             }
@@ -267,4 +267,22 @@
                 ->orderBy('nom')
                 ->get();
         }
+
+           #la liste des clients en dette
+           public function clientsDette()
+           {
+            try {
+               $clients = Client::where('type_client', 'special')
+                   ->where('statut','en_dette')
+                   ->paginate(10);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'message' => 'Erreur lors de la récupération des clients en dette: ' . $e->getMessage(),
+                ], 500);
+            }
+               return $clients;
+           }
     }
+
+
+

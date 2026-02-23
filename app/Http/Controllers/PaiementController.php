@@ -113,7 +113,6 @@ class PaiementController extends Controller
     public function store(Request $request, string $commandeId)
     {
         # les validations
-
         $data = $request->validate([
             'montant' => 'required|numeric|min:0.01',
             'type_paiement' => 'required|string',
@@ -142,12 +141,7 @@ class PaiementController extends Controller
 
 
             // Diffuser l'événement de paiement (sans bloquer si Reverb n'est pas disponible)
-            try {
-            event(new PaiementCree($paiement));
-            } catch (\Exception $e) {
-                // Log l'errTransfereeur mais ne bloque pas l'opération
-                Log::warning('Erreur lors de la diffusion du paiement: ' . $e->getMessage());
-            }
+
 
             // Traiter la finalisation de la commande (mise à jour du statut, stock, etc.)
             // Même en cas d'erreur, on retourne le paiement car il est déjà créé
@@ -156,14 +150,22 @@ class PaiementController extends Controller
                 #recuperer le client et changer son statut en paye
                 $client = $commande->client;
                 $client->update(['statut' => 'paye']);
-                $client->update(['solde' => 0]);
+                $client->update([
+                'solde' => 0,
+                'dette' => 0,
+                'total_paye' => $request->input('montant'),
+                ]);
             }
             else{
                 $commande->update(['statut' => 'partiellement_payee']);
                 #recuperer le client et changer son statut en en_dette
                 $client = $commande->client;
                 $client->update(['statut' => 'en_dette']);
-                $client->update(['solde' => $reste]);
+                $client->update([
+                'solde' => $reste,
+                'dette' => $reste,
+                'total_paye' => Paiement::where('commande_id', $commande->id)->sum('montant'),
+                ]);
             }
 
             $paiement = Paiement::create([
@@ -174,6 +176,13 @@ class PaiementController extends Controller
                 'reste_du' => $reste,
                 'caissier_id' => Auth::user()->id ?? $commande->vendeur_id, // Fallback to vendeur if no auth user
             ]);
+
+            try {
+            event(new PaiementCree($paiement));
+            } catch (\Exception $e) {
+                // Log l'errTransfereeur mais ne bloque pas l'opération
+                Log::warning('Erreur lors de la diffusion du paiement: ' . $e->getMessage());
+            }
 
             $commande->update(['caissier_id' => Auth::user()->id]);
 
@@ -260,7 +269,11 @@ class PaiementController extends Controller
             #recuperer le client et changer son statut en paye
             $client = $commande->client;
             $client->update(['statut' => 'paye']);
-            $client->update(['solde' => 0]);
+            $client->update([
+                'solde' => 0,
+                'dette' => 0,
+                'total_paye' => Paiement::where('commande_id', $commande->id)->sum('montant'),
+            ]);
 
             return response()->json([
                 'message' => 'La commande a été payée entièrement',
@@ -278,6 +291,15 @@ class PaiementController extends Controller
             'type_paiement' => $request->input('type_paiement'),
             'reste_du' => $commande->total - ($montantPaye + $dernierPaiement->montant),
         ]);
+
+        $commande->update(['statut' => 'partiellement_payee']);
+        $client = $commande->client;
+        $client->update(['statut' => 'en_dette']);
+        $client->update([
+            'solde' => $commande->total - ($montantPaye + $dernierPaiement->montant),
+            'total_paye' => Paiement::where('commande_id', $commande->id)->sum('montant'),
+        ]);
+
         // Mettre à jour le reste du montant à payer pour la commande
         return $paiement;
     }
