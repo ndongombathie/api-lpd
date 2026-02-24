@@ -18,8 +18,8 @@ return new class extends Migration
             $table->string('adresse')->nullable();
             $table->string('numero_cni')->nullable();
             $table->string('telephone')->nullable();
-            $table->uuid('boutique_id')->foreignId('boutiques')->cascadeOnDelete();
-            $table->string('role'); // vendeur, caissier, gestionnaire_boutique, gestionnaire_depot, responsable, admin
+            $table->uuid('boutique_id')->nullable()->foreignId('boutiques')->cascadeOnDelete();
+            $table->enum('role', ['vendeur', 'caissier', 'gestionnaire_boutique', 'gestionnaire_depot', 'responsable', 'comptable']); // vendeur, caissier, gestionnaire_boutique, gestionnaire_depot, responsable, admin
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');

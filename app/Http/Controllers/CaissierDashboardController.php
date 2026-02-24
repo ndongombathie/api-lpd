@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\CaissierCaisseJournal;
 use App\Models\Commande;
 use App\Models\Decaissement;
+use App\Models\fondCaisse;
 use App\Models\Paiement;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class CaissierDashboardController extends Controller
 {
@@ -19,11 +21,14 @@ class CaissierDashboardController extends Controller
         $fondOuverture = $this->getFondOuverture($date);
 
         // Total encaissements du jour = somme des paiements du jour (heure exacte)
-        $totalEncaissements = (int) Paiement::whereDate('date', $dateStr)->sum('montant');
+        $totalEncaissements = (int) Paiement::whereDate('date', $dateStr)
+        ->where('caissier_id', Auth::user()->id)
+        ->sum('montant');
 
         // Total décaissements du jour = décaissements "valide" validés ce jour-là (updated_at)
         $totalDecaissements = (int) Decaissement::whereRaw('LOWER(statut) = ?', ['valide'])
             ->whereDate('updated_at', $dateStr)
+            ->where('caissier_id', Auth::user()->id)
             ->sum('montant');
 
         $soldeActuel = (int) ($fondOuverture + $totalEncaissements - $totalDecaissements);
@@ -33,6 +38,7 @@ class CaissierDashboardController extends Controller
         // Tickets traités = commandes passées à "payee" ce jour-là (updated_at)
         $ticketsTraites = (int) Commande::whereRaw('LOWER(statut) = ?', ['payee'])
             ->whereDate('updated_at', $dateStr)
+            ->where('caissier_id', Auth::user()->id)
             ->count();
 
         return response()->json([
@@ -53,6 +59,7 @@ class CaissierDashboardController extends Controller
         $rows = Paiement::query()
             ->selectRaw('type_paiement, SUM(montant) as montant')
             ->whereDate('date', $dateStr)
+            ->where('caissier_id', Auth::user()->id)
             ->groupBy('type_paiement')
             ->get();
 
@@ -62,7 +69,7 @@ class CaissierDashboardController extends Controller
             'especes' => 'Espèces',
             'carte' => 'Carte',
             'wave' => 'Wave',
-            'om' => 'Orange Money',
+            'Orange Money' => 'Orange Money',
             'autre' => 'Autre',
         ];
 
@@ -97,7 +104,9 @@ class CaissierDashboardController extends Controller
             '18h-20h' => 0,
         ];
 
-        $paiements = Paiement::whereDate('date', $dateStr)->get(['montant', 'date']);
+        $paiements = Paiement::whereDate('date', $dateStr)->get(['montant', 'date'])
+        ->where('caissier_id', Auth::user()->id)
+        ;
 
         foreach ($paiements as $p) {
             $dt = Carbon::parse($p->date);
@@ -134,7 +143,7 @@ class CaissierDashboardController extends Controller
             return (int) ($journalDuJour->fond_ouverture ?? 0);
         }
 
-        // Sinon : fond = solde de clôture de la veille
+        // Sinon : fond = solde de clôture de la veille (journal caissier)
         $veille = $date->copy()->subDay()->toDateString();
         $rapportVeille = CaissierCaisseJournal::where('date', $veille)
             ->where('cloture', true)

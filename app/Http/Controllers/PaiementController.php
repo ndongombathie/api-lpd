@@ -13,8 +13,11 @@ use App\Events\FactureCree;
 use App\Events\StockRupture;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Models\Transfer;
+use App\Models\TransfertEnAttente;
 use App\Models\HistoriqueVente;
+use Illuminate\Support\Facades\Log;
+
+
 
 use App\Models\Decaissement;
 use App\Models\User;
@@ -29,8 +32,12 @@ class PaiementController extends Controller
 
     public function index(string $commandeId)
     {
-        $commande = Commande::findOrFail($commandeId);
-        return Paiement::where('commande_id', $commande->id)->orderBy('date')->get();
+        try {
+            $commande = Commande::findOrFail($commandeId);
+            return Paiement::where('commande_id', $commande->id)->orderBy('date')->get();
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
 
@@ -51,7 +58,7 @@ class PaiementController extends Controller
                     DB::raw('COUNT(paiements.id) as nombre_paiement'),
                     DB::raw('SUM(paiements.montant) as valeur_total_paiement')
                 )
-                ->whereDate('paiements.date', $date)
+                //->whereDate('paiements.date', $date)
                 ->groupBy('users.id', 'users.nom', 'users.prenom')
                 ->get();
 
@@ -91,6 +98,7 @@ class PaiementController extends Controller
                     'nombre_paiement' => $p ? $p->nombre_paiement : 0,
                     'valeur_total_paiement' => $p ? $p->valeur_total_paiement : 0,
                     'total_decaissement' => $d ? $d->total_decaissement : 0,
+                    'caisse_final'=> $p->valeur_total_paiement - ($d->total_decaissement + 0),
                 ];
             }
 
@@ -106,35 +114,35 @@ class PaiementController extends Controller
     public function store(Request $request, string $commandeId)
     {
         $commande = Commande::findOrFail($commandeId);
-        
+
         // Pour les clients spéciaux, vérifier si un paiement existe déjà avec un type_paiement
         $commande->loadMissing('client');
         $isClientSpecial = optional($commande->client)->type_client === 'special';
-        
+
         // Récupérer tous les paiements existants pour cette commande
         $paiementsExistants = Paiement::where('commande_id', $commande->id)->get();
-        
+
         // Si client spécial et paiements existants, utiliser le type_paiement du premier paiement
         $typePaiementParDefaut = null;
         if ($isClientSpecial && $paiementsExistants->isNotEmpty()) {
             // Prendre le type_paiement du premier paiement (créé par le responsable)
             $typePaiementParDefaut = $paiementsExistants->first()->type_paiement;
         }
-        
+
         $data = $request->validate([
             'montant' => 'required|numeric|min:0.01',
-            'type_paiement' => $isClientSpecial && $typePaiementParDefaut 
-                ? 'nullable|string' 
+            'type_paiement' => $isClientSpecial && $typePaiementParDefaut
+                ? 'nullable|string'
                 : 'required|string',
         ]);
-        
+
         // Utiliser le type_paiement du paiement existant pour les clients spéciaux si non fourni ou vide
         if ($isClientSpecial && $typePaiementParDefaut) {
             if (empty($data['type_paiement']) || $data['type_paiement'] === '' || $data['type_paiement'] === null) {
                 $data['type_paiement'] = $typePaiementParDefaut;
             }
         }
-        
+
         // Validation finale : le type_paiement doit être présent
         if (empty($data['type_paiement']) || $data['type_paiement'] === null) {
             return response()->json([
@@ -160,14 +168,15 @@ class PaiementController extends Controller
             try {
             event(new PaiementCree($paiement));
             } catch (\Exception $e) {
-                // Log l'erreur mais ne bloque pas l'opération
-                \Log::warning('Erreur lors de la diffusion du paiement: ' . $e->getMessage());
+                // Log l'errTransfereeur mais ne bloque pas l'opération
+                Log::warning('Erreur lors de la diffusion du paiement: ' . $e->getMessage());
             }
 
             // Traiter la finalisation de la commande (mise à jour du statut, stock, etc.)
             // Même en cas d'erreur, on retourne le paiement car il est déjà créé
             if ($reste <= 0) {
                 $commande->update(['statut' => 'payee']);
+                $commande->update(['caissier_id' => Auth::user()->id]);
 
                 // Créer la facture
                 $facture = Facture::create([
@@ -180,21 +189,22 @@ class PaiementController extends Controller
                 // Mettre à jour le stock de la boutique et enregistrer le mouvement
                 $commande->loadMissing(['details', 'vendeur']);
                 $boutiqueId = optional($commande->vendeur)->boutique_id;
-                
+
                 // Traiter chaque détail avec gestion d'erreur individuelle
                 foreach ($commande->details as $detail) {
                     try {
+
                     // Décrémenter le stock de la boutique pour chaque produit
-                    $stock = Transfer::where('boutique_id', $boutiqueId)
-                        ->where('produit_id', $detail->produit_id)
+                    $stock = TransfertEnAttente::where('produit_id', $detail->produit_id)
                         ->first();
+
                     if ($stock) {
                         $stock->update(['quantite' => max(0, $stock->quantite - $detail->quantite)]);
                         if ($stock->quantite <= 0) {
                                 try {
                             event(new StockRupture($stock->fresh()));
                                 } catch (\Exception $e) {
-                                    \Log::warning('Erreur lors de la diffusion de la rupture de stock: ' . $e->getMessage());
+                                    Log::warning('Erreur lors de la diffusion de la rupture de stock: ' . $e->getMessage());
                                 }
                         }
                     }
@@ -207,6 +217,7 @@ class PaiementController extends Controller
                         'prix_unitaire' => $detail->prix_unitaire ?? 0,
                         // Montant pour ce produit spécifique
                         'montant' => ($detail->prix_unitaire ?? 0) * $detail->quantite,
+                        'date' => now()
                     ]);
 
                     MouvementStock::create([
@@ -219,7 +230,7 @@ class PaiementController extends Controller
                     ]);
                     } catch (\Exception $e) {
                         // Log l'erreur pour ce produit mais continue avec les autres
-                        \Log::error('Erreur lors de la mise à jour du stock pour le produit ' . $detail->produit_id . ': ' . $e->getMessage());
+                        Log::error('Erreur lors de la mise à jour du stock pour le produit ' . $detail->produit_id . ': ' . $e->getMessage());
                         // On continue avec les autres produits
                     }
                 }
@@ -228,10 +239,23 @@ class PaiementController extends Controller
                 try {
                 event(new FactureCree($facture));
                 } catch (\Exception $e) {
-                    \Log::warning('Erreur lors de la diffusion de la facture: ' . $e->getMessage());
+                    Log::warning('Erreur lors de la diffusion de la facture: ' . $e->getMessage());
                 }
             }
             return $paiement;
+    }
+
+    #•	Reste total à encaisser.
+    public function resteTotalEncaisser(){
+        try {
+            $resteTotal = Paiement::sum('reste_du');
+            return response()->json($resteTotal);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Erreur lors de la récupération du reste total à encaisser',
+                'error' => $th->getMessage(),
+            ], 500);
+        }
     }
 
 
@@ -259,4 +283,15 @@ class PaiementController extends Controller
     {
         abort(405);
     }
+
+    #la somme total des paiements
+    public function sommeTotalPaiements(){
+        try {
+            $paiement=Paiement::sum('montant');
+            return response()->json($paiement);
+        } catch (\Throwable $th) {
+            //throw $th;
+        }
+    }
+
 }

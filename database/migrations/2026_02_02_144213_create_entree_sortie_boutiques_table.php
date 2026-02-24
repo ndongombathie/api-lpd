@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('entree_sortie_boutiques', function (Blueprint $table) {
              $table->uuid('id')->primary();
-            $table->foreignUuid('produit_id')->constrained('produits');
+            $table->foreignUuid('produit_id')->nullable()->constrained('produits')->onDelete('cascade');
             $table->integer('quantite_avant');
             $table->integer('quantite_apres');
             $table->integer('nombre_fois');

@@ -14,7 +14,9 @@ class HistoriqueActionController extends Controller
     public function index()
     {
         try {
-            return HistoriqueAction::with('user','produit')->paginate(50);
+            return HistoriqueAction::with('user','produit')
+            ->orderBy('created_at', 'desc')
+            ->paginate(50);
         } catch (\Throwable $th) {
             return response()->json(['message' => $th->getMessage()], 500);
         }

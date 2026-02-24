@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class CaissierCaisseJournal extends Model
 {
+    use HasFactory;
     use HasUuids;
 
     public $incrementing = false;
@@ -18,6 +21,8 @@ class CaissierCaisseJournal extends Model
         'date',
         'fond_ouverture',
         'total_encaissements',
+        'nombre_paiements',
+        'caissier_id',
         'total_decaissements',
         'solde_theorique',
         'solde_reel',
@@ -29,10 +34,17 @@ class CaissierCaisseJournal extends Model
         'date' => 'date',
         'fond_ouverture' => 'integer',
         'total_encaissements' => 'integer',
+        'nombre_paiements' => 'integer',
+        'caissier_id' => 'string',
         'total_decaissements' => 'integer',
         'solde_theorique' => 'integer',
         'solde_reel' => 'integer',
         'cloture' => 'boolean',
     ];
+
+    public function caissier()
+    {
+        return $this->belongsTo(User::class, 'caissier_id');
+    }
 }
 

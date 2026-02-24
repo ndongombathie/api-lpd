@@ -15,15 +15,16 @@ class Commande extends Model
 
     public $incrementing = false;
     protected $keyType = 'string';
-
+    
     protected $fillable = [
-        'client_id','vendeur_id','total','statut','type_vente','date'
+        'client_id','vendeur_id','total','statut','type_vente','date','caissier_id','tva_appliquee'
     ];
 
     public function details()
     {
         return $this->hasMany(DetailCommande::class);
     }
+
 
     public function client(): BelongsTo
     {

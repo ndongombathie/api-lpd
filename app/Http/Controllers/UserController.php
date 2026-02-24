@@ -13,7 +13,9 @@ class UserController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = User::query()->latest();
+            $query = User::query()
+            ->orderBy('created_at', 'desc')
+            ->latest();
             // Filter by role if provided
             if ($request->filled('role')) {
                 $query->where('role', $request->input('role'));
@@ -33,11 +35,55 @@ class UserController extends Controller
                       ->orWhere('email', 'like', "%{$search}%");
                 });
             }
-            return $query->paginate(20);
+            return $query->paginate(10);
 
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la récupération des utilisateurs',
+                'error' => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    #Nombre total de vendeurs
+    public function vendeursCount()
+    {
+        try {
+            return response()->json([
+                'vendeurs_count' => User::where('role', 'vendeur')->count(),
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Erreur lors de la récupération du nombre de vendeurs',
+                'error' => $th->getMessage()
+            ], 500);
+        }
+    }
+    #nombre total de caissier
+    public function caissiersCount()
+    {
+        try {
+            return response()->json([
+                'caissiers_count' => User::where('role', 'caissier')->count(),
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Erreur lors de la récupération du nombre de caissiers',
+                'error' => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    # nombre total de gestionnaire boutique
+    public function gestionnairesCount()
+    {
+        try {
+            return response()->json([
+                'gestionnaires_count' => User::where('role', 'gestionnaire_boutique')->count(),
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Erreur lors de la récupération du nombre de gestionnaires boutique',
                 'error' => $th->getMessage()
             ], 500);
         }
@@ -51,8 +97,8 @@ class UserController extends Controller
             $data = $request->validate([
                 'nom' => 'required|string',
                 'prenom' => 'required|string',
-                'adresse' => 'nullable|string',
-                'numero_cni' => 'nullable|string',
+                'adresse' => 'required|string',
+                'numero_cni' => 'required|string',
                 'telephone' => 'nullable|string',
                 'role' => 'required|string',
                 'email' => 'required|email|unique:users,email',

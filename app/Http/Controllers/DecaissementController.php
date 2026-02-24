@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use App\Http\Requests\UpdateDecaissementRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class DecaissementController extends Controller
 {
@@ -17,7 +18,11 @@ class DecaissementController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = Decaissement::query()->with(['user', 'caissier'])->latest('updated_at');
+
+
+            $query = Decaissement::query()->with(['user', 'caissier'])
+                ->where('caissier_id', Auth::user()->id)
+                ->latest('updated_at');
             // Filter by role if provided
             if ($request->filled('motif')) {
                 $query->where('motif', $request->input('motif'));
@@ -82,9 +87,39 @@ class DecaissementController extends Controller
         }
     }
 
+    /** Liste tous les décaissements avec filtres (vendeur / comptable) */
+    public function getDecaissements(Request $request){
+        try {
+            $query = Decaissement::query()->with(['user', 'caissier'])
+                ->latest('created_at');
+            // Filter by role if provided
+            if ($request->filled('motif')) {
+                $query->where('motif', $request->input('motif'));
+            }
+
+            // Filter by boutique_id if provided
+            if ($request->filled('cassier_id')) {
+                $query->where('cassier_id', $request->input('cassier_id'));
+            }
+
+            // Filter by search term if provided
+            if ($request->filled('search')) {
+                $search = $request->input('search');
+                $query->where(function ($q) use ($search) {
+                    $q->where('methode_paiement', 'like', "%{$search}%")
+                      ->orWhere('date', 'like', "%{$search}%")
+                      ->orWhere('statut', 'like', "%{$search}%");
+                });
+            }
+            return response()->json($query->paginate(8));
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
     public function montantTotalDecaissement(){
         try {
-            $montantTotal =Decaissement::sum('montant');
+            $montantTotal =Decaissement::where('caissier_id', Auth::user()->id)->sum('montant');
             return response()->json(['montant_total' => $montantTotal], 200);
         } catch (\Throwable $th) {
             //throw $th;
@@ -103,12 +138,12 @@ class DecaissementController extends Controller
                 ->whereRaw('LOWER(statut) = ?', ['en_attente'])
                 ->orderBy('created_at', 'asc')
                 ->get();
-            
+
             // Retourner les valeurs brutes directement depuis la base de données
             $decaissementsArray = $decaissements->map(function ($dec) {
                 // Utiliser getAttributes() pour obtenir les valeurs brutes
                 $attributes = $dec->getAttributes();
-                
+
                 return [
                     'id' => $attributes['id'] ?? $dec->id,
                     'user_id' => $attributes['user_id'] ?? $dec->user_id,
@@ -135,11 +170,11 @@ class DecaissementController extends Controller
                     ] : null,
                 ];
             });
-            
+
             return response()->json(['data' => $decaissementsArray->values()]);
         } catch (\Exception $e) {
-            \Log::error('Erreur getDecaissementsEnAttente: ' . $e->getMessage());
-            \Log::error('Stack trace: ' . $e->getTraceAsString());
+            Log::error('Erreur getDecaissementsEnAttente: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }

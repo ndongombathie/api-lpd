@@ -24,6 +24,7 @@ class HistoriqueVenteFactory extends Factory
             'quantite' => $this->faker->numberBetween(1, 100),
             'prix_unitaire' => $this->faker->numberBetween(10, 1000),
             'montant' => $this->faker->numberBetween(100, 10000),
+            'date'=>$this->faker->dateTimeBetween('-1 year', 'now'),
             'created_at' => $this->faker->dateTimeBetween('-1 year', 'now'),
         ];
     }

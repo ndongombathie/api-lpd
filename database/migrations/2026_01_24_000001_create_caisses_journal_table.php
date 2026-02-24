@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('caisses_journal', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->date('date')->unique();
+            $table->date('date');
 
             $table->bigInteger('fond_ouverture')->default(0);
             $table->bigInteger('total_encaissements')->default(0);

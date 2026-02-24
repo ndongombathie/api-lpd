@@ -22,10 +22,10 @@ class TransferFactory extends Factory
         return [
             'boutique_id'=> Boutique::inRandomOrder()->value('id') ?? Boutique::factory(),
             'produit_id'=> Produit::inRandomOrder()->value('id') ?? Produit::factory(),
-            'quantite'=>$this->faker->numberBetween(50,100),
+            'quantite'=>$this->faker->numberBetween(0,100),
             'status'=>$this->faker->randomElement(['en_attente','valide']),
             'nombre_carton'=>$this->faker->numberBetween(20,50),
-            'seuil'=>$this->faker->numberBetween(10,15)
+            'seuil'=>$this->faker->numberBetween(20,30)
         ];
     }
 }

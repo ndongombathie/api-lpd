@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Categorie;
 use App\Models\EntreeSortie;
+use App\Models\Inventaire;
 use App\Models\MouvementStock;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -13,10 +14,16 @@ class MouvementSockController extends Controller
     /**
      * Display a listing of the resource.
      */
+    protected $inventaireController;
+    public function __construct(InventaireController $inventaireController) {
+        $this->inventaireController = $inventaireController;
+    }
     public function index(Request $request)
     {
         try {
-            $query = MouvementStock::query()->with('produit');
+            $query = MouvementStock::query()
+            ->orderBy('created_at', 'desc')
+            ->with('produit');
 
             if ($request->filled('date_debut')) {
                 $query->whereDate('date', '>=', $request->date_debut);
@@ -62,7 +69,7 @@ class MouvementSockController extends Controller
                     DB::raw("SUM(CASE WHEN mouvement_stocks.type = 'entree' THEN mouvement_stocks.quantite ELSE 0 END) as total_entree"),
                     DB::raw("SUM(CASE WHEN mouvement_stocks.type = 'sortie' THEN mouvement_stocks.quantite ELSE 0 END) as total_sortie")
                 )
-                ->groupBy('produits.id', 'produits.nom', 'produits.prix_unite_carton', 'produits.prix_achat');
+                ->groupBy('produits.id', 'produits.nom', 'produits.categorie_id', 'produits.prix_unite_carton', 'produits.prix_achat');
 
             if ($request->filled('date_debut')) {
                 $query->whereDate('mouvement_stocks.date', '>=', $request->date_debut);
@@ -71,7 +78,7 @@ class MouvementSockController extends Controller
                 $query->whereDate('mouvement_stocks.date', '<=', $request->date_fin);
             }
 
-            $inventaire = $query->paginate(20);
+            $inventaire = $query->paginate(10);
 
             $inventaire->getCollection()->transform(function ($item) {
                 $entrees=EntreeSortie::where('produit_id',$item->id)->get()->first();
@@ -84,9 +91,51 @@ class MouvementSockController extends Controller
                 return $item;
             });
 
+            return $inventaire;
+        } catch (\Throwable $th) {
+            return response()->json(['error' => $th->getMessage()], 500);
+        }
+    }
 
+    #a partir de inventaireDepot calculer l'inventaireDeopt faire la somme de prix_achat_total,prix_valeur_sortie_total,valeur_estimee_total et le benefice_total
+    public function enregistrerInventaireDepot(Request $request)
+    {
+        try {
+            $inventaire = $this->inventaireDepot($request);
+            $total = $inventaire->reduce(function ($carry, $item) {
 
-            return response()->json($inventaire);
+                $entree = (int) $item->total_entree;
+                $sortie = (int) $item->total_sortie;
+                $stock  = (int) $item->stock_restant;
+                $prix   = (float) $item->prix_achat;
+
+                $carry['prix_achat_total'] += $entree * $prix;
+                $carry['prix_valeur_sortie_total'] += $sortie * $prix;
+                $carry['valeur_estimee_total'] += $stock * $prix;
+
+                return $carry;
+
+                }, [
+                    'prix_achat_total' => 0,
+                    'prix_valeur_sortie_total' => 0,
+                    'valeur_estimee_total' => 0,
+                ]);
+
+                $total['benefice_total'] =
+                    $total['prix_valeur_sortie_total'] - $total['prix_achat_total'];
+
+                Inventaire::create([
+                    'type' => 'Depot',
+                    'date_debut' => $request->date_debut ?? now(),
+                    'date_fin' => $request->date_fin ?? now(),
+                    'date' => now(),
+                    'prix_achat_total' => $total['prix_achat_total'],
+                    'prix_valeur_sortie_total' => $total['prix_valeur_sortie_total'],
+                    'valeur_estimee_total' => $total['valeur_estimee_total'],
+                    'benefice_total' => $total['benefice_total'],
+                ]);
+
+                return response()->json($total);
         } catch (\Throwable $th) {
             return response()->json(['error' => $th->getMessage()], 500);
         }
@@ -105,7 +154,16 @@ class MouvementSockController extends Controller
      */
     public function show(string $id)
     {
-        //
+        try {
+            //dd($id);
+            $mouvement=MouvementStock::query()->where('produit_id',$id)->get()->first();
+            $mouvement->entree_sortie = EntreeSortie::where('produit_id', $mouvement->produit_id)->first();
+            return $mouvement;
+
+        } catch (\Throwable $th) {
+
+          return response()->json(['error' => $th->getMessage()], 500);
+        }
     }
 
     /**
@@ -123,4 +181,43 @@ class MouvementSockController extends Controller
     {
         //
     }
+
+    public function nombreMouvementStockToday(){
+        try {
+            return response()->json(MouvementStock::whereDate('date', now())->count());
+        } catch (\Throwable $th) {
+            return response()->json(['message' => $th->getMessage()], 500);
+        }
+    }
+
+    #le nombre de mouvement de stock total
+    public function nombreMouvementStockTotal(){
+        try {
+            return response()->json(MouvementStock::count());
+        } catch (\Throwable $th) {
+            return response()->json(['message' => $th->getMessage()], 500);
+        }
+    }
+
+    #le nombre d'entre dans le  stock
+    public function nombreEntreeStockTotal(){
+        try {
+            return response()->json(MouvementStock::where('type','entree')->count());
+        } catch (\Throwable $th) {
+            return response()->json(['message' => $th->getMessage()], 500);
+        }
+    }
+
+
+    #le nombre de sortie dans le  stock
+    public function nombreSortieStockTotal(){
+        try {
+            return response()->json(MouvementStock::where('type','sortie')->count());
+        } catch (\Throwable $th) {
+            return response()->json(['message' => $th->getMessage()], 500);
+        }
+    }
+
+
+
 }

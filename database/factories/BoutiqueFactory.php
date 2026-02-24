@@ -17,7 +17,7 @@ class BoutiqueFactory extends Factory
     public function definition(): array
     {
         return [
-            'nom' => 'Boutique ' . $this->faker->citySuffix(),
+            'nom' => 'Boutique LPD',
             'adresse' => $this->faker->address(),
             'telephone' => $this->faker->phoneNumber(),
         ];
