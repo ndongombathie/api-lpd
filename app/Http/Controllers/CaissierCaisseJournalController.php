@@ -54,6 +54,14 @@ class CaissierCaisseJournalController extends Controller
             if ($request->filled('date_fin')) {
                 $query->where('date', '<=', $request->date_fin);
             }
+            # filtrer par nom et mail des caissier en utilisant search
+            if ($request->filled('search')) {
+                $query->where(function ($q) use ($request) {
+                    $q->where('caissier.nom', 'like', '%'.$request->search.'%')
+                        ->orWhere('caissier.email', 'like', '%'.$request->search.'%');
+                });
+            }
+
 
             $journals = $query->paginate(10);
 
