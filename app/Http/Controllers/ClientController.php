@@ -60,6 +60,7 @@
             $data = $request->validate([
                 'nom' => 'required|string',
                 'prenom' => 'required|string',
+                'entreprise' => 'nullable|string',
                 'adresse' => 'nullable|string',
                 'numero_cni' => 'nullable|string',
                 'telephone' => 'nullable|string',
