@@ -302,6 +302,7 @@ class CommandeController extends Controller
                 return response()->json([
                     'message' => 'Seules les commandes en attente peuvent être annulées',
                 ], 400);
+                abort(400);
             }
             $commande->delete();
             return response()->noContent();
@@ -336,6 +337,7 @@ class CommandeController extends Controller
             return response()->json([
                 'message' => 'Seules les commandes en attente peuvent être annulées',
             ], 400);
+            abort(400);
         }
         $commande->update(['statut' => 'annulee','caissier_id'=>Auth::user()->id]);
         $commande->load('details', 'vendeur', 'client');
