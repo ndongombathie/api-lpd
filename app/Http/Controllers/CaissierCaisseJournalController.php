@@ -41,12 +41,12 @@ class CaissierCaisseJournalController extends Controller
         try {
             $query = CaissierCaisseJournal::query()->with('caissier')->orderByDesc('date');
 
-            if (!$request->filled('date_debut')) {
+           /* if (!$request->filled('date_debut')) {
                 $request->merge(['date_debut' => Carbon::today()->toDateString()]);
             }
             if (!$request->filled('date_fin')) {
                 $request->merge(['date_fin' => Carbon::today()->toDateString()]);
-            }
+            }*/
 
             if ($request->filled('date_debut')) {
                 $query->where('date', '>=', $request->date_debut);
@@ -54,6 +54,7 @@ class CaissierCaisseJournalController extends Controller
             if ($request->filled('date_fin')) {
                 $query->where('date', '<=', $request->date_fin);
             }
+
 
             $journals = $query->paginate(10);
 
