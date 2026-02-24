@@ -360,5 +360,12 @@ class ProduitController extends Controller
             return response()->json(['message' => $th->getMessage()], 500);
         }
     }
+    // ============================================================
+    // LISTE COMPLETE PRODUITS (sans pagination)
+    // ============================================================
+    public function all()
+    {
+        return Produit::orderBy('nom')->get();
+    }
 }
 
