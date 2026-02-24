@@ -160,12 +160,11 @@ class PaiementController extends Controller
                 $commande->update(['statut' => 'partiellement_payee']);
                 #recuperer le client et changer son statut en en_dette
                 $client = $commande->client;
-                $client->update(['statut' => 'en_dette']);
-                $client->update([
-                'solde' => $reste,
-                'dette' => $reste,
-                'total_paye' => Paiement::where('commande_id', $commande->id)->sum('montant'),
-                ]);
+                $client->statut = 'en_dette';
+                $client->solde = $reste;
+                $client->dette = $reste;
+                $client->total_paye = Paiement::where('commande_id', $commande->id)->sum('montant');
+                $client->save();
             }
 
             $paiement = Paiement::create([
