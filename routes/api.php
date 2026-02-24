@@ -271,6 +271,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('nombre-produits-sous-seuil', [ProduitController::class, 'nombreProduitsSousSeuil']);
     #nombre de produits en normaux.
     Route::get('nombre-produits-en-normaux', [ProduitController::class, 'nombreProduitsEnNormaux']);
+    Route::get('produits-en-normaux', [ProduitController::class, 'produitsEnNormaux']);
+    Route::get('produits-sous-seuil', [ProduitController::class, 'produits_sous_seuil']);
 
 
 

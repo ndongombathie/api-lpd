@@ -76,9 +76,22 @@ class ProduitController extends Controller
     }
 
     #sous seuil
-    public function produits_sous_seuil(){
+    public function produits_sous_seuil(Request $request){
         try {
-            return Produit::whereColumn('nombre_carton', '<', 'stock_seuil')->paginate(10);
+            $query = Produit::whereColumn('nombre_carton', '<', 'stock_seuil');
+            if($request->filled('search')){
+                $search = $request->input('search');
+                $query->where(function ($q) use ($search) {
+                    $q->whereHas('categorie', function ($sub) use ($search) {
+                        $sub->where('nom', 'like', "%{$search}%");
+                    })
+                    ->orWhere('quantite', 'like', "%{$search}%")
+                    ->orWhere('seuil', 'like', "%{$search}%")
+                    ->orWhere('nombre_carton', 'like', "%{$search}%")
+                    ->orWhere('created_at', 'like', "%{$search}%");
+                });
+            }
+            return $query->paginate(10);
         } catch (\Throwable $th) {
             return response()->json(['message' => $th->getMessage()], 500);
         }
@@ -103,6 +116,28 @@ class ProduitController extends Controller
                 ->count();
 
             return response()->json($count);
+        } catch (\Throwable $th) {
+            return response()->json(['message' => $th->getMessage()], 500);
+        }
+    }
+    #la liste des produits normales
+    #filtrer par nom de produit,categorie
+    public function produitsEnNormaux(Request $request){
+        try {
+            $query = Produit::whereColumn('nombre_carton', '>', 'stock_seuil');
+            if($request->filled('search')){
+                $search = $request->input('search');
+                $query->where(function ($q) use ($search) {
+                    $q->whereHas('categorie', function ($sub) use ($search) {
+                        $sub->where('nom', 'like', "%{$search}%");
+                    })
+                    ->orWhere('quantite', 'like', "%{$search}%")
+                    ->orWhere('seuil', 'like', "%{$search}%")
+                    ->orWhere('nombre_carton', 'like', "%{$search}%")
+                    ->orWhere('created_at', 'like', "%{$search}%");
+                });
+            }
+            return $query->paginate(10);
         } catch (\Throwable $th) {
             return response()->json(['message' => $th->getMessage()], 500);
         }
