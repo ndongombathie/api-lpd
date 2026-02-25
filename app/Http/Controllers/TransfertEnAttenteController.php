@@ -102,6 +102,7 @@ class TransfertEnAttenteController extends Controller
     {
         try {
             $transfers = TransfertEnAttente::with(['produit'])->where('status', 'valide')
+            ->where('quantite','>',0)
             ->latest();
 
             if($request->filled('search')){
@@ -129,7 +130,6 @@ class TransfertEnAttenteController extends Controller
         try {
             $transfers = TransfertEnAttente::with(['produit.categorie'])
             ->where('status', 'valide')
-            ->where('quantite','>',0)
             ->latest();
             if($request->filled('search')){
                 $search = $request->input('search');
