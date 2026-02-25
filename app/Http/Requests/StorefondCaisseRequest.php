@@ -22,7 +22,6 @@ class StorefondCaisseRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'caissier_id' => 'required|exists:users,id',
             'montant' => 'required|integer',
         ];
     }
