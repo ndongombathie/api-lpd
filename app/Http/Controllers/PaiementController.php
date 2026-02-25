@@ -206,7 +206,6 @@ class PaiementController extends Controller
 
                     if ($stock) {
                         $stock->update(['quantite' => max(0, $stock->quantite - $detail->quantite)]);
-                        $stock_boutique->update(['quantite' => max(0, $stock->quantite - $detail->quantite)]);
                         if ($stock->quantite <= 0) {
                                 try {
                             event(new StockRupture($stock->fresh()));
