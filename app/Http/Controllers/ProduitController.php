@@ -24,7 +24,7 @@ class ProduitController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = Produit::query();
+            $query =  $this->repository->index();
             // =========================
             // 🔎 RECHERCHE PRODUIT
             // =========================
@@ -56,7 +56,7 @@ class ProduitController extends Controller
 
             return $query
                 ->orderBy('nom')
-                ->paginate(50);
+                ->paginate(10);
 
             } catch (\Throwable $th) {
                 return response()->json([
