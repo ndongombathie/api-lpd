@@ -120,6 +120,30 @@ return response()->json($paginator);
         }
     }
 
+    #la liste de toutes les commandes et  pour un caissier donnees
+    public function allCommandesByCaissier(Request $request){
+            try {
+                $query=Commande::query()
+                #ajouter les relation details, client, vendeur, paiements
+                ->with(['details.produit', 'client', 'vendeur', 'paiements'])
+                ->where('caissier_id', Auth::user()->id)
+                ->latest();
+                #filter par client et numero de commande
+                if ($request->filled('search')) {
+                    $query->where(function ($q) use ($request) {
+                        $q->where('client.nom', 'like', '%'.$request->search.'%')
+                          ->orWhere('client.prenom', 'like', '%'.$request->search.'%')
+                          ->orWhere('vendeur.nom', 'like', '%'.$request->search.'%')
+                          ->orWhere('vendeur.prenom', 'like', '%'.$request->search.'%')
+                          ;
+                    });
+                }
+            } catch (\Throwable $th) {
+                //throw $th;
+            }
+    }
+
+
     #appliquer des filtre par date
     public function getCommandesValidees(Request $request){
         try {
@@ -142,12 +166,15 @@ return response()->json($paginator);
                     $q->orderBy('date', 'desc'); // Trier les paiements par date décroissante
                 }])->latest();
             }
-            if ($request->filled('date')) {
-                $commandes->whereDate('date', $request->date);
+            #filtrer entre deux dates date_debut et date_fin
+            if ($request->filled('date_debut') && $request->filled('date_fin')) {
+                $commandes->whereBetween('date', [$request->date_debut, $request->date_fin]);
             }
 
-            // Filter by boutique_id if provided
-
+            #filtrer par une date donnee
+            if ($request->filled('date_debut') || $request->filled('date_fin')) {
+                $commandes->whereDate('date', $request->date);
+            }
 
             return response()->json($commandes->paginate(10));
         } catch (\Throwable $th) {
@@ -369,6 +396,7 @@ return response()->json($paginator);
                 return response()->json([
                     'message' => 'Seules les commandes en attente peuvent être annulées',
                 ], 400);
+                abort(400);
             }
             $commande->delete();
             return response()->noContent();
@@ -403,6 +431,7 @@ return response()->json($paginator);
             return response()->json([
                 'message' => 'Seules les commandes en attente peuvent être annulées',
             ], 400);
+            abort(400);
         }
         $commande->update(['statut' => 'annulee','caissier_id'=>Auth::user()->id]);
         $commande->load('details', 'vendeur', 'client');

@@ -36,9 +36,7 @@ use App\Http\Controllers\Api\RapportController;
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
 
-Route::middleware('auth:sanctum')->post('/broadcasting/auth', function (Request $request) {
-    return Broadcast::auth($request);
-});
+Broadcast::routes(['middleware' => ['auth:sanctum']]);
 
 /*
 |--------------------------------------------------------------------------
@@ -81,6 +79,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // ---------------- CLIENTS ----------------
     Route::get('clients/{client}/paiements-tranches', [ClientController::class, 'paiementsTranches']);
     Route::get('clients/{client}/paiements', [ClientController::class, 'paiementsTranches']);
+    Route::get('clients-dette', [ClientController::class, 'clientsDette']);
+
+
 
     // ---------------- COMMANDES ----------------
 
@@ -132,6 +133,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('transfers/boutique/{boutique_id}', [TransfertEnAttenteController::class, 'produitsByBoutique']);
     Route::get('transfers-en-attente', [TransfertEnAttenteController::class, 'getTransferEnAttente']);
     Route::get('transfers-annuler', [TransfertEnAttenteController::class, 'getTransferAnnuler']);
+    Route::get('nombre-transfers-annuler', [TransfertEnAttenteController::class, 'nombreTransfertAnnuler']);
     Route::get('liste-transfers-annuler',[TransfertEnAttenteController::class,'transfertAnnuler']);
 
     Route::get('transfers/valide', [TransfertEnAttenteController::class, 'getTransferValide']);
@@ -144,9 +146,10 @@ Route::middleware('auth:sanctum')->group(function () {
     #dramé
     Route::get('nombre-produits-total', [TransfertEnAttenteController::class, 'nombreProduits']);
     Route::get('quantite-totale-produit', [TransfertEnAttenteController::class, 'quantiteTotaleProduit']);
-    Route::get('produits-sous-seuil', [TransfertEnAttenteController::class, 'produitsSousSeuil']);
+    Route::get('produits-sous-seuils', [TransfertEnAttenteController::class, 'produitsSousSeuil']);
     Route::get('produits-rupture', [TransfertEnAttenteController::class, 'produitsRupture']);
     Route::get('montant-total-stock', [TransfertEnAttenteController::class, 'MontantTotalStock']);
+    Route::get('nombre-transfer-en-attente', [TransfertEnAttenteController::class, 'nombreTransferEnAttente']);
     #dramé
     Route::get('produits-controle-boutique', [TransfertEnAttenteController::class, 'produitsControleBoutique']);
     Route::get('produits-controle-depots', [TransfertEnAttenteController::class, 'produitsControleDepots']);
@@ -221,6 +224,9 @@ Route::middleware('auth:sanctum')->group(function () {
     # o	Commandes en attente caisse
     Route::get('commandes-en-attente-caisse', [CommandeController::class, 'commandesEnAttenteCaisse']);
     Route::get('stats-commandes-speciales', [CommandeController::class, 'statsCommandesSpeciales']);
+    #la liste de toutes les commandes et  pour un caissier donnees
+    Route::get('commandes-par-caissier', [CommandeController::class, 'allCommandesByCaissier']);
+
 
 
     Route::post('commandes/{commande}/paiements', [PaiementController::class, 'store']);
@@ -263,6 +269,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('nombre-produits-sous-seuil', [ProduitController::class, 'nombreProduitsSousSeuil']);
     #nombre de produits en normaux.
     Route::get('nombre-produits-en-normaux', [ProduitController::class, 'nombreProduitsEnNormaux']);
+    Route::get('produits-en-normaux', [ProduitController::class, 'produitsEnNormaux']);
+    Route::get('produits-sous-seuil', [ProduitController::class, 'produits_sous_seuil']);
 
 
 
@@ -272,7 +280,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
 
-    Route::post('fond-caisse', [FondCaisseController::class, 'store']);
+    Route::post('fond-caisse/{id}', [FondCaisseController::class, 'store']);
 
     # Gestion des enregPtPistrements de versement
     Route::apiResource('enregistrer-versements', EnregistrerVersementController::class);

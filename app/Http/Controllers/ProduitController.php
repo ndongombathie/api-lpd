@@ -24,7 +24,7 @@ class ProduitController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = Produit::query();
+            $query =  $this->repository->index();
             // =========================
             // 🔎 RECHERCHE PRODUIT
             // =========================
@@ -56,7 +56,7 @@ class ProduitController extends Controller
 
             return $query
                 ->orderBy('nom')
-                ->paginate(50);
+                ->paginate(10);
 
             } catch (\Throwable $th) {
                 return response()->json([
@@ -76,9 +76,22 @@ class ProduitController extends Controller
     }
 
     #sous seuil
-    public function produits_sous_seuil(){
+    public function produits_sous_seuil(Request $request){
         try {
-            return Produit::whereColumn('nombre_carton', '<', 'stock_seuil')->paginate(10);
+            $query = Produit::whereColumn('nombre_carton', '<', 'stock_seuil');
+            if($request->filled('search')){
+                $search = $request->input('search');
+                $query->where(function ($q) use ($search) {
+                    $q->whereHas('categorie', function ($sub) use ($search) {
+                        $sub->where('nom', 'like', "%{$search}%");
+                    })
+                    ->orWhere('quantite', 'like', "%{$search}%")
+                    ->orWhere('seuil', 'like', "%{$search}%")
+                    ->orWhere('nombre_carton', 'like', "%{$search}%")
+                    ->orWhere('created_at', 'like', "%{$search}%");
+                });
+            }
+            return $query->paginate(10);
         } catch (\Throwable $th) {
             return response()->json(['message' => $th->getMessage()], 500);
         }
@@ -87,8 +100,8 @@ class ProduitController extends Controller
     #nombre sous seuil
     public function nombreProduitsSousSeuil(){
         try {
-            $count = Produit::where('stock_global', '>', 0)
-                ->whereColumn('stock_global', '<', 'stock_seuil')
+            $count = Produit::where('nombre_carton', '>', 0)
+                ->whereColumn('nombre_carton', '<', 'stock_seuil')
                 ->count();
 
             return response()->json($count);
@@ -99,10 +112,32 @@ class ProduitController extends Controller
     # nombre en normaux.
     public function nombreProduitsEnNormaux(){
         try {
-            $count = Produit::whereColumn('stock_global', '>=', 'stock_seuil')
+            $count = Produit::whereColumn('nombre_carton', '>=', 'stock_seuil')
                 ->count();
 
             return response()->json($count);
+        } catch (\Throwable $th) {
+            return response()->json(['message' => $th->getMessage()], 500);
+        }
+    }
+    #la liste des produits normales
+    #filtrer par nom de produit,categorie
+    public function produitsEnNormaux(Request $request){
+        try {
+            $query = Produit::whereColumn('nombre_carton', '>', 'stock_seuil');
+            if($request->filled('search')){
+                $search = $request->input('search');
+                $query->where(function ($q) use ($search) {
+                    $q->whereHas('categorie', function ($sub) use ($search) {
+                        $sub->where('nom', 'like', "%{$search}%");
+                    })
+                    ->orWhere('quantite', 'like', "%{$search}%")
+                    ->orWhere('seuil', 'like', "%{$search}%")
+                    ->orWhere('nombre_carton', 'like', "%{$search}%")
+                    ->orWhere('created_at', 'like', "%{$search}%");
+                });
+            }
+            return $query->paginate(10);
         } catch (\Throwable $th) {
             return response()->json(['message' => $th->getMessage()], 500);
         }
@@ -112,7 +147,7 @@ class ProduitController extends Controller
     #•	Nombre de produits en rupture (nombre_carton==0)
     public function nombreProduitsEnRupture(){
         try {
-            $count = Produit::where('stock_global', 0)->count();
+            $count = Produit::where('nombre_carton', 0)->count();
 
             return response()->json($count);
         } catch (\Throwable $th) {

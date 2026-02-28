@@ -28,15 +28,20 @@ class FondCaisseController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StorefondCaisseRequest $request)
+    public function store(StorefondCaisseRequest $request,string $id)
     {
         try {
-            $request['date'] = Carbon::today()->format('Y-m-d');
-            $fondCaisse = fondCaisse::create($request->validated());
+            $data=$request->validated();
+            $data['date'] = Carbon::today()->format('Y-m-d');
+            $data['caissier_id']=$id;
+            $fondCaisse = fondCaisse::updateOrCreate($data);
             CaissierCaisseJournal::updateOrCreate(
-            ['date' => $request['date']],
-            ['fond_ouverture' => $request['montant']]
-        );
+                [
+                    'date' => $data['date'],
+                    'fond_ouverture' => $data['montant'],
+                    'caissier_id' => $id,
+                ]
+            );
             return response()->json($fondCaisse, 201);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);

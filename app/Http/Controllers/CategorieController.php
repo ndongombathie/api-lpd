@@ -16,15 +16,14 @@ class CategorieController extends Controller
     {
         try {
             $query= Categorie::query()
-            ->orderBy('created_at', 'desc')
             ->latest();
-            if($request->filled('search'))
+
+            /* if($request->filled('search'))
             {
                 $search = $request->input('search');
-                $query->where(function ($q) use ($search) {
-                    $q->where('nom', 'like', "%{$search}%");
-                });
-            }
+                $query->where('nom', 'like', "%{$search}%");
+            } */
+
             return response()->json($query->paginate(10));
         } catch (\Throwable $th) {
             //throw $th;

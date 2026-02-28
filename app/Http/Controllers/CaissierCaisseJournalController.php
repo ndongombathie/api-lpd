@@ -41,19 +41,20 @@ class CaissierCaisseJournalController extends Controller
         try {
             $query = CaissierCaisseJournal::query()->with('caissier')->orderByDesc('date');
 
-            if (!$request->filled('date_debut')) {
-                $request->merge(['date_debut' => Carbon::today()->toDateString()]);
-            }
-            if (!$request->filled('date_fin')) {
-                $request->merge(['date_fin' => Carbon::today()->toDateString()]);
+
+            if ($request->filled('date')) {
+                $query->where('date', $request->date);
             }
 
-            if ($request->filled('date_debut')) {
-                $query->where('date', '>=', $request->date_debut);
+            # filtrer par nom et mail des caissier en utilisant search
+            if ($request->filled('search')) {
+                $query->where(function ($q) use ($request) {
+                    $q->where('caissier.nom', 'like', '%'.$request->search.'%')
+                        ->orWhere('caissier.email', 'like', '%'.$request->search.'%');
+                });
             }
-            if ($request->filled('date_fin')) {
-                $query->where('date', '<=', $request->date_fin);
-            }
+
+
 
             $journals = $query->paginate(10);
 
@@ -250,7 +251,7 @@ class CaissierCaisseJournalController extends Controller
             ->sum('montant');
 
         $soldeTheorique = (int) ($fondOuverture + $totalEncaissements - $totalDecaissements);
-
+        //dd($totalEncaissements, $totalDecaissements, $soldeTheorique, $nombrePaiements);
         return [$totalEncaissements, $totalDecaissements, $soldeTheorique, $nombrePaiements];
     }
 

@@ -19,12 +19,8 @@ return new class extends Migration
             $table->foreignUuid('fournisseur_id')->nullable()->constrained('fournisseurs')->onDelete('cascade');
             $table->bigInteger('unite_carton')->default(0);
             $table->bigInteger('prix_unite_carton')->default(0);
-            $table->bigInteger('prix_vente_detail')->default(0);
-            $table->bigInteger('prix_vente_gros')->default(0);
             $table->bigInteger('prix_total')->default(0);
             $table->bigInteger('prix_achat')->nullable()->default(0);
-            $table->bigInteger('prix_seuil_detail')->nullable()->default(0);
-            $table->bigInteger('prix_seuil_gros')->nullable()->default(0);
             $table->bigInteger('nombre_carton')->default(0);
             $table->bigInteger('stock_global')->default(0);
             $table->bigInteger('stock_seuil')->default(0);

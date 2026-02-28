@@ -42,7 +42,7 @@ class Produit extends Model
     {
         return $this->hasMany(DetailCommande::class);
     }
-    
+
 
     // =========================
     // 🟣 SYSTÈME RESPONSABLE
