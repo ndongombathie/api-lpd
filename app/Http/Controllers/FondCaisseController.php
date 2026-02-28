@@ -34,11 +34,14 @@ class FondCaisseController extends Controller
             $data=$request->validated();
             $data['date'] = Carbon::today()->format('Y-m-d');
             $data['caissier_id']=$id;
-            $fondCaisse = fondCaisse::create($data);
+            $fondCaisse = fondCaisse::updateOrCreate($data);
             CaissierCaisseJournal::updateOrCreate(
-            ['date' => $data['date']],
-            ['fond_ouverture' => $data['montant']]
-        );
+                [
+                    'date' => $data['date'],
+                    'fond_ouverture' => $data['montant'],
+                    'caissier_id' => $id,
+                ]
+            );
             return response()->json($fondCaisse, 201);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);

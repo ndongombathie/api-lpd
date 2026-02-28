@@ -69,7 +69,7 @@ class CaissierDashboardController extends Controller
             'especes' => 'Espèces',
             'carte' => 'Carte',
             'wave' => 'Wave',
-            'Orange Money' => 'Orange Money',
+            'Orange Money' => 'om',
             'autre' => 'Autre',
         ];
 
