@@ -89,12 +89,12 @@ class CommandeController extends Controller
     }
 
     #la liste de toutes les commandes et  pour un caissier donnees
-    public function allCommandesByCaissier(Request $request, string $id){
+    public function allCommandesByCaissier(Request $request){
             try {
                 $query=Commande::query()
                 #ajouter les relation details, client, vendeur, paiements
                 ->with(['details.produit', 'client', 'vendeur', 'paiements'])
-                ->where('caissier_id', $id)
+                ->where('caissier_id', Auth::user()->id)
                 ->latest();
                 #filter par client et numero de commande
                 if ($request->filled('search')) {
