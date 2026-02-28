@@ -142,6 +142,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // ---------------- TRANSFERTS ----------------
     Route::get('transfers/boutique/{boutique_id}', [TransfertEnAttenteController::class, 'produitsByBoutique']);
     Route::get('transfers-annuler', [TransfertEnAttenteController::class, 'getTransferAnnuler']);
+    Route::get('nombre-transfers-annuler', [TransfertEnAttenteController::class, 'nombreTransfertAnnuler']);
     Route::get('liste-transfers-annuler',[TransfertEnAttenteController::class,'transfertAnnuler']);
 
     Route::get('transfers/valide', [TransfertEnAttenteController::class, 'getTransferValide']);
@@ -230,7 +231,7 @@ Route::middleware('auth:sanctum')->group(function () {
     # o	Commandes en attente caisse
     Route::get('commandes-en-attente-caisse', [CommandeController::class, 'commandesEnAttenteCaisse']);
     #la liste de toutes les commandes et  pour un caissier donnees
-    Route::get('commandes-par-caissier', [CommandeController::class, 'allCommandesByCaissier']);    
+    Route::get('commandes-par-caissier', [CommandeController::class, 'allCommandesByCaissier']);
 
 
 

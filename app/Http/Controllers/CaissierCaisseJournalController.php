@@ -45,7 +45,7 @@ class CaissierCaisseJournalController extends Controller
             if ($request->filled('date')) {
                 $query->where('date', $request->date);
             }
-            
+
             # filtrer par nom et mail des caissier en utilisant search
             if ($request->filled('search')) {
                 $query->where(function ($q) use ($request) {
@@ -251,7 +251,7 @@ class CaissierCaisseJournalController extends Controller
             ->sum('montant');
 
         $soldeTheorique = (int) ($fondOuverture + $totalEncaissements - $totalDecaissements);
-
+        //dd($totalEncaissements, $totalDecaissements, $soldeTheorique, $nombrePaiements);
         return [$totalEncaissements, $totalDecaissements, $soldeTheorique, $nombrePaiements];
     }
 
