@@ -36,9 +36,7 @@ use App\Http\Controllers\Api\RapportController;
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
 
-Route::middleware('auth:sanctum')->post('/broadcasting/auth', function (Request $request) {
-    return Broadcast::auth($request);
-});
+Broadcast::routes(['middleware' => ['auth:sanctum']]);
 
 /*
 |--------------------------------------------------------------------------
@@ -156,9 +154,10 @@ Route::middleware('auth:sanctum')->group(function () {
     #dramé
     Route::get('nombre-produits-total', [TransfertEnAttenteController::class, 'nombreProduits']);
     Route::get('quantite-totale-produit', [TransfertEnAttenteController::class, 'quantiteTotaleProduit']);
-    Route::get('produits-sous-seuil', [TransfertEnAttenteController::class, 'produitsSousSeuil']);
+    Route::get('produits-sous-seuils', [TransfertEnAttenteController::class, 'produitsSousSeuil']);
     Route::get('produits-rupture', [TransfertEnAttenteController::class, 'produitsRupture']);
     Route::get('montant-total-stock', [TransfertEnAttenteController::class, 'MontantTotalStock']);
+    Route::get('nombre-transfer-en-attente', [TransfertEnAttenteController::class, 'nombreTransferEnAttente']);
     #dramé
     Route::get('produits-controle-boutique', [TransfertEnAttenteController::class, 'produitsControleBoutique']);
     Route::get('produits-controle-depots', [TransfertEnAttenteController::class, 'produitsControleDepots']);
