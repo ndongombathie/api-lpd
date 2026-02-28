@@ -23,9 +23,9 @@ class Paiement extends Model
         return $this->belongsTo(Commande::class);
     }
 
-    public function cassier(): BelongsTo
+    public function caissier(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'cassier_id');
+        return $this->belongsTo(User::class, 'caissier_id');
     }
     protected static function booted()
     {
@@ -45,9 +45,9 @@ class Paiement extends Model
             }
 
             // 🔒 commande soldée
-            if ($commande->statut === 'soldee') {
+            if ($commande->statut === 'payee') {
                 throw new \Exception(
-                    'Cette commande est déjà soldée.'
+                    'Cette commande est déjà payée.'
                 );
             }
         });

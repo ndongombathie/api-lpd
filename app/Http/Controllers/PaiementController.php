@@ -110,199 +110,169 @@ class PaiementController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request, string $commandeId)
-    {
-        # les validations
-        $data = $request->validate([
-            'montant' => 'required|numeric|min:0.01',
-            'type_paiement' => 'required|string',
+public function store(Request $request, string $commandeId)
+{
+    # les validations
+    $data = $request->validate([
+        'montant' => 'required|numeric|min:0.01',
+        'type_paiement' => 'nullable|string',
+    ]);
+    $commande = Commande::findOrFail($commandeId);
+    
+    // 🔒 Vérifier montant exact envoyé par le responsable
+    if ($commande->montant_a_encaisser === null) {
+        return response()->json([
+            'message' => 'Aucune tranche envoyée à la caisse pour cette commande.'
+        ], 400);
+    }
+
+    if ((float) $request->input('montant') !== (float) $commande->montant_a_encaisser) {
+        return response()->json([
+            'message' => 'Le montant doit être exactement égal à la tranche envoyée.'
+        ], 400);
+    }
+    
+    if(!in_array($commande->statut, ['attente','partiellement_payee'])){
+        return response()->json([
+            'message' => 'Cette commande ne peut plus recevoir de paiement',
+        ], 400);
+    }
+    
+    // Pour les clients spéciaux, vérifier si un paiement existe déjà avec un type_paiement
+    $commande->loadMissing('client');
+    $isClientSpecial = optional($commande->client)->type_client === 'special';
+    
+    $totalDejaPaye = Paiement::where('commande_id', $commande->id)->sum('montant');
+    $reste = max(0, $commande->total - ($totalDejaPaye + $request->input('montant')));
+
+    # si le client n'est pas special il doit tout payer en une fois
+    if(!$isClientSpecial && $reste != 0){
+        return response()->json([
+            'message' => 'Seul les clients specials peuvent payer par tranche.',
+        ], 400);
+    }
+
+    // 🔥 TOUTE LA LOGIQUE CRITIQUE DANS UNE TRANSACTION
+    return DB::transaction(function () use ($data, $commande, $request) {
+        
+        // 1️⃣ Créer le paiement SANS reste_du (on le calculera après)
+        $paiement = Paiement::create([
+            'commande_id' => $commande->id,
+            'montant' => $data['montant'],
+            'type_paiement' => $data['type_paiement'] ?? null,
+            'date' => now(),
+            'caissier_id' => Auth::user()->id ?? $commande->vendeur_id,
         ]);
 
-        $commande = Commande::findOrFail($commandeId);
-        if($commande->statut !== 'attente'){
-            return response()->json([
-                'message' => 'Seules les commandes en attente peuvent être payées',
-            ], 400);
-            abort(400, 'Seules les commandes en attente peuvent être payées');
-        }
-        // Pour les clients spéciaux, vérifier si un paiement existe déjà avec un type_paiement
-        $commande->loadMissing('client');
-        $isClientSpecial = optional($commande->client)->type_client === 'special';
-        //dd($isClientSpecial);
-        $reste = $commande->total - $request->input('montant') > 0 ? $commande->total - $request->input('montant') : 0 ;
+        // 2️⃣ Calculer le total payé APRÈS création du paiement
+        $totalDejaPayeApres = Paiement::where('commande_id', $commande->id)->sum('montant');
+        $resteApres = max(0, $commande->total - $totalDejaPayeApres);
 
-        # si le client n'est pas special il doit tout payer en une fois
-        if(!$isClientSpecial && $reste != 0){
-            return response()->json([
-                'message' => 'Seul les clients specials peuvent payer par tranche.',
-            ], 400);
-            abort(400, 'Seul les clients spéciaux peuvent payer par tranche.');
-        }
+        // 3️⃣ Mettre à jour le paiement avec le vrai reste
+        $paiement->update([
+            'reste_du' => $resteApres
+        ]);
 
-
-            // Diffuser l'événement de paiement (sans bloquer si Reverb n'est pas disponible)
-
-
-            // Traiter la finalisation de la commande (mise à jour du statut, stock, etc.)
-            // Même en cas d'erreur, on retourne le paiement car il est déjà créé
-            if ($reste == 0) {
-                $commande->update(['statut' => 'payee']);
-                #recuperer le client et changer son statut en paye
-                $client = $commande->client;
-                $client->update(['statut' => 'paye']);
-                $client->update([
+        // 4️⃣ Mettre à jour le statut de la commande et du client
+        if ($resteApres == 0) {
+            $commande->update(['statut' => 'payee']);
+            $client = $commande->client;
+            $client->update([
+                'statut' => 'paye',
                 'solde' => 0,
                 'dette' => 0,
-                'total_paye' => $request->input('montant'),
-                ]);
-            }
-            else{
-                $commande->update(['statut' => 'partiellement_payee']);
-                #recuperer le client et changer son statut en en_dette
-                $client = $commande->client;
-                $client->update(['statut' => 'en_dette']);
-                $client->update([
-                'solde' => $reste,
-                'dette' => $reste,
-                'total_paye' => Paiement::where('commande_id', $commande->id)->sum('montant'),
-                ]);
-            }
-
-            $paiement = Paiement::create([
-                'commande_id' => $commande->id,
-                'montant' => $data['montant'],
-                'type_paiement' => $data['type_paiement'],
-                'date' => now(),
-                'reste_du' => $reste,
-                'caissier_id' => Auth::user()->id ?? $commande->vendeur_id, // Fallback to vendeur if no auth user
+                'total_paye' => $totalDejaPayeApres,
             ]);
+        } else {
+            $commande->update(['statut' => 'partiellement_payee']);
+            $client = $commande->client;
+            $client->update([
+                'statut' => 'en_dette',
+                'solde' => $resteApres,
+                'dette' => $resteApres,
+                'total_paye' => $totalDejaPayeApres,
+            ]);
+        }
 
-            try {
-            event(new PaiementCree($paiement));
-            } catch (\Exception $e) {
-                // Log l'errTransfereeur mais ne bloque pas l'opération
-                Log::warning('Erreur lors de la diffusion du paiement: ' . $e->getMessage());
-            }
+        // 5️⃣ Nettoyer et mettre à jour la commande
+        $commande->update([
+            'montant_a_encaisser' => null,
+            'caissier_id' => Auth::user()->id ?? $commande->vendeur_id
+        ]);
 
-            $commande->update(['caissier_id' => Auth::user()->id]);
+        // 6️⃣ Créer la facture UNIQUEMENT si elle n'existe pas déjà
+        $facture = Facture::firstOrCreate(
+            ['commande_id' => $commande->id],
+            [
+                'total' => $commande->total,
+                'mode_paiement' => $paiement->type_paiement,
+                'date' => now(),
+            ]
+        );
 
-                // Créer la facture
-                $facture = Facture::create([
-                    'commande_id' => $commande->id,
-                    'total' => $commande->total,
-                    'mode_paiement' => $paiement->type_paiement,
-                    'date' => now(),
-                ]);
+        // 7️⃣ Mettre à jour le stock
+        $commande->loadMissing(['details', 'vendeur']);
 
-                // Mettre à jour le stock de la boutique et enregistrer le mouvement
-                $commande->loadMissing(['details', 'vendeur']);
+        // 🔥 Décrémenter le stock UNIQUEMENT au premier encaissement
+        if ($totalDejaPayeApres == $data['montant']) {
 
-                // Traiter chaque détail avec gestion d'erreur individuelle
-                foreach ($commande->details as $detail) {
-                    try {
+            foreach ($commande->details as $detail) {
 
-                    // Décrémenter le stock de la boutique pour chaque produit
-                    $stock_boutique=StockBoutique::where('produit_id', $detail->produit_id)->first();
-                    $stock = TransfertEnAttente::where('produit_id', $stock_boutique->produit_id)->first();
+                // ⚠️ Sécuriser la récupération du stock boutique
+                $stock_boutique = StockBoutique::where('produit_id', $detail->produit_id)->first();
 
-                    if ($stock) {
-                        $stock->update(['quantite' => max(0, $stock->quantite - $detail->quantite)]);
-                        $stock_boutique->update(['quantite' => max(0, $stock->quantite - $detail->quantite)]);
-                        if ($stock->quantite <= 0) {
-                                try {
+                if (!$stock_boutique) {
+                    Log::warning('Stock boutique introuvable pour le produit ' . $detail->produit_id);
+                    continue;
+                }
+
+                $stock = TransfertEnAttente::where('produit_id', $stock_boutique->produit_id)->first();
+
+                if ($stock) {
+
+                    $nouvelleQuantite = max(0, $stock->quantite - $detail->quantite);
+
+                    $stock->update([
+                        'quantite' => $nouvelleQuantite
+                    ]);
+
+                    $stock_boutique->update([
+                        'quantite' => $nouvelleQuantite
+                    ]);
+
+                    if ($nouvelleQuantite <= 0) {
+                        try {
                             event(new StockRupture($stock->fresh()));
-                                } catch (\Exception $e) {
-                                    Log::warning('Erreur lors de la diffusion de la rupture de stock: ' . $e->getMessage());
-                                }
+                        } catch (\Exception $e) {
+                            Log::warning('Erreur lors de la diffusion de la rupture de stock: ' . $e->getMessage());
                         }
                     }
-
-                    // Enregistrer la vente dans l'historique
-                    HistoriqueVente::create([
-                        'vendeur_id' => $commande->vendeur_id,
-                        'produit_id' => $detail->produit_id,
-                        'quantite' => $detail->quantite,
-                        'prix_unitaire' => $detail->prix_unitaire ?? 0,
-                        'montant' => ($detail->prix_unitaire ?? 0) * $detail->quantite,
-                        'date' => now()
-                                        ]);
-
-                    } catch (\Exception $e) {
-                        // Log l'erreur pour ce produit mais continue avec les autres
-                        Log::error('Erreur lors de la mise à jour du stock pour le produit ' . $detail->produit_id . ': ' . $e->getMessage());
-                        // On continue avec les autres produits
-                    }
-                }
-                // Diffuser l'événement de facture
-                try {
-                event(new FactureCree($facture));
-                } catch (\Exception $e) {
-                    Log::warning('Erreur lors de la diffusion de la facture: ' . $e->getMessage());
                 }
 
-            return $paiement;
-    }
-   #payer par tranche pour une commande donnee jusqu'a atteindre le montant total de la commande
-    public function payementParTranche(Request $request, string $commandeId){
-        # les validtions
-        $request->validate([
-            'montant' => 'required|numeric|min:0',
-            'type_paiement' => 'required|string',
-        ]);
-
-        $commande = Commande::findOrFail($commandeId);
-        if($commande->statut !== 'partiellement_payee'){
-            return response()->json([
-                'message' => 'Seules les commandes partiellement payées peuvent être payées',
-            ], 400);
+                // ✅ Enregistrer la vente dans l'historique UNE SEULE FOIS
+                HistoriqueVente::create([
+                    'vendeur_id' => $commande->vendeur_id,
+                    'produit_id' => $detail->produit_id,
+                    'quantite' => $detail->quantite,
+                    'prix_unitaire' => $detail->prix_unitaire ?? 0,
+                    'montant' => ($detail->prix_unitaire ?? 0) * $detail->quantite,
+                    'date' => now()
+                ]);
+            }
         }
 
-        $montantPaye = $request->input('montant');
-        if($montantPaye > $commande->total){
-            return response()->json([
-                'message' => 'Le montant payé ne peut pas dépasser le montant total de la commande',
-            ], 400);
+        // 8️⃣ Diffuser les événements (hors transaction car non critiques)
+        try {
+            event(new PaiementCree($paiement));
+            event(new FactureCree($facture));
+        } catch (\Exception $e) {
+            Log::warning('Erreur lors de la diffusion des événements: ' . $e->getMessage());
         }
 
-        if($commande->total == Paiement::where('commande_id', $commande->id)->sum('montant')){
-            $commande->update(['statut' => 'payee']);
-            #recuperer le client et changer son statut en paye
-            $client = $commande->client;
-            $client->update(['statut' => 'paye']);
-            $client->update([
-                'solde' => 0,
-                'dette' => 0,
-                'total_paye' => Paiement::where('commande_id', $commande->id)->sum('montant'),
-            ]);
-
-            return response()->json([
-                'message' => 'La commande a été payée entièrement',
-            ], 400);
-        }
-        // Créer le paiement
-
-        #le dernier montant payer pour la commande
-        $dernierPaiement = Paiement::where('commande_id', $commande->id)->latest()->first();
-
-        $paiement = Paiement::create([
-            'caissier_id' => Auth::user()->id,
-            'commande_id' => $commande->id,
-            'montant' => $montantPaye,
-            'type_paiement' => $request->input('type_paiement'),
-            'reste_du' => $commande->total - ($montantPaye + $dernierPaiement->montant),
-        ]);
-
-        $commande->update(['statut' => 'partiellement_payee']);
-        $client = $commande->client;
-        $client->update(['statut' => 'en_dette']);
-        $client->update([
-            'solde' => $commande->total - ($montantPaye + $dernierPaiement->montant),
-            'total_paye' => Paiement::where('commande_id', $commande->id)->sum('montant'),
-        ]);
-
-        // Mettre à jour le reste du montant à payer pour la commande
+        // ✅ Retourner le paiement
         return $paiement;
-    }
+    });
+}
 
     #la liste des paiement associer a une commande
     public function listePaiements(string $commandeId){

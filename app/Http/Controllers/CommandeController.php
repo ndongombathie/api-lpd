@@ -7,6 +7,7 @@ use App\Models\DetailCommande;
 use App\Models\Produit;
 use App\Events\CommandeValidee;
 use App\Events\CommandeAnnulee;
+use App\Models\TransfertEnAttente;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -17,23 +18,54 @@ class CommandeController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = Commande::with('details.produit', 'client', 'vendeur')
-               ->orderBy('created_at', 'desc')
+            $query = Commande::with([
+                'details.produit',
+                'client',
+                'vendeur',
+                'paiements'
+            ])
+                        ->orderBy('created_at', 'desc')
                ->where('vendeur_id', Auth::user()->id);
 
-            if ($request->filled('date')) {
-                $query->whereDate('date', $request->date);
+            // 🔎 Filtre statut
+            if ($request->filled('statut')) {
+                $query->where('statut', $request->statut);
             }
 
-            if ($request->filled('status')) {
-                $query->where('statut', $request->status);
+            // 📅 Filtre période
+            if ($request->filled('start_date')) {
+                $query->whereDate('created_at', '>=', $request->start_date);
             }
 
-            if ($request->filled('type')) {
-                $query->where('type_vente', $request->type);
+            if ($request->filled('end_date')) {
+                $query->whereDate('created_at', '<=', $request->end_date);
             }
 
-            return response()->json($query->paginate(10));
+            // 🔍 Recherche
+            if ($request->filled('search')) {
+                $search = $request->search;
+
+                $query->where(function ($q) use ($search) {
+                    $q->where('numero', 'like', "%{$search}%")
+                    ->orWhereHas('client', function ($qc) use ($search) {
+                        $qc->where('nom', 'like', "%{$search}%")
+                            ->orWhere('prenom', 'like', "%{$search}%");
+                    });
+                });
+            }
+            $paginator = $query->paginate(10);
+
+            $paginator->getCollection()->transform(function ($commande) {
+
+                $totalPaye = $commande->paiements->sum('montant');
+
+                $commande->montant_paye = $totalPaye;
+                $commande->reste_a_payer = max(0, $commande->total - $totalPaye);
+
+                return $commande;
+            });
+
+return response()->json($paginator);
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la récupération des commandes',
@@ -98,7 +130,7 @@ class CommandeController extends Controller
                     $q->orderBy('date', 'desc'); // Trier les paiements par date décroissante
                 }])->latest();
 
-                if ($request->filled('type')) {
+                if ($request->filled('type_vente')) {
                 $commandes->where('type_vente', $request->input('type_vente'));
             }
             }else
@@ -158,7 +190,7 @@ class CommandeController extends Controller
                 'type_vente' => 'required|in:detail,gros',
                 'tva_appliquee' => 'required|boolean',
                 'items' => 'required|array|min:1',
-                'items.*.produit_id' => 'required|uuid|exists:produits,id',
+                'items.*.transfert_id' => 'required|uuid|exists:transfert_en_attentes,id',
                 'items.*.quantite' => 'required|integer|min:1',
                 'items.*.prix_unitaire' => 'nullable|numeric',
             ]);
@@ -171,52 +203,74 @@ class CommandeController extends Controller
         }
 
         try {
+
+            return DB::transaction(function () use ($validated, $request) {
+
                 $user = $request->user();
                 $tva = $validated['tva_appliquee'] ? 0.18 : 0;
 
-                    $commande = Commande::create([
-                        'client_id' => $validated['client_id'] ?? null,
-                        'vendeur_id' => $user->id,
-                        'tva_appliquee' => $validated['tva_appliquee'],
-                        'type_vente' => $validated['type_vente'],
-                        'statut' => 'attente',
-                        'total' => 0,
-                        'date' => now(),
-                    ]);
-                    $lastNumero = Commande::lockForUpdate()->max('numero');
-                    $next = $lastNumero
-                        ? ((int) substr($lastNumero, 4)) + 1
-                        : 1;
+                $commande = Commande::create([
+                    'client_id' => $validated['client_id'] ?? null,
+                    'vendeur_id' => $user->id,
+                    'tva_appliquee' => $validated['tva_appliquee'],
+                    'type_vente' => $validated['type_vente'],
+                    'statut' => 'attente',
+                    'total' => 0,
+                    'date' => now(),
+                ]);
 
-                    $commande->numero = 'CMD-' . str_pad($next, 6, '0', STR_PAD_LEFT);
-                    $commande->save();
+                $lastNumero = Commande::lockForUpdate()->max('numero');
+                $next = $lastNumero ? ((int) substr($lastNumero, 4)) + 1 : 1;
 
-                    $totalHt = 0;
-                    foreach ($validated['items'] as $item) {
-                        $produit = Produit::findOrFail($item['produit_id']);
-                        $prix = $item['prix_unitaire'] ?? ($validated['type_vente'] === 'gros' && $produit->prix_gros ? $produit->prix_gros : $produit->prix_vente);
-                        $ligneTotal = $prix * $item['quantite'];
-                        $totalHt += $ligneTotal;
+                $commande->numero = 'CMD-' . str_pad($next, 6, '0', STR_PAD_LEFT);
+                $commande->save();
 
-                        DetailCommande::create([
-                            'commande_id' => $commande->id,
-                            'produit_id' => $produit->id,
-                            'quantite' => $item['quantite'],
-                            'prix_unitaire' => $prix,
-                        ]);
+                $totalHt = 0;
+
+                foreach ($validated['items'] as $item) {
+
+                    $transfert = TransfertEnAttente::where('id', $item['transfert_id'])
+                        ->where('status', 'valide')
+                        ->lockForUpdate()
+                        ->firstOrFail();
+
+                    if ($item['quantite'] > $transfert->quantite) {
+                        throw new \Exception('Stock insuffisant en boutique.');
                     }
 
-                    $montantTva = $totalHt * $tva;
-                    $commande->update(['total' => intval($totalHt + $montantTva)]);
-                    $commande->load('details', 'vendeur','client');
-                    event(new CommandeValidee($commande));
-                    return response()->json($commande);
+                    $prix = $validated['type_vente'] === 'gros'
+                        ? $transfert->prix_vente_gros
+                        : $transfert->prix_vente_detail;
 
-       }catch (\Throwable $th) {
+                    $ligneTotal = $prix * $item['quantite'];
+                    $totalHt += $ligneTotal;
+
+                    DetailCommande::create([
+                        'commande_id' => $commande->id,
+                        'produit_id' => $transfert->produit_id,
+                        'quantite' => $item['quantite'],
+                        'prix_unitaire' => $prix,
+                    ]);
+
+                    $transfert->decrement('quantite', $item['quantite']);
+                }
+
+                $montantTva = $totalHt * $tva;
+                $commande->update(['total' => intval($totalHt + $montantTva)]);
+
+                $commande->load('details', 'vendeur', 'client');
+
+                event(new CommandeValidee($commande));
+
+                return response()->json($commande);
+
+            });
+
+        } catch (\Throwable $th) {
+
             return response()->json([
-                'message' => 'Erreur lors de la création de la commande',
-                'error' => $th->getMessage(),
-            ], 500);
+                'message' => $th->getMessage(),
+            ], 400);
         }
     }
 
@@ -226,7 +280,20 @@ class CommandeController extends Controller
     public function show(string $id)
     {
         try {
-            return response()->json(Commande::with(['details','client','vendeur'])->findOrFail($id));
+            $commande = Commande::with([
+                'details',
+                'client',
+                'vendeur',
+                'paiements'
+            ])->findOrFail($id);
+
+            $totalPaye = $commande->paiements->sum('montant');
+
+            $commande->montant_paye = $totalPaye;
+            $commande->reste_a_payer = max(0, $commande->total - $totalPaye);
+
+            return response()->json($commande);
+
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la récupération de la commande',
@@ -243,7 +310,7 @@ class CommandeController extends Controller
         try {
             $commande = Commande::findOrFail($id);
             $data = $request->validate([
-                'statut' => 'sometimes|in:brouillon,validee,payee,annulee',
+                'statut' => 'sometimes|in:attente,partiellement_payee,payee,annulee',
             ]);
 
             $commande->update($data);
@@ -427,10 +494,11 @@ class CommandeController extends Controller
             $query = Commande::query()
                 ->whereHas('client', function ($q) {
                     $q->where('type_client', 'special');
-                });
+                })
+                ->where('vendeur_id', Auth::user()->id);
 
             // ===============================
-            // FILTRES IDENTIQUES AU FRONT
+            // FILTRES IDENTIQUES AU TABLEAU
             // ===============================
 
             if ($request->filled('client_id')) {
@@ -454,7 +522,8 @@ class CommandeController extends Controller
                 $query->where(function ($q) use ($search) {
                     $q->where('numero', 'like', "%{$search}%")
                     ->orWhereHas('client', function ($sub) use ($search) {
-                        $sub->where('nom', 'like', "%{$search}%");
+                        $sub->where('nom', 'like', "%{$search}%")
+                            ->orWhere('prenom', 'like', "%{$search}%");
                     });
                 });
             }
@@ -463,15 +532,19 @@ class CommandeController extends Controller
             // ANNULÉES (compteur séparé)
             // ===============================
 
-            $annuleesQuery = clone $query;
-            $annulees = $annuleesQuery
+            $annulees = (clone $query)
                 ->where('statut', 'annulee')
                 ->count();
+
             $statsQuery = clone $query;
 
-            // Exclure annulées sauf si filtre annulée
-            if (!$request->filled('statut') || $request->statut !== 'annulee') {
-                $statsQuery->where('statut', '!=', 'annulee');
+            // Actives par défaut
+            if (!$request->filled('statut')) {
+                $statsQuery->whereIn('statut', [
+                    'attente',
+                    'partiellement_payee',
+                    'payee'
+                ]);
             }
 
             $nb = $statsQuery->count();
@@ -499,5 +572,56 @@ class CommandeController extends Controller
                 'error' => $th->getMessage(),
             ], 500);
         }
+    }
+    public function envoyerTranche(Request $request, string $id)
+    {
+        $request->validate([
+            'montant' => 'required|numeric|min:0.01'
+        ]);
+
+        $commande = Commande::with('client')->findOrFail($id);
+        // 🔒 Empêcher plusieurs tranches en attente
+        if ($commande->montant_a_encaisser !== null) {
+            return response()->json([
+                'message' => 'Une tranche est déjà en attente d’encaissement.'
+            ], 400);
+        }
+        // 🔒 On respecte les statuts backend actuels
+        if ($commande->statut !== 'attente' && $commande->statut !== 'partiellement_payee') {
+            return response()->json([
+                'message' => 'Seules les commandes en attente ou partiellement payées peuvent recevoir une tranche.'
+            ], 400);
+        }
+
+        // ✅ Vérifier client spécial
+        if (!$commande->client || $commande->client->type_client !== 'special') {
+            return response()->json([
+                'message' => 'Seuls les clients spéciaux peuvent payer par tranche.'
+            ], 400);
+        }
+
+        $montant = $request->montant;
+
+        // 🔍 Calcul du reste réel
+        $totalPaye = $commande->paiements()->sum('montant');
+        $reste = $commande->total - $totalPaye;
+
+        if ($montant > $reste) {
+            return response()->json([
+                'message' => 'Le montant dépasse le reste à payer.'
+            ], 400);
+        }
+
+        // 🟣 On prépare juste la caisse
+        $commande->update([
+            'montant_a_encaisser' => $montant
+        ]);
+
+        return response()->json([
+            'numero' => $commande->numero,
+            'montant_a_encaisser' => $montant,
+            'reste_avant_paiement' => $reste,
+            'message' => 'Tranche envoyée à la caisse.'
+        ]);
     }
 }
