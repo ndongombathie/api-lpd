@@ -121,7 +121,7 @@ class PaiementController extends Controller
         $commande = Commande::findOrFail($commandeId);
         if($commande->statut !== 'attente'){
             return response()->json([
-                'message' => 'Seules les commandes en attente peuvent être payées',
+                'message' => 'Cette commande est en cours de traitement, vous ne pouvez pas payer.',
             ], 400);
             abort(400, 'Seules les commandes en attente peuvent être payées');
         }
