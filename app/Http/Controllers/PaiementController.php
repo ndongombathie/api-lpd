@@ -121,7 +121,7 @@ class PaiementController extends Controller
         $commande = Commande::findOrFail($commandeId);
         if($commande->statut !== 'attente'){
             return response()->json([
-                'message' => 'Seules les commandes en attente peuvent être payées',
+                'message' => 'Cette commande est en cours de traitement, vous ne pouvez pas payer.',
             ], 400);
             abort(400, 'Seules les commandes en attente peuvent être payées');
         }
@@ -138,10 +138,6 @@ class PaiementController extends Controller
             ], 400);
             abort(400, 'Seul les clients spéciaux peuvent payer par tranche.');
         }
-
-
-            // Diffuser l'événement de paiement (sans bloquer si Reverb n'est pas disponible)
-
 
             // Traiter la finalisation de la commande (mise à jour du statut, stock, etc.)
             // Même en cas d'erreur, on retourne le paiement car il est déjà créé
@@ -167,17 +163,17 @@ class PaiementController extends Controller
                 $client->save();
             }
 
-            $paiement = Paiement::create([
+            try
+            {
+                $paiement = Paiement::create([
                 'commande_id' => $commande->id,
                 'montant' => $data['montant'],
                 'type_paiement' => $data['type_paiement'],
                 'date' => now(),
                 'reste_du' => $reste,
                 'caissier_id' => Auth::user()->id ?? $commande->vendeur_id, // Fallback to vendeur if no auth user
-            ]);
-
-            try {
-            event(new PaiementCree($paiement));
+                ]);
+                event(new PaiementCree($paiement));
             } catch (\Exception $e) {
                 // Log l'errTransfereeur mais ne bloque pas l'opération
                 Log::warning('Erreur lors de la diffusion du paiement: ' . $e->getMessage());
@@ -196,28 +192,29 @@ class PaiementController extends Controller
                 // Mettre à jour le stock de la boutique et enregistrer le mouvement
                 $commande->loadMissing(['details', 'vendeur']);
 
-                // Traiter chaque détail avec gestion d'erreur individuelle
-                foreach ($commande->details as $detail) {
                     try {
 
-                    // Décrémenter le stock de la boutique pour chaque produit
-                    $stock_boutique=StockBoutique::where('produit_id', $detail->produit_id)->first();
-                    $stock = TransfertEnAttente::where('produit_id', $stock_boutique->produit_id)->first();
+                     // Traiter chaque détail avec gestion d'erreur individuelle
+                    foreach ($commande->details as $detail) {
+                        // Décrémenter le stock de la boutique pour chaque produit
+                        $stock_boutique=StockBoutique::where('produit_id', $detail->produit_id)->first();
+                        $stock = TransfertEnAttente::where('produit_id', $stock_boutique->produit_id)->first();
 
-                    if ($stock) {
-                        $stock->update(['quantite' => max(0, $stock->quantite - $detail->quantite)]);
-                        $stock_boutique->update(['quantite' => max(0, $stock->quantite - $detail->quantite)]);
-                        if ($stock->quantite <= 0) {
-                                try {
-                            event(new StockRupture($stock->fresh()));
-                                } catch (\Exception $e) {
-                                    Log::warning('Erreur lors de la diffusion de la rupture de stock: ' . $e->getMessage());
+                            if ($stock) {
+                                $stock->update(['quantite' => max(0, $stock->quantite - $detail->quantite)]);
+                                if ($stock->quantite <= 0) {
+                                    try {
+                                        event(new StockRupture($stock->fresh()));
+                                    } catch (\Exception $e) {
+                                        Log::warning('Erreur lors de la diffusion de la rupture de stock: ' . $e->getMessage());
+                                    }
                                 }
-                        }
-                    }
+                            }
 
-                    // Enregistrer la vente dans l'historique
-                    HistoriqueVente::create([
+                        }
+
+                        // Enregistrer la vente dans l'historique
+                        HistoriqueVente::create([
                         'vendeur_id' => $commande->vendeur_id,
                         'produit_id' => $detail->produit_id,
                         'quantite' => $detail->quantite,
@@ -231,7 +228,7 @@ class PaiementController extends Controller
                         Log::error('Erreur lors de la mise à jour du stock pour le produit ' . $detail->produit_id . ': ' . $e->getMessage());
                         // On continue avec les autres produits
                     }
-                }
+
                 // Diffuser l'événement de facture
                 try {
                 event(new FactureCree($facture));

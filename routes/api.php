@@ -286,7 +286,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
 
-    Route::post('fond-caisse', [FondCaisseController::class, 'store']);
+    Route::post('fond-caisse/{id}', [FondCaisseController::class, 'store']);
 
     # Gestion des enregPtPistrements de versement
     Route::apiResource('enregistrer-versements', EnregistrerVersementController::class);

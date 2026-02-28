@@ -101,7 +101,8 @@ class TransfertEnAttenteController extends Controller
     public function produitsDisponibles(Request $request)
     {
         try {
-            $transfers = TransfertEnAttente::with(['produit'])->where('status', 'valide')
+            $transfers = TransfertEnAttente::with(['produit.categorie'])->where('status', 'valide')
+            ->where('quantite','>',0)
             ->latest();
 
             if($request->filled('search')){
@@ -127,7 +128,7 @@ class TransfertEnAttenteController extends Controller
     public function produitsControleBoutique(Request $request)
     {
         try {
-            $transfers = TransfertEnAttente::with(['produit'])
+            $transfers = TransfertEnAttente::with(['produit.categorie'])
             ->where('status', 'valide')
             ->latest();
             if($request->filled('search')){
