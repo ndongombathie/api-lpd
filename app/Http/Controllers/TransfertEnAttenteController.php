@@ -21,7 +21,7 @@ class TransfertEnAttenteController extends Controller
         try {
             $transfers = TransfertEnAttente::with(['produit'])
             ->where('status', 'en_attente')
-            ->latest();
+            ->latest('created_at');
 
             if($request->filled('search')){
                 $search = $request->input('search');
@@ -103,7 +103,7 @@ class TransfertEnAttenteController extends Controller
         try {
             $transfers = TransfertEnAttente::with(['produit.categorie'])->where('status', 'valide')
             ->where('quantite','>',0)
-            ->latest();
+            ->latest('updated_at');
 
             if($request->filled('search')){
                 $search = $request->input('search');
@@ -119,7 +119,7 @@ class TransfertEnAttenteController extends Controller
                 });
             }
 
-            return response()->json($transfers->paginate(10));
+            return response()->json($transfers->paginate(12));
         } catch (\Throwable $th) {
             return response()->json(['error' => $th->getMessage()], 500);
         }
@@ -184,7 +184,7 @@ class TransfertEnAttenteController extends Controller
 
     public function getTransferValide(Request $request){
       try {
-        $transfers = TransfertEnAttente::with(['produit'])->where('status', 'valide')->latest();
+        $transfers = TransfertEnAttente::with(['produit'])->where('status', 'valide')->latest('updated_at');
 
         if($request->filled('search')){
           $search = $request->input('search');
