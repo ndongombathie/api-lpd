@@ -134,12 +134,15 @@ class CommandeController extends Controller
                     $q->orderBy('date', 'desc'); // Trier les paiements par date décroissante
                 }])->latest();
             }
-            if ($request->filled('date')) {
-                $commandes->whereDate('date', $request->date);
+            #filtrer entre deux dates date_debut et date_fin
+            if ($request->filled('date_debut') && $request->filled('date_fin')) {
+                $commandes->whereBetween('date', [$request->date_debut, $request->date_fin]);
             }
 
-            // Filter by boutique_id if provided
-
+            #filtrer par une date donnee
+            if ($request->filled('date_debut') || $request->filled('date_fin')) {
+                $commandes->whereDate('date', $request->date);
+            }
 
             return response()->json($commandes->paginate(10));
         } catch (\Throwable $th) {
