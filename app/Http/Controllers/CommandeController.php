@@ -134,6 +134,7 @@ class CommandeController extends Controller
                     $q->orderBy('date', 'desc'); // Trier les paiements par date décroissante
                 }])->latest();
             }
+
             #filtrer entre deux dates date_debut et date_fin
             if ($request->filled('date_debut') && $request->filled('date_fin')) {
                 $commandes->whereBetween('date', [$request->date_debut, $request->date_fin]);
@@ -141,7 +142,7 @@ class CommandeController extends Controller
 
             #filtrer par une date donnee
             if ($request->filled('date_debut') || $request->filled('date_fin')) {
-                $commandes->whereDate('date', $request->date);
+                $commandes->whereDate('date', $request->date_debut ?? $request->date_fin);
             }
 
             return response()->json($commandes->paginate(10));
