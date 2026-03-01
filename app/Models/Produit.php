@@ -39,6 +39,7 @@ class Produit extends Model
     {
         return $this->hasMany(DetailCommande::class);
     }
+    
 
     public function stocks(): HasMany
     {
@@ -51,7 +52,7 @@ class Produit extends Model
     }
 
     public function categorie():BelongsTo{
-      return $this->belongsTo(categorie::class);
+      return $this->belongsTo(Categorie::class);
     }
 
     public function fournisseur():BelongsTo{
@@ -65,11 +66,21 @@ class Produit extends Model
 
     public function entreees_sorties_boutique(): HasMany
     {
-        return $this->hasMany(entree_sortie_boutique::class);
+        return $this->hasMany(EntreeSortieBoutique::class);
     }
 
     public function historique_actions(): HasMany
     {
         return $this->hasMany(HistoriqueAction::class);
+    }
+
+    public function transferts(): HasMany
+    {
+        return $this->hasMany(Transfer::class);
+    }
+
+    public function transferts_en_attente(): HasMany
+    {
+        return $this->hasMany(TransfertEnAttente::class);
     }
 }

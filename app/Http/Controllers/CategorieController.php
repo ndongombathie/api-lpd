@@ -12,12 +12,31 @@ class CategorieController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Response $request)
     {
         try {
-            return response()->json(Categorie::query()->latest()->paginate(20));
+            $query= Categorie::query()
+            ->orderBy('created_at', 'desc')
+            ->latest();
+            if($request->filled('search'))
+            {
+                $search = $request->input('search');
+                $query->where(function ($q) use ($search) {
+                    $q->where('nom', 'like', "%{$search}%");
+                });
+            }
+            return response()->json($query->paginate(10));
         } catch (\Throwable $th) {
             //throw $th;
+        }
+    }
+
+    public function nombreCategorie()
+    {
+        try {
+            return response()->json(Categorie::count());
+        } catch (\Throwable $th) {
+            return response()->json(['message' => $th->getMessage()], 500);
         }
     }
 
@@ -37,27 +56,32 @@ class CategorieController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Categorie $categorie)
+    public function show(String $categorie)
     {
         try {
+            $categorie=Categorie::findOrFail($categorie);
             return response()->json($categorie);
         } catch (\Throwable $th) {
-            //throw $th;
+            return response()->json(['message' => $th->getMessage()], 500);
         }
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateCategorieRequest $request, Categorie $categorie)
+    public function update(UpdateCategorieRequest $request, string $categorie)
     {
         try {
             if($request->validated())
             {
-                $categorie->update($request->validated());
+
+                $categorie=Categorie::findOrFail($categorie);
+                $categorie->nom=$request->input('nom');
+                $categorie->update();
             }
             return response()->json($categorie);
         } catch (\Throwable $th) {
+            return response()->json(['message' => $th->getMessage()], 500);
             //throw $th;
         }
     }
@@ -65,13 +89,19 @@ class CategorieController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Categorie $categorie)
+    public function destroy(string $categorie)
     {
         try {
+            $categorie = Categorie::findOrFail($categorie);
+
+            // Détacher les produits associés avant suppression pour éviter
+            // la suppression en cascade des produits qui échouerait s'ils ont des ventes
+            $categorie->produits()->update(['categorie_id' => null]);
+
             $categorie->delete();
-            return response()->json(null,Response::HTTP_NO_CONTENT);
+            return response()->json(null, Response::HTTP_NO_CONTENT);
         } catch (\Throwable $th) {
-            //throw $th;
+            return response()->json(['message' => $th->getMessage()], 500);
         }
     }
 }

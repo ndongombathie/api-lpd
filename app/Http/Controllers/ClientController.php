@@ -12,7 +12,7 @@ class ClientController extends Controller
 {
     public function index()
     {
-        return Client::query()->latest()->paginate(20);
+        return Client::query()->latest()->paginate(10);
     }
 
     /**
@@ -39,7 +39,7 @@ class ClientController extends Controller
         {
             $data['type_client'] = 'normal';
         }
-        
+
         $client = Client::create($data);
         return response()->json($client, 201);
     }

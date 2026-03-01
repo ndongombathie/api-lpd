@@ -13,9 +13,9 @@ class Categorie extends Model
     use HasFactory;
     use HasUuids;
 
-    protected $fillable = ['nom'];
+    protected $fillable = ['nom','id'];
 
-    
+
 
     public function produits():HasMany
     {

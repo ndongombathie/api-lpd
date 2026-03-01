@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use App\Models\Boutique;
+use App\Models\CaissierCaisseJournal;
 use App\Models\Categorie;
 use App\Models\Produit;
 use App\Models\Client;
@@ -15,10 +16,13 @@ use App\Models\MouvementStock;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\Decaissement;
+use App\Models\EntreeSortieBoutique;
 use App\Models\EntreeSortie;
 use App\Models\HistoriqueAction;
 use App\Models\HistoriqueVente;
 use App\Models\Transfer;
+use App\Models\Inventaire;
+use App\Models\TransfertEnAttente;
 
 class DatabaseSeeder extends Seeder
 {
@@ -38,7 +42,7 @@ class DatabaseSeeder extends Seeder
             'nom' => 'Admin',
             'prenom' => 'Global',
             'email' => 'ndongo@example.com',
-            'role' => 'admin',
+            'role' => 'comptable',
             'boutique_id' => optional($premiereBoutique)->id,
             'adresse' => 'Siège',
             'telephone' => '+237600000000',
@@ -60,11 +64,12 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // Données de base
-        Categorie::factory()->count(50)->create();
-        Produit::factory()->count(50)->create();
-        Client::factory()->count(20)->create();
-        Fournisseur::factory()->count(5)->create();
-        Transfer::factory()->count(10)->create();
+        Categorie::factory()->count(100)->create();
+        Produit::factory()->count(100)->create();
+        Client::factory()->count(200)->create();
+        Fournisseur::factory()->count(50)->create();
+        Transfer::factory()->count(2000)->create();
+        TransfertEnAttente::factory()->count(2000)->create();
 
 
         // Stock initial par boutique
@@ -110,23 +115,27 @@ class DatabaseSeeder extends Seeder
             }
 
             // Statut basé sur paiements
-            if ($reste <= 0 && $total > 0) {
+            /* if ($reste <= 0 && $total > 0) {
                 $commande->statut = 'payee';
             } elseif ($total > 0) {
-                $commande->statut = 'validee';
-            }
+                $commande->statut = 'valide';
+            } */
 
             $commande->save();
         });
 
         // Mouvements de stock
-        MouvementStock::factory()->count(80)->create();
+        MouvementStock::factory()->count(100)->create();
 
         // Décaisements
-        Decaissement::factory()->count(10)->create();
-        HistoriqueVente::factory()->count(50)->create();
-        HistoriqueAction::factory()->count(50)->create();
-        EntreeSortie::factory()->count(50)->create();
+        Decaissement::factory()->count(100)->create();
+        HistoriqueVente::factory()->count(100)->create();
+        HistoriqueAction::factory()->count(100)->create();
+        EntreeSortie::factory()->count(100)->create();
+        EntreeSortieBoutique::factory()->count(100)->create();
+        Inventaire::factory()->count(100)->create();
+        CaissierCaisseJournal::factory()->count(100)->create();
+
     }
 
 }

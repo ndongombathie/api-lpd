@@ -9,8 +9,10 @@ use App\Events\StockBoutiqueMisAJour;
 use App\Events\StockRupture;
 use App\Models\entree_sortie_boutique;
 use App\Models\EntreeSortie;
+use App\Models\EntreeSortieBoutique;
 use App\Models\HistoriqueAction;
 use App\Models\Transfer;
+use App\Models\TransfertEnAttente;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -20,7 +22,9 @@ class StockController extends Controller
     public function index()
     {
         try {
-            return StockBoutique::with('produit')->paginate(50);
+            return StockBoutique::with('produit')
+            ->orderBy('created_at', 'desc')
+            ->paginate(50);
         } catch (\Throwable $th) {
             return response()->json(['error' => $th->getMessage()], 500);
         }
@@ -32,7 +36,7 @@ class StockController extends Controller
         return StockBoutique::with('produit')
             ->where('quantite', '<=', 'stock_seuil')
             ->when($boutiqueId, fn($q) => $q->where('boutique_id', $boutiqueId))
-            ->paginate(20);
+            ->paginate(10);
     }
 
     public function transfer(Request $request)
@@ -47,16 +51,10 @@ class StockController extends Controller
             $sourceLabel = 'depot';
 
             if (!empty(Auth::user()->boutique_id)) {
+
                 $src = StockBoutique::firstOrCreate([
                     'boutique_id' => Auth::user()->boutique_id,
                     'produit_id' => $produitId,
-                ]);
-                $transfer = Transfer::firstOrCreate([
-                    'boutique_id' => Auth::user()->boutique_id,
-                    'produit_id'  => $produitId,
-                ], [
-                    'quantite' => 0, // provide a default value for the NOT NULL column
-                    'nombre_carton' => 0, // provide a default value for the NOT NULL column
                 ]);
 
                 if ($src->nombre_carton < $qte) {
@@ -68,14 +66,30 @@ class StockController extends Controller
                 $produit->decrement('stock_global', $qte*$produit->unite_carton);
                 $produit->save();
 
-                $transfer->increment('quantite', $qte*$produit->unite_carton);
+                Transfer::Create([
+                    'boutique_id' => Auth::user()->boutique_id,
+                    'produit_id'  => $produitId,
+                    'quantite' => $qte*$produit->unite_carton, // provide a default value for the NOT NULL column
+                    'nombre_carton' => $qte,
+                ]);
+
+                TransfertEnAttente::Create([
+                    'produit_id'  => $produitId,
+                    'quantite' => $qte*$produit->unite_carton, // provide a default value for the NOT NULL column
+                    'nombre_carton' => $qte,
+                ]);
+
+               /*  $transfer->increment('quantite', $qte*$produit->unite_carton);
                 $transfer->increment('nombre_carton', $qte);
+                $transfer->status = 'en_attente';
                 $transfer->updated_at = now();
-                $transfer->save();
+                $transfer->save(); */
 
                 $this->EntreeSortiesBoutique($produitId,$qte);
                 $this->Sorties($produitId,$qte);
-                $src->decrement('quantite', $qte);
+
+                $src->decrement('quantite', $qte*$produit->unite_carton);
+                $src->decrement('nombre_carton',$qte);
                 $sourceLabel = 'boutique:' . Auth::user()->boutique_id;
 
                 MouvementStock::firstOrCreate([
@@ -84,6 +98,7 @@ class StockController extends Controller
                     'produit_id' => $produitId,
                     'quantite' => $qte,
                     'type' => 'sortie',
+                    'motif' => 'Transfert de produit',
                 ],[
                      'date' => now(),
                 ]);
@@ -104,6 +119,72 @@ class StockController extends Controller
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
+    }
+
+    /**
+     * Annuler le dernier transfert d’un produit depuis la boutique vers le dépôt un en dans paramatre id du transfert.
+     * Le transfert est identifié via le modèle Transfer (boutique + produit).
+     * Toutes les quantités déplacées sont remises à leur état d’origine.
+     */
+    public function annulerTransfert(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'transfer_id' => 'required|uuid|exists:transfert_en_attentes,id',
+            ]);
+            $id = $validated['transfer_id'];
+
+            $transfer = TransfertEnAttente::findOrFail($id);
+            if ($transfer->status != 'en_attente') {
+                abort(422, 'Transfert non en attente');
+            }
+
+            $transfer->status = 'annuler';
+            $transfer->updated_at = now();
+            $transfer->save();
+
+            $this->EntreeSorties($transfer->produit_id,$transfer->nombre_carton);
+            $this->EntreeSortiesBoutique($transfer->produit_id,$transfer->nombre_carton);
+            $produit = Produit::findOrFail($transfer->produit_id);
+            $boutiqueId = $transfer->boutique_id;
+
+            // Restaurer le stock boutique
+            $src = StockBoutique::firstOrCreate([
+                'boutique_id' => Auth::user()->boutique_id,
+                'produit_id'  => $transfer->produit_id,
+            ]);
+            $src->increment('quantite', $transfer->quantite);
+            $src->increment('nombre_carton', $transfer->nombre_carton);
+
+            // Restaurer le stock global et nombre_carton du produit
+            $produit->increment('stock_global', $transfer->quantite);
+            $produit->increment('nombre_carton', $transfer->nombre_carton);
+
+            // Créer le mouvement de retour
+            MouvementStock::firstOrCreate([
+                'source'      => 'boutique:' . $boutiqueId,
+                'destination' => 'depot',
+                'produit_id'  => $transfer->produit_id,
+                'quantite'    => $transfer->quantite,
+                'type'        => 'entree',
+                'motif'       => 'Annulation de transfert',
+            ], [
+                'date' => now(),
+            ]);
+
+            // Historique
+            HistoriqueAction::create([
+                'user_id'    => Auth::user()->id,
+                'produit_id' => $transfer->produit_id,
+                'action'     => 'Annulation de transfert',
+            ]);
+
+            // Supprimer le transfert
+            $transfer->delete();
+            return response()->json(['message' => 'Transfert annulé']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
     }
 
     public function EntreeSorties($produitId,$qte)
@@ -139,7 +220,7 @@ class StockController extends Controller
 
     public function EntreeSortiesBoutique($produitId,$qte)
     {
-        $entree_sortie=entree_sortie_boutique::firstOrCreate([
+        $entree_sortie=EntreeSortieBoutique::firstOrCreate([
             'produit_id'  => $produitId,
         ], [
             'quantite_avant' => 0,
@@ -150,7 +231,6 @@ class StockController extends Controller
         $entree_sortie->increment('quantite_apres',$qte);
         $entree_sortie->increment('nombre_fois',1);
         $entree_sortie->save();
-
     }
 
     /**
@@ -182,6 +262,7 @@ class StockController extends Controller
                     if ($qte !== null) {
                     $dest->increment('quantite', $qte);
                     $produit->increment('stock_global', $qte*$produit->unite_carton);
+                    $produit->increment('nombre_carton',$qte);
                     }
 
                     MouvementStock::firstOrCreate([
@@ -189,7 +270,8 @@ class StockController extends Controller
                         'destination' => 'boutique:' . Auth::user()->boutique_id,
                         'produit_id' => $validated['produit_id'],
                         'quantite' => $qte,
-                        'type' => 'Approvisionnement',
+                        'type' => 'entree',
+                        'motif' => 'Approvisionnement de produit',
                     ],[
                         'date' => now(),
                     ]);

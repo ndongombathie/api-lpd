@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Decaissement;
+use App\Models\HistoriqueVente;
 use App\Models\Produit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class BoutiqueController extends Controller
 {
@@ -23,7 +25,9 @@ class BoutiqueController extends Controller
             $montantTotal = $montantTotalProduit - $montantTotalDecaissement;
             return response()->json(['montant_total' => $montantTotal], 200);
         } catch (\Throwable $th) {
-            //throw $th;
+            Log::error('Erreur montantTotalBoutique: ' . $th->getMessage());
+            Log::error('Stack trace: ' . $th->getTraceAsString());
+            return response()->json(['error' => $th->getMessage()], 500);
         }
     }
 
@@ -32,9 +36,29 @@ class BoutiqueController extends Controller
             $benefice = $this->montantTotalBoutique()['montant_total'] - Produit::sum('prix_unite_carton');
             return response()->json(['benefice' => $benefice], 200);
         } catch (\Throwable $th) {
-            //throw $th;
+            Log::error('Erreur BeneficeBoutique: ' . $th->getMessage());
+            Log::error('Stack trace: ' . $th->getTraceAsString());
+            return response()->json(['error' => $th->getMessage()], 500);
         }
     }
+
+
+    #use HistoriqueVenteController give montantTotalVentesBoutique frr the day current
+    public function montantTotalVentesToday(){
+        try {
+            $montantTotalVentes = HistoriqueVente::whereDate('created_at', date('Y-m-d'))->sum('montant');
+            return response()->json($montantTotalVentes, 200);
+        } catch (\Throwable $th) {
+            Log::error('Erreur montantTotalVentesToday: ' . $th->getMessage());
+            Log::error('Stack trace: ' . $th->getTraceAsString());
+            return response()->json(['error' => $th->getMessage()], 500);
+        }
+    }
+
+
+
+
+    #enregistrer une inventaire entre deux dates choisies donnees en parametre (argent Total ventes	argent Total achats	Résultat)
 
     /**
      * Store a newly created resource in storage.

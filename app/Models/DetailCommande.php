@@ -18,7 +18,7 @@ class DetailCommande extends Model
         'commande_id','produit_id','quantite','prix_unitaire'
     ];
 
-    public function produit()
+    public function produit(): BelongsTo
     {
         return $this->belongsTo(Produit::class);
     }

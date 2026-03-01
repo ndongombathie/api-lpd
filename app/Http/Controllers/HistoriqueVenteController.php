@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\HistoriqueVente;
+use App\Models\Inventaire;
 use App\Models\Produit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -47,28 +48,33 @@ class HistoriqueVenteController extends Controller
         }
     }
 
+
     public function inventaireBoutique(Request $request)
     {
 
-        $validated = $request->validate([
-            'date' => 'nullable|date',
-            'per_page' => 'nullable|integer|min:1|max:200',
-        ]);
-        $date = $validated['date'] ?? Carbon::now()->format('Y-m-d');
-
         try {
+            //dd($request);
             // Récupérer les produits vendus à la date donnée avec la quantité totale vendue
             $query = DB::table('historique_ventes')
-                ->join('transfers', 'historique_ventes.produit_id', '=', 'transfers.produit_id')
+                ->join('transfert_en_attentes', 'historique_ventes.produit_id', '=', 'transfert_en_attentes.produit_id')
                 ->select(
-                    'transfers.produit_id',
-                    'transfers.quantite as stock_initial',
+                    'transfert_en_attentes.produit_id',
+                    'transfert_en_attentes.quantite as stock_initial',
                     DB::raw('SUM(historique_ventes.quantite) as quantite_vendue')
                 )
-               // ->whereDate('historique_ventes.created_at', $date)
-                ->groupBy('transfers.produit_id', 'transfers.quantite');
+                ->groupBy('transfert_en_attentes.produit_id', 'transfert_en_attentes.quantite');
+
+
+            if($request->filled('date_debut')) {
+                $query->whereDate('historique_ventes.date', '>=', $request->date_debut);
+            }
+
+            if ($request->filled('date_fin')) {
+                $query->whereDate('historique_ventes.date', '<=', $request->date_fin);
+            }
+
             $produitsVendus = $query->paginate(10);
-            // Ajouter la colonne écart (stock_initial - quantite_vendue)
+
             $produitsVendus->getCollection()->transform(function ($produit) {
                 $produit->ecart = $produit->stock_initial - $produit->quantite_vendue;
                 $produit->produit=Produit::query()->with('entreees_sorties_boutique')->where('id',$produit->produit_id)->get()->first();
@@ -77,46 +83,58 @@ class HistoriqueVenteController extends Controller
                 return $produit;
             });
 
-            return response()->json(['date' => $date, 'produits' => $produitsVendus]);
+            return ['produits' => $produitsVendus];
+
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
 
     }
 
-     public function inventaireDepot(Request $request)
+    #a partir de inventaireDepot calculer l'inventaireBoutique faire la somme de prix_achat_total,prix_valeur_sortie_total,valeur_estimee_total et le benefice_total
+    public function enregistrerInventaireBoutique(Request $request)
     {
-
-        $validated = $request->validate([
-            'date' => 'nullable|date',
-            'per_page' => 'nullable|integer|min:1|max:200',
-        ]);
-        $date = $validated['date'] ?? Carbon::now()->format('Y-m-d');
-        $perPage = $validated['per_page'] ?? 50;
         try {
-            // Récupérer les produits vendus à la date donnée avec la quantité totale vendue
-            $query = DB::table('historique_ventes')
-                ->join('transfers', 'historique_ventes.produit_id', '=', 'transfers.produit_id')
-                ->select(
-                    'transfers.produit_id',
-                    'transfers.quantite as stock_initial',
-                    DB::raw('SUM(historique_ventes.quantite) as quantite_vendue')
-                )
-               // ->whereDate('historique_ventes.created_at', $date)
-                ->groupBy('transfers.produit_id', 'transfers.quantite');
-            $produitsVendus = $query->paginate($perPage);
-            // Ajouter la colonne écart (stock_initial - quantite_vendue)
-            $produitsVendus->getCollection()->transform(function ($produit) {
-                $produit->ecart = $produit->stock_initial - $produit->quantite_vendue;
-                $produit->produit=Produit::find($produit->produit_id);
-                return $produit;
-            });
+                $inventaire = $this->inventaireBoutique($request)['produits'];
+                $total = $inventaire->reduce(function ($carry, $item) {
 
-            return response()->json(['date' => $date, 'produits' => $produitsVendus]);
-        } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
+                $mouvement = $item->produit->entreees_sorties_boutique->first();
+
+                $entree = (int) ($mouvement->quantite_apres ?? 0);
+                $sortie = (int) ($mouvement->quantite_avant ?? 0);
+                $stock  = (int) $item->total_resant;
+                $prix   = (float) $item->produit->prix_achat;
+
+                $carry['prix_achat_total'] += $entree * $prix;
+                $carry['prix_valeur_sortie_total'] += $sortie * $prix;
+                $carry['valeur_estimee_total'] += $stock * $prix;
+
+                return $carry;
+
+                }, [
+                    'prix_achat_total' => 0,
+                    'prix_valeur_sortie_total' => 0,
+                    'valeur_estimee_total' => 0,
+                ]);
+
+                $total['benefice_total'] =
+                    $total['prix_valeur_sortie_total'] - $total['prix_achat_total'];
+
+                Inventaire::create([
+                    'type' => 'Boutique',
+                    'date_debut' => $request->date_debut ?? now(),
+                    'date_fin' => $request->date_fin ?? now(),
+                    'date' => now(),
+                    'prix_achat_total' => $total['prix_achat_total'],
+                    'prix_valeur_sortie_total' => $total['prix_valeur_sortie_total'],
+                    'valeur_estimee_total' => $total['valeur_estimee_total'],
+                    'benefice_total' => $total['benefice_total'],
+                ]);
+
+                return response()->json($total);
+        } catch (\Throwable $th) {
+            return response()->json(['error' => $th->getMessage()], 500);
         }
-
     }
 
 
@@ -127,11 +145,19 @@ class HistoriqueVenteController extends Controller
     public function totalParJour(Request $request)
     {
 
+
         $date = $request->input('date') ?? Carbon::now()->format('Y-m-d');
 
         try {
-            $total = HistoriqueVente::whereDate('created_at', $date)->sum('montant');
-            return response()->json(['date' => $date, 'total' => $total]);
+            $total = HistoriqueVente::query();
+            if($request->filled('date')){
+                $total = $total->whereDate('created_at', $date)->sum('montant');
+            }
+            else{
+                $total = $total->sum('montant');
+            }
+
+            return response()->json($total);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
@@ -159,6 +185,36 @@ class HistoriqueVenteController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
+
+    #Nombre total de ventes par vendeur et Total encaissé par vendeur
+    public function totalVentesParVendeur(Request $request)
+    {
+        try {
+            $totalVentes = HistoriqueVente::with('vendeur')
+                ->select('vendeur_id', DB::raw('COUNT(quantite) as total_ventes')
+                ,DB::raw('SUM(montant) as total_encaisses'))
+                ->groupBy('vendeur_id');
+                
+             # appliquer des filtre par nom ,prenom ,email
+            if ($request->filled('search')) {
+                $search = $request->input('search');
+                $totalVentes->where(function ($q) use ($search) {
+                    $q->whereHas('vendeur', function ($q) use ($search) {
+                        $q->where('nom', 'like', "%{$search}%")
+                          ->orWhere('prenom', 'like', "%{$search}%")
+                          ->orWhere('email', 'like', "%{$search}%");
+                    });
+                });
+            }
+            return response()->json([
+                'total_ventes' => $totalVentes->paginate(10),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+
 
     /**
      * Display the specified resource.

@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('stock_boutiques', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('boutique_id');
-            $table->uuid('produit_id');
+            $table->uuid('boutique_id')->nullable();
+            $table->uuid('produit_id')->nullable();
             $table->integer('quantite')->default(0);
             $table->integer('nombre_carton')->default(0);
             $table->timestamps();

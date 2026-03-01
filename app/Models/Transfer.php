@@ -16,9 +16,17 @@ class Transfer extends Model
         'boutique_id',
         'produit_id',
         'quantite',
+        'seuil',
+        'nombre_carton',
+        'status',
     ];
     protected $casts = [
+        'boutique_id' => 'string',
+        'produit_id' => 'string',
         'quantite' => 'integer',
+        'seuil' => 'integer',
+        'nombre_carton' => 'integer',
+        'status' => 'string',
     ];
 
     public function produit()

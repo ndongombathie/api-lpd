@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Commande;
 use App\Models\EntreeSortie;
 use App\Models\Fournisseur;
 use App\Models\HistoriqueAction;
@@ -34,11 +35,56 @@ class ProduitController extends Controller
     public function produits_en_rupture()
     {
         try {
-            return Produit::whereColumn('nombre_carton', '<=', 'stock_seuil')->paginate(50);
+            return Produit::where('nombre_carton', 0)->paginate(10);
         } catch (\Throwable $th) {
             return response()->json(['message' => $th->getMessage()], 500);
         }
     }
+
+    #sous seuil
+    public function produits_sous_seuil(){
+        try {
+            return Produit::whereColumn('nombre_carton', '<', 'stock_seuil')->paginate(10);
+        } catch (\Throwable $th) {
+            return response()->json(['message' => $th->getMessage()], 500);
+        }
+    }
+
+    #nombre sous seuil
+    public function nombreProduitsSousSeuil(){
+        try {
+            $nombreProduitsSousSeuil = Produit::whereColumn('nombre_carton', '<', 'stock_seuil')->count();
+            return response()->json($nombreProduitsSousSeuil);
+        } catch (\Throwable $th) {
+            return response()->json(['message' => $th->getMessage()], 500);
+        }
+    }
+    # nombre en normaux.
+    public function nombreProduitsEnNormaux(){
+        try {
+            $nombreProduitsEnNormaux = Produit::whereColumn('nombre_carton', '>', 'stock_seuil')->count();
+            return response()->json($nombreProduitsEnNormaux);
+        } catch (\Throwable $th) {
+            return response()->json(['message' => $th->getMessage()], 500);
+        }
+    }
+
+
+
+    #•	Nombre de produits en rupture (nombre_carton==0)
+    public function nombreProduitsEnRupture(){
+        try {
+            $nombreProduitsEnRupture = Produit::where('nombre_carton', 0)->count();
+            return response()->json($nombreProduitsEnRupture);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Erreur lors de la récupération du nombre de produits en rupture',
+                'error' => $th->getMessage(),
+            ], 500);
+        }
+    }
+
+
 
     public function store(Request $request)
     {
@@ -76,6 +122,7 @@ class ProduitController extends Controller
                             'produit_id' => $produit->id,
                             'quantite' => $produit->nombre_carton,
                             'type' => 'Entree',
+                            'motif' => 'Ajout de produit',
                         ],[
                             'date' => now(),
                         ]);
@@ -125,12 +172,14 @@ class ProduitController extends Controller
         $produit = Produit::findOrFail($id);
         $data = $request->validate([
             'nom' => 'required|string',
-            'code' => 'required|string|unique:produits,code',
+            'code' => 'required|string|unique:produits,code,'.$id,
             'categorie_id' => 'nullable|string',
-            'unite_carton' => 'nullable|string',
+            'fournisseur_id' => 'nullable|string',
+            'unite_carton' => 'nullable|integer',
             'prix_unite_carton' => 'nullable|numeric',
             'nombre_carton' => 'nullable|integer',
             'stock_seuil' => 'nullable|integer',
+            'prix_achat' => 'nullable|numeric',
         ]);
         $data['stock_global'] = $data['unite_carton']*$data['nombre_carton'];
         $data['prix_total'] = $data['prix_unite_carton']*($data['nombre_carton']*$data['unite_carton']);
@@ -150,14 +199,93 @@ class ProduitController extends Controller
     {
         try {
             $produit = Produit::findOrFail($id);
-            $produit->delete();
-            //create historique action
             HistoriqueAction::create([
                 'user_id' => Auth::user()->id,
                 'produit_id' => $produit->id,
                 'action' => 'Suppression de produit',
             ]);
+            $produit->delete();
+            //create historique action
+
             return response()->noContent();
+        } catch (\Throwable $th) {
+            return response()->json(['message' => $th->getMessage()], 500);
+        }
+    }
+
+    public function reduireStockProduit(string $id, Request $request)
+    {
+        $produit = Produit::findOrFail($id);
+        if($produit->nombre_carton < $request->quantite){
+            return response()->json(['message' => 'Quantite superieure au stock disponible'], 400);
+        }
+        $data = $request->validate([
+            'quantite' => 'required|integer',
+        ]);
+
+        $produit->decrement('nombre_carton',$data['quantite']);
+
+        if($produit->stock_global < $data['quantite']*$produit->unite_carton){
+            $produit->stock_global=0;
+            $produit->save();
+        }else{
+            $produit->decrement('stock_global',$data['quantite']*$produit->unite_carton);
+        }
+
+        MouvementStock::firstOrCreate([
+            'source' => 'boutique:' . Auth::user()->boutique_id,
+            'destination' => 'depot',
+            'produit_id' => $produit->id,
+            'quantite' => $data['quantite'],
+            'type' => 'Sortie',
+            'motif' => 'Reduction de stock',
+        ],[
+            'date' => now(),
+        ]);
+        //create historique action
+        HistoriqueAction::create([
+            'user_id' => Auth::user()->id,
+            'produit_id' => $produit->id,
+            'action' => 'Reduction de stock',
+        ]);
+
+        $entree_sortie=EntreeSortie::firstOrCreate([
+            'produit_id'  => $produit->id,
+        ], [
+            'quantite_avant' => 0,
+            'quantite_apres' => 0,
+            'nombre_fois'=>0
+        ]);
+        $entree_sortie->quantite_avant=$entree_sortie->quantite_apres;
+        $entree_sortie->decrement('quantite_apres',$data['quantite']);
+        $entree_sortie->increment('nombre_fois',1);
+        $entree_sortie->save();
+        return response()->json($produit);
+    }
+
+
+    #nombre de produits total vendu aujourduih
+    public function nombreProduitsVendusAujourdhui(){
+        try {
+            $nombreProduitsVendus = Commande::whereDate('created_at', date('Y-m-d'))
+            ->with('details.produit')
+            ->where('statut', 'payee')
+            ->get()
+            ->sum(function ($commande) {
+                return $commande->details->sum('quantite');
+            });
+            return response()->json($nombreProduitsVendus);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Erreur lors de la récupération du nombre de produits vendus aujourd\'hui',
+                'error' => $th->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function nombreProduits(){
+        try {
+            return response()->json(Produit::count());
         } catch (\Throwable $th) {
             return response()->json(['message' => $th->getMessage()], 500);
         }
