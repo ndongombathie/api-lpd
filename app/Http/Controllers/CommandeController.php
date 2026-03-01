@@ -263,7 +263,7 @@ class CommandeController extends Controller
                 if($somme >= $commande->total){
                     $commande->update(['statut' => 'payee']);
                 }else{
-                    $commande->update(['statut' => 'partiellement_payee']);
+                    $commande->update(['statut' => 'attente']);
                 }
                 $commande->save();
                 $commande->load('details', 'vendeur','client');
