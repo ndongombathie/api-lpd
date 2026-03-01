@@ -215,6 +215,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('stocks/reapprovisionner', [StockController::class, 'reapprovisionner']);
 
     Route::apiResource('commandes', CommandeController::class);
+    Route::post('premiere-tranche/{commande}',[CommandeController::class,'storeTranche']);
     # les commandes payee aujourduih
     Route::get('commandes-payees-aujourdhui', [CommandeController::class, 'commandesPayeesAujourdhui']);
     Route::get('commandes-attente', [CommandeController::class, 'getCommandesEnAttente']);
