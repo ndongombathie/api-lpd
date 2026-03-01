@@ -49,7 +49,6 @@ class PaiementController extends Controller
     {
         # les validations
         $data = $request->validate([
-            'montant' => 'required|numeric|min:0.01',
             'type_paiement' => 'required|string',
         ]);
 
@@ -64,7 +63,11 @@ class PaiementController extends Controller
         $commande->loadMissing('client');
         $isClientSpecial = optional($commande->client)->type_client === 'special';
         //dd($isClientSpecial);
-        $reste = $commande->total - $request->input('montant') > 0 ? $commande->total - $request->input('montant') : 0 ;
+        if(!$isClientSpecial){
+            $commande->update(['premiere_tranche' => $commande->total]);
+        }
+
+        $reste = $commande->total - $commande->premiere_tranche > 0 ? $commande->total - $commande->premiere_tranche : 0 ;
 
         # si le client n'est pas special il doit tout payer en une fois
         if(!$isClientSpecial && $reste != 0){
@@ -83,7 +86,7 @@ class PaiementController extends Controller
                 $client->update([
                 'solde' => 0,
                 'dette' => 0,
-                'total_paye' => $request->input('montant'),
+                'total_paye' => $commande->premiere_tranche,
                 ]);
                 $client->save();
             }
@@ -107,7 +110,7 @@ class PaiementController extends Controller
                     $client->statut = 'en_dette';
                     $client->solde = $reste;
                     $client->dette = $reste;
-                    $client->total_paye = $request->input('montant');
+                    $client->total_paye = $commande->premiere_tranche ;
                     $client->save();
                 }else{
 
@@ -116,15 +119,15 @@ class PaiementController extends Controller
                             'montant' => $data['montant'],
                             'type_paiement' => $data['type_paiement'],
                             'date' => now(),
-                            'reste_du' => $commande->total - ($montantPaye + $request->input('montant')),
+                            'reste_du' => $commande->total - ($montantPaye + $commande->premiere_tranche),
                             'caissier_id' => Auth::user()->id ?? $commande->vendeur_id, // Fallback to vendeur if no auth user
                             ]);
                     event(new PaiementCree($paiement));
 
                     $client = $commande->client;
                     $client->statut = 'en_dette';
-                    $client->solde = $commande->total - ($montantPaye + $request->input('montant'));
-                    $client->dette = $commande->total - ($montantPaye + $request->input('montant'));
+                    $client->solde = $commande->total - ($montantPaye + $commande->premiere_tranche);
+                    $client->dette = $commande->total - ($montantPaye + $commande->premiere_tranche);
                     $client->total_paye = Paiement::where('commande_id', $commande->id)->sum('montant');
                     $client->save();
                     #ne continuer pas le reste du programme il s'arrete ici
@@ -223,7 +226,7 @@ class PaiementController extends Controller
             ], 400);
         }
 
-        $montantPaye = $request->input('montant');
+        $montantPaye = $commande->premiere_tranche;
         if($montantPaye > $commande->total){
             return response()->json([
                 'message' => 'Le montant payé ne peut pas dépasser le montant total de la commande',

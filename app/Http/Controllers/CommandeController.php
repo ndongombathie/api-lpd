@@ -264,6 +264,7 @@ class CommandeController extends Controller
                     $commande->update(['statut' => 'payee']);
                 }else{
                     $commande->update(['statut' => 'attente']);
+                    $commande->update(['premiere_tranche' => $request->input('montant')]);
                 }
                 $commande->save();
                 $commande->load('details', 'vendeur','client');
