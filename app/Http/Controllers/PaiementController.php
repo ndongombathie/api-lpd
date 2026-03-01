@@ -88,8 +88,17 @@ class PaiementController extends Controller
                 $client->save();
             }
             else{
+
                 $dernierPaiement= Paiement::where('commande_id', $commande->id)->orderByDesc('date')->first();
                 $montantPaye = Paiement::where('commande_id', $commande->id)->sum('montant');
+
+                if($montantPaye > $commande->total){
+                    return response()->json([
+                        'message' => 'Le montant payé excède le total de la commande.',
+                    ], 400);
+                    abort(400, 'Le montant payé excède le total de la commande.');
+                }
+
                 if(!$dernierPaiement){
                     $commande->update(['statut' => 'partiellement_payee']);
                     $commande->save();
@@ -100,15 +109,6 @@ class PaiementController extends Controller
                     $client->dette = $reste;
                     $client->total_paye = $request->input('montant');
                     $client->save();
-                        $paiement = Paiement::create([
-                            'commande_id' => $commande->id,
-                            'montant' => $data['montant'],
-                            'type_paiement' => $data['type_paiement'],
-                            'date' => now(),
-                            'reste_du' => $reste,
-                            'caissier_id' => Auth::user()->id ?? $commande->vendeur_id, // Fallback to vendeur if no auth user
-                            ]);
-                    event(new PaiementCree($paiement));
                 }else{
 
                     $paiement = Paiement::create([
@@ -135,8 +135,6 @@ class PaiementController extends Controller
                 }
             }
 
-
-
             try
             {
                 $paiement = Paiement::create([
@@ -152,9 +150,7 @@ class PaiementController extends Controller
                 // Log l'errTransfereeur mais ne bloque pas l'opération
                 Log::warning('Erreur lors de la diffusion du paiement: ' . $e->getMessage());
             }
-
             $commande->update(['caissier_id' => Auth::user()->id]);
-
                 // Créer la facture
                 $facture = Facture::create([
                     'commande_id' => $commande->id,
@@ -162,10 +158,8 @@ class PaiementController extends Controller
                     'mode_paiement' => $paiement->type_paiement,
                     'date' => now(),
                 ]);
-
                 // Mettre à jour le stock de la boutique et enregistrer le mouvement
                 $commande->loadMissing(['details', 'vendeur']);
-
                     try {
 
                      // Traiter chaque détail avec gestion d'erreur individuelle
