@@ -7,6 +7,7 @@ use App\Models\DetailCommande;
 use App\Models\Produit;
 use App\Events\CommandeValidee;
 use App\Events\CommandeAnnulee;
+use App\Models\Paiement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -50,7 +51,11 @@ class CommandeController extends Controller
 
             $query = Commande::query()
                 ->where('statut', 'attente')
-                ->with(['details.produit', 'client', 'vendeur', 'paiements'])
+                # dans le with je veux le dernier paiement de chaque commande
+                ->with(['details.produit', 'client', 'vendeur', 'paiements' => function($q){
+                    $q->orderByDesc('date')
+                        ->limit(1);
+                }])
                 ->latest();
 
             // Recherche par N° ticket, ID, vendeur ou client
@@ -253,14 +258,14 @@ class CommandeController extends Controller
 
         try {
                 $commande = Commande::findOrFail($commandeId);
-                $somme= $commande->sum('montant');
+                $somme= Paiement::where('commande_id', $commandeId)->sum('montant');
 
                 if($somme >= $commande->total){
                     $commande->update(['statut' => 'payee']);
                 }else{
                     $commande->update(['statut' => 'partiellement_payee']);
                 }
-                
+                $commande->save();
                 $commande->load('details', 'vendeur','client');
                 event(new CommandeValidee($commande));
                 return response()->json($commande);

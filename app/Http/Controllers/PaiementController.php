@@ -42,71 +42,6 @@ class PaiementController extends Controller
 
 
 
-    public function rapportJournalier(Request $request)
-    {
-        $date = $request->input('date') ?? date('Y-m-d');
-
-        try {
-            // Paiements grouped by cashier (using caissier_id)
-            $paiements = DB::table('paiements')
-                ->join('users', 'paiements.caissier_id', '=', 'users.id')
-                ->select(
-                    'users.id as caissier_id',
-                    'users.nom',
-                    'users.prenom',
-                    DB::raw('COUNT(paiements.id) as nombre_paiement'),
-                    DB::raw('SUM(paiements.montant) as valeur_total_paiement')
-                )
-                //->whereDate('paiements.date', $date)
-                ->groupBy('users.id', 'users.nom', 'users.prenom')
-                ->get();
-
-            // Decaissements grouped by caissier
-            $decaissements = DB::table('decaissements')
-                ->select(
-                    'caissier_id',
-                    DB::raw('SUM(montant) as total_decaissement')
-                )
-                ->whereDate('date', $date)
-                ->whereNotNull('caissier_id')
-                ->groupBy('caissier_id')
-                ->get()
-                ->keyBy('caissier_id');
-
-            // Get all unique caissier IDs involved
-            $caissierIds = $paiements->pluck('caissier_id')->merge($decaissements->keys())->unique();
-
-            $rapport = [];
-            foreach ($caissierIds as $id) {
-                $p = $paiements->firstWhere('caissier_id', $id);
-                $d = $decaissements->get($id);
-
-                if ($p) {
-                    $nom = $p->nom;
-                    $prenom = $p->prenom;
-                } else {
-                    $user = DB::table('users')->where('id', $id)->select('nom', 'prenom')->first();
-                    $nom = $user ? $user->nom : 'Inconnu';
-                    $prenom = $user ? $user->prenom : '';
-                }
-
-                $rapport[] = [
-                    'caissier_nom' => $nom . ' ' . $prenom,
-                    'date_journalier' => $date,
-                    'fond_de_caisse' => 0, // Placeholder as requested
-                    'nombre_paiement' => $p ? $p->nombre_paiement : 0,
-                    'valeur_total_paiement' => $p ? $p->valeur_total_paiement : 0,
-                    'total_decaissement' => $d ? $d->total_decaissement : 0,
-                    'caisse_final'=> $p->valeur_total_paiement - ($d->total_decaissement + 0),
-                ];
-            }
-
-            return response()->json($rapport);
-        } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
-        }
-    }
-
     /**
      * Store a newly created resource in storage.
      */
@@ -138,7 +73,6 @@ class PaiementController extends Controller
             ], 400);
             abort(400, 'Seul les clients spéciaux peuvent payer par tranche.');
         }
-
             // Traiter la finalisation de la commande (mise à jour du statut, stock, etc.)
             // Même en cas d'erreur, on retourne le paiement car il est déjà créé
             if ($reste == 0) {
@@ -151,17 +85,57 @@ class PaiementController extends Controller
                 'dette' => 0,
                 'total_paye' => $request->input('montant'),
                 ]);
-            }
-            else{
-                $commande->update(['statut' => 'partiellement_payee']);
-                #recuperer le client et changer son statut en en_dette
-                $client = $commande->client;
-                $client->statut = 'en_dette';
-                $client->solde = $reste;
-                $client->dette = $reste;
-                $client->total_paye = Paiement::where('commande_id', $commande->id)->sum('montant');
                 $client->save();
             }
+            else{
+                $dernierPaiement= Paiement::where('commande_id', $commande->id)->orderByDesc('date')->first();
+                $montantPaye = Paiement::where('commande_id', $commande->id)->sum('montant');
+                if(!$dernierPaiement){
+                    $commande->update(['statut' => 'partiellement_payee']);
+                    $commande->save();
+                    #recuperer le client et changer son statut en en_dette
+                    $client = $commande->client;
+                    $client->statut = 'en_dette';
+                    $client->solde = $reste;
+                    $client->dette = $reste;
+                    $client->total_paye = $request->input('montant');
+                    $client->save();
+                        $paiement = Paiement::create([
+                            'commande_id' => $commande->id,
+                            'montant' => $data['montant'],
+                            'type_paiement' => $data['type_paiement'],
+                            'date' => now(),
+                            'reste_du' => $reste,
+                            'caissier_id' => Auth::user()->id ?? $commande->vendeur_id, // Fallback to vendeur if no auth user
+                            ]);
+                    event(new PaiementCree($paiement));
+                }else{
+
+                    $paiement = Paiement::create([
+                            'commande_id' => $commande->id,
+                            'montant' => $data['montant'],
+                            'type_paiement' => $data['type_paiement'],
+                            'date' => now(),
+                            'reste_du' => $commande->total - ($montantPaye + $request->input('montant')),
+                            'caissier_id' => Auth::user()->id ?? $commande->vendeur_id, // Fallback to vendeur if no auth user
+                            ]);
+                    event(new PaiementCree($paiement));
+
+                    $client = $commande->client;
+                    $client->statut = 'en_dette';
+                    $client->solde = $commande->total - ($montantPaye + $request->input('montant'));
+                    $client->dette = $commande->total - ($montantPaye + $request->input('montant'));
+                    $client->total_paye = Paiement::where('commande_id', $commande->id)->sum('montant');
+                    $client->save();
+                    #ne continuer pas le reste du programme il s'arrete ici
+                    return response()->json([
+                        'message' => 'Paiement effectué avec succès.',
+                        'paiement' => $paiement,
+                    ], 201);
+                }
+            }
+
+
 
             try
             {
@@ -239,7 +213,7 @@ class PaiementController extends Controller
             return $paiement;
     }
 
-    
+
    #payer par tranche pour une commande donnee jusqu'a atteindre le montant total de la commande
     public function payementParTranche(Request $request, string $commandeId){
         # les validtions
