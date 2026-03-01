@@ -238,6 +238,8 @@ class PaiementController extends Controller
 
             return $paiement;
     }
+
+    
    #payer par tranche pour une commande donnee jusqu'a atteindre le montant total de la commande
     public function payementParTranche(Request $request, string $commandeId){
         # les validtions
