@@ -74,9 +74,22 @@ class PaiementController extends Controller
         if ($reste == 0) {
             $this->finalizeFullPayment($commande);
         } else {
+
+            if($this->getMontantPaye($commande)>=$commande->total){
+                $this->updateClientPourDette($commande, 0, $commande->total,'paye');
+                $commande->statut = 'payee';
+                $commande->premiere_tranche = 0;
+                $commande->save();
+                return response()->json([
+                    'message' => 'La commande a été payée entièrement.',
+                ], 200);
+                abort(400, 'la commande a été payée entièrement.');
+            }
+
             $dernierPaiement = $this->getDernierPaiement($commande);
             $montantPaye = $this->getMontantPaye($commande);
             $commande->statut = 'partiellement_payee';
+
 
             if ($montantPaye > $commande->total) {
                 return response()->json([
@@ -95,6 +108,7 @@ class PaiementController extends Controller
                     $commande->total - ($montantPaye + $commande->premiere_tranche),
                     $this->getMontantPaye($commande)
                 );
+
                 $commande->save();
                 $this->updateClientPourDette(
                     $commande,
@@ -182,10 +196,10 @@ class PaiementController extends Controller
         }
     }
 
-    private function updateClientPourDette(Commande $commande, float $solde, ?float $totalPaye = null): void
+    private function updateClientPourDette(Commande $commande, float $solde, ?float $totalPaye = null,string $statut = 'en_dette'): void
     {
         $client = $commande->client;
-        $client->statut = 'en_dette';
+        $client->statut = $statut;
         $client->solde = $solde;
         $client->dette = $solde;
         if ($totalPaye !== null) {
