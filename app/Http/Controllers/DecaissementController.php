@@ -33,6 +33,14 @@ class DecaissementController extends Controller
                 $query->where('cassier_id', $request->input('cassier_id'));
             }
 
+            if ($request->filled('date')) {
+                $query->whereDate('date', $request->date);
+                
+            }
+            if (!$request->filled('date')) {
+                $query->whereDate('date', now()->toDateString());
+            }
+
             // Filter by search term if provided
             if ($request->filled('search')) {
                 $search = $request->input('search');

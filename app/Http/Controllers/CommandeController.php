@@ -25,6 +25,9 @@ class CommandeController extends Controller
             if ($request->filled('date')) {
                 $query->whereDate('date', $request->date);
             }
+            if (!$request->filled('date')) {
+                $query->whereDate('date', now()->toDateString());
+            }
 
             if ($request->filled('status')) {
                 $query->where('statut', $request->status);
@@ -266,6 +269,7 @@ class CommandeController extends Controller
 
                 if($somme >= $commande->total){
                     $commande->statut = 'payee';
+                    $commande->premiere_tranche = 0;
                 }else{
                     $commande->statut = 'attente';
                     $commande->premiere_tranche = $request->input('montant');
