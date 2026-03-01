@@ -61,6 +61,7 @@ class CommandeController extends Controller
             // Recherche par N° ticket, ID, vendeur ou client
             if (strlen(trim($search)) >= 2) {
                 $searchTerm = '%' . trim($search) . '%';
+
                 $query->where(function ($q) use ($searchTerm) {
                     $q->where('id', 'like', $searchTerm)
                       ->orWhereHas('vendeur', function ($v) use ($searchTerm) {
@@ -71,7 +72,7 @@ class CommandeController extends Controller
                           $c->where('prenom', 'like', $searchTerm)
                             ->orWhere('nom', 'like', $searchTerm);
                       });
-                });
+                })->orWhere('numero', 'like', $searchTerm);
             }
 
             $totalAmount = (int) (clone $query)->sum('total');
@@ -122,7 +123,7 @@ class CommandeController extends Controller
         try {
             if(Auth::user()->role=="comptable"){
                 $commandes = Commande::query()
-                ->where('statut', 'payee')
+                ->whereIn('statut', ['payee', 'partiellement_payee'])
                 ->with(['details','client','vendeur', 'paiements' => function($q) {
                     $q->orderBy('date', 'desc'); // Trier les paiements par date décroissante
                 }])->latest();
@@ -133,7 +134,7 @@ class CommandeController extends Controller
             }else
             {
                 $commandes = Commande::query()
-                ->where('statut', 'payee')
+                ->whereIn('statut', ['payee', 'partiellement_payee'])
                 ->where('caissier_id', Auth::user()->id)
                 ->with(['details','client','vendeur', 'paiements' => function($q) {
                     $q->orderBy('date', 'desc'); // Trier les paiements par date décroissante
@@ -222,6 +223,7 @@ class CommandeController extends Controller
                         : 1;
 
                     $commande->numero = 'CMD-' . str_pad($next, 6, '0', STR_PAD_LEFT);
+
                     $commande->save();
 
                     $totalHt = 0;
@@ -241,7 +243,9 @@ class CommandeController extends Controller
 
                     $montantTva = $totalHt * $tva;
                     $commande->update(['total' => intval($totalHt + $montantTva)]);
+                    $commande->premiere_tranche = intval($totalHt + $montantTva);
                     $commande->load('details', 'vendeur','client');
+                    $commande->save();
                     event(new CommandeValidee($commande));
                     return response()->json($commande);
 
@@ -261,10 +265,10 @@ class CommandeController extends Controller
                 $somme= Paiement::where('commande_id', $commandeId)->sum('montant');
 
                 if($somme >= $commande->total){
-                    $commande->update(['statut' => 'payee']);
+                    $commande->statut = 'payee';
                 }else{
-                    $commande->update(['statut' => 'attente']);
-                    $commande->update(['premiere_tranche' => $request->input('montant')]);
+                    $commande->statut = 'attente';
+                    $commande->premiere_tranche = $request->input('montant');
                 }
                 $commande->save();
                 $commande->load('details', 'vendeur','client');

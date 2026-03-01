@@ -91,9 +91,9 @@ class PaiementController extends Controller
                 $client->save();
             }
             else{
-
                 $dernierPaiement= Paiement::where('commande_id', $commande->id)->orderByDesc('date')->first();
                 $montantPaye = Paiement::where('commande_id', $commande->id)->sum('montant');
+                $commande->statut = 'partiellement_payee';
 
                 if($montantPaye > $commande->total){
                     return response()->json([
@@ -103,9 +103,7 @@ class PaiementController extends Controller
                 }
 
                 if(!$dernierPaiement){
-                    $commande->update(['statut' => 'partiellement_payee']);
                     $commande->save();
-                    #recuperer le client et changer son statut en en_dette
                     $client = $commande->client;
                     $client->statut = 'en_dette';
                     $client->solde = $reste;
@@ -116,20 +114,24 @@ class PaiementController extends Controller
 
                     $paiement = Paiement::create([
                             'commande_id' => $commande->id,
-                            'montant' => $data['montant'],
+                            'montant' => $commande->premiere_tranche,
                             'type_paiement' => $data['type_paiement'],
                             'date' => now(),
                             'reste_du' => $commande->total - ($montantPaye + $commande->premiere_tranche),
                             'caissier_id' => Auth::user()->id ?? $commande->vendeur_id, // Fallback to vendeur if no auth user
                             ]);
-                    event(new PaiementCree($paiement));
+                    $paiement->somme_payees = Paiement::where('commande_id', $commande->id)->sum('montant');
+                    $paiement->save();
+                    $commande->save();
 
+                    event(new PaiementCree($paiement));
                     $client = $commande->client;
                     $client->statut = 'en_dette';
                     $client->solde = $commande->total - ($montantPaye + $commande->premiere_tranche);
                     $client->dette = $commande->total - ($montantPaye + $commande->premiere_tranche);
                     $client->total_paye = Paiement::where('commande_id', $commande->id)->sum('montant');
                     $client->save();
+                    $commande->update(['caissier_id' => Auth::user()->id]);
                     #ne continuer pas le reste du programme il s'arrete ici
                     return response()->json([
                         'message' => 'Paiement effectué avec succès.',
@@ -142,12 +144,14 @@ class PaiementController extends Controller
             {
                 $paiement = Paiement::create([
                 'commande_id' => $commande->id,
-                'montant' => $data['montant'],
+                'montant' => $commande->premiere_tranche,
                 'type_paiement' => $data['type_paiement'],
                 'date' => now(),
                 'reste_du' => $reste,
                 'caissier_id' => Auth::user()->id ?? $commande->vendeur_id, // Fallback to vendeur if no auth user
                 ]);
+                $paiement->somme_payees = $commande->premiere_tranche;
+                $paiement->save();
                 event(new PaiementCree($paiement));
             } catch (\Exception $e) {
                 // Log l'errTransfereeur mais ne bloque pas l'opération

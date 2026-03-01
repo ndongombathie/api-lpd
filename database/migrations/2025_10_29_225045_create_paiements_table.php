@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreign('caissier_id')->references('id')->on('users')->cascadeOnDelete();
             $table->uuid('commande_id')->nullable();
             $table->integer('montant');
+            $table->integer('somme_payees')->default(0);
             $table->string('type_paiement'); // cash, mobile, carte, virement
             $table->timestamp('date')->useCurrent();
             $table->integer('reste_du')->default(0);
