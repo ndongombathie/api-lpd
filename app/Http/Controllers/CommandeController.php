@@ -248,6 +248,31 @@ class CommandeController extends Controller
         }
     }
 
+     public function storeTranche(string $commandeId, Request $request)
+    {
+
+        try {
+                $commande = Commande::findOrFail($commandeId);
+                $somme= $commande->sum('montant');
+
+                if($somme >= $commande->total){
+                    $commande->update(['statut' => 'payee']);
+                }else{
+                    $commande->update(['statut' => 'partiellement_payee']);
+                }
+                
+                $commande->load('details', 'vendeur','client');
+                event(new CommandeValidee($commande));
+                return response()->json($commande);
+       }catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Erreur lors de la création de la commande',
+                'error' => $th->getMessage(),
+            ], 500);
+        }
+    }
+
+
     /**
      * Display the specified resource.
      */
