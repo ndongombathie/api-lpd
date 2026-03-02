@@ -79,7 +79,8 @@ class ProduitController extends Controller
     #sous seuil
     public function produits_sous_seuil(Request $request){
         try {
-            $query = Produit::whereColumn('nombre_carton', '<', 'stock_seuil');
+            $query = Produit::whereColumn('nombre_carton', '<', 'stock_seuil')
+            ->where('nombre_carton','!=', 0);
             if($request->filled('search')){
                 $search = $request->input('search');
                 $query->where(function ($q) use ($search) {
@@ -103,6 +104,7 @@ class ProduitController extends Controller
         try {
             $count = Produit::where('nombre_carton', '>', 0)
                 ->whereColumn('nombre_carton', '<', 'stock_seuil')
+                ->where('nombre_carton','!=', 0)
                 ->count();
 
             return response()->json($count);
@@ -113,7 +115,7 @@ class ProduitController extends Controller
     # nombre en normaux.
     public function nombreProduitsEnNormaux(){
         try {
-            $count = Produit::whereColumn('nombre_carton', '>=', 'stock_seuil')
+            $count = Produit::whereColumn('nombre_carton', '>', 'stock_seuil')
                 ->count();
 
             return response()->json($count);
