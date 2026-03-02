@@ -6,30 +6,22 @@ use App\Models\Categorie;
 use App\Http\Requests\StoreCategorieRequest;
 use App\Http\Requests\UpdateCategorieRequest;
 use Illuminate\Http\Response;
+use Illuminate\Http\Request;
 
 class CategorieController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index(Response $request)
+    public function index(Request $request)
     {
-        try {
-            $query= Categorie::query()
-            ->latest();
+        $query = Categorie::query()
+            ->latest()
+            ->when($request->search, function ($q, $search) {
+                $q->where('nom', 'like', "%{$search}%");
+            });
 
-            $query = Produit::whereColumn('nombre_carton', '>', 'stock_seuil');
-             if ($request->filled('search')) {
-                $search = $request->input('search');
-                $query->where(function ($q) use ($search) {
-                    $q->where('nom', 'like', "%{$search}%");
-                });
-            }
-
-            return response()->json($query->paginate(10));
-        } catch (\Throwable $th) {
-            //throw $th;
-        }
+        return response()->json($query->paginate(10));
     }
 
     public function nombreCategorie()
