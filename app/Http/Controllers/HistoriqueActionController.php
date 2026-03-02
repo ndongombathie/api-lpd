@@ -26,12 +26,10 @@ class HistoriqueActionController extends Controller
                 $search = $request->search;
 
                 $historiqueActions->where(function ($q) use ($search) {
-
                     $q->whereHas('user', function ($q2) use ($search) {
                         $q2->where('nom', 'like', "%$search%")
                         ->orWhere('prenom', 'like', "%$search%");
                     })
-
                     ->orWhereHas('produit', function ($q3) use ($search) {
                         $q3->where('nom', 'like', "%$search%");
                     });
