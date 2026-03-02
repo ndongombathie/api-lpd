@@ -69,6 +69,7 @@ class ProduitController extends Controller
     public function produits_en_rupture()
     {
         try {
+
             return Produit::where('nombre_carton', 0)->paginate(10);
         } catch (\Throwable $th) {
             return response()->json(['message' => $th->getMessage()], 500);
@@ -122,24 +123,44 @@ class ProduitController extends Controller
     }
     #la liste des produits normales
     #filtrer par nom de produit,categorie
-    public function produitsEnNormaux(Request $request){
+    public function produitsEnNormaux(Request $request)
+    {
         try {
-            $query = Produit::whereColumn('nombre_carton', '>', 'stock_seuil');
-            if($request->filled('search')){
-                $search = $request->input('search');
+            $query = Produit::with('categorie')
+                ->whereColumn('nombre_carton', '>', 'stock_seuil')
+                ->latest();
+
+            if ($request->filled('search')) {
+                $search = $request->search;
+
                 $query->where(function ($q) use ($search) {
-                    $q->whereHas('categorie', function ($sub) use ($search) {
+
+                    // 🔍 Recherche par nom du produit
+                    $q->where('nom', 'like', "%{$search}%");
+
+                    // 🔍 Recherche par catégorie
+                    $q->orWhereHas('categorie', function ($sub) use ($search) {
                         $sub->where('nom', 'like', "%{$search}%");
-                    })
-                    ->orWhere('quantite', 'like', "%{$search}%")
-                    ->orWhere('seuil', 'like', "%{$search}%")
-                    ->orWhere('nombre_carton', 'like', "%{$search}%")
-                    ->orWhere('created_at', 'like', "%{$search}%");
+                    });
+
+                    // 🔍 Recherche numérique (si chiffre)
+                    if (is_numeric($search)) {
+                        $q->orWhere('quantite', $search)
+                        ->orWhere('stock_seuil', $search)
+                        ->orWhere('nombre_carton', $search);
+                    }
+
+                    // 🔍 Recherche par date
+                    $q->orWhere('created_at', 'like', "%{$search}%");
                 });
             }
-            return $query->paginate(10);
+
+            return response()->json($query->paginate(10));
+
         } catch (\Throwable $th) {
-            return response()->json(['message' => $th->getMessage()], 500);
+            return response()->json([
+                'message' => $th->getMessage()
+            ], 500);
         }
     }
 
