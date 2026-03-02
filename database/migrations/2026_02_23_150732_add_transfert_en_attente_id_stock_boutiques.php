@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('stock_boutiques', function (Blueprint $table) {
-            $table->foreignUuid('transfert_en_attente_id')->nullable()->constrained('transfert_en_attentes');
+            $table->foreignUuid('transfert_en_attente_id')->nullable()->constrained('transfert_en_attentes')->onDelete('cascade');
         });
     }
 
