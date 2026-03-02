@@ -18,11 +18,13 @@ class CategorieController extends Controller
             $query= Categorie::query()
             ->latest();
 
-            /* if($request->filled('search'))
-            {
+            $query = Produit::whereColumn('nombre_carton', '>', 'stock_seuil');
+             if ($request->filled('search')) {
                 $search = $request->input('search');
-                $query->where('nom', 'like', "%{$search}%");
-            } */
+                $query->where(function ($q) use ($search) {
+                    $q->where('nom', 'like', "%{$search}%");
+                });
+            }
 
             return response()->json($query->paginate(10));
         } catch (\Throwable $th) {

@@ -11,7 +11,7 @@ class HistoriqueActionController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         try {
             $historiqueActions = HistoriqueAction::with('user','produit')
@@ -22,10 +22,11 @@ class HistoriqueActionController extends Controller
             }
 
             if ($request->filled('search')) {
-                    $historiqueActions->where(function ($q) use ($request) {
-                        $q->where('user.nom', 'like', '%'.$request->search.'%')
-                          ->orWhere('user.prenom', 'like', '%'.$request->search.'%')
-                          ->orWhere('produit.nom', 'like', '%'.$request->search.'%');
+                 $search = $request->input('search');
+                    $historiqueActions->where(function ($q) use ($search) {
+                        $q->where('user.nom', 'like', '%'.$search.'%')
+                          ->orWhere('user.prenom', 'like', '%'.$search.'%')
+                          ->orWhere('produit.nom', 'like', '%'.$search.'%');
                     });
                 }
 
