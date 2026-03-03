@@ -2,32 +2,32 @@
 
 namespace App\Events;
 
-use Illuminate\Broadcasting\Channel;
-use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use App\Models\TransfertEnAttente;
-use Illuminate\Support\Facades\Auth;
 
-class TransfertValidee
+class TransfertValidee implements ShouldBroadcast
 {
     use Dispatchable, SerializesModels;
 
-    public function __construct(public TransfertEnAttente $transfert)
+    public $transfert;
+    public $boutiqueId;
+
+    public function __construct(TransfertEnAttente $transfert, $boutiqueId)
     {
+        $this->transfert = $transfert;
+        $this->boutiqueId = $boutiqueId;
+
         $this->transfert->loadMissing(['produit']);
     }
 
     public function broadcastOn(): array
-    { 
-        $transfertId = $this->transfert->id;
-        $boutiqueId = Auth::user()->boutique_id;
+    {
         return [
-            new PrivateChannel('transfert.' . $transfertId),
-            new PrivateChannel('boutique.' . $boutiqueId),
+            new PrivateChannel('transfert.' . $this->transfert->id),
+            new PrivateChannel('boutique.' . $this->boutiqueId),
         ];
     }
 

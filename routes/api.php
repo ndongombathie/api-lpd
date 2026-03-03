@@ -36,7 +36,30 @@ use App\Http\Controllers\Api\RapportController;
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
 
-Broadcast::routes(['middleware' => ['auth:sanctum']]);
+//Broadcast::routes(['middleware' => ['auth:sanctum']]);
+Route::middleware('auth:sanctum')->post('/broadcasting/auth', function (Request $request) {
+    $user = $request->user();
+
+    Log::info('Broadcasting Auth Attempt', [
+        'user_id' => $user->id,
+        'user_boutique_id' => $user->boutique_id,
+        'user_role' => $user->role,
+        'socket_id' => $request->input('socket_id'),
+        'channel_name' => $request->input('channel_name'),
+    ]);
+
+    try {
+        $response = Broadcast::auth($request);
+        Log::info('Broadcasting Auth Success', ['response' => $response]);
+        return $response;
+    } catch (\Exception $e) {
+        Log::error('Broadcasting Auth Failed', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
+        throw $e;
+    }
+});
 
 /*
 |--------------------------------------------------------------------------
