@@ -9,6 +9,7 @@ use App\Models\TransfertEnAttente;
 use App\Models\Transfer;
 use App\Http\Requests\StoreTransfertEnAttenteRequest;
 use App\Http\Requests\UpdateTransfertEnAttenteRequest;
+use App\Events\TransfertValidee;
 
 class TransfertEnAttenteController extends Controller
 {
@@ -36,7 +37,6 @@ class TransfertEnAttenteController extends Controller
                     ->orWhere('created_at', 'like', "%{$search}%");
                 });
             }
-
             return response()->json($transfers->paginate(10));
         } catch (\Throwable $th) {
             return response()->json(['error' => $th->getMessage()], 500);
@@ -262,7 +262,7 @@ class TransfertEnAttenteController extends Controller
             $transfer->prix_seuil_detail = $request->prix_seuil_detail;
             $transfer->prix_seuil_gros = $request->prix_seuil_gros;
             $transfer->save();
-
+            event(new TransfertValidee($transfer));
             return response()->json($transfer);
       } catch (\Throwable $th) {
         return response()->json(['error' => $th->getMessage()], 500);
