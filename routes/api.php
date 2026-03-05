@@ -26,6 +26,8 @@ use App\Http\Controllers\HistoriqueActionController;
 use App\Http\Controllers\MouvementSockController;
 use App\Http\Controllers\InventaireController;
 use App\Http\Controllers\Api\RapportController;
+use Illuminate\Support\Facades\Log;
+
 
 
 /*

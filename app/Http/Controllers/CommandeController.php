@@ -246,7 +246,12 @@ class CommandeController extends Controller
 
                     $montantTva = $totalHt * $tva;
                     $commande->update(['total' => intval($totalHt + $montantTva)]);
-                    $commande->premiere_tranche = intval($totalHt + $montantTva);
+
+                    if(Auth::user()->role==='rseponsable')
+                         $commande->premiere_tranche = 0;
+                    else
+                        $commande->premiere_tranche = intval($totalHt + $montantTva);
+                    
                     $commande->load('details', 'vendeur','client');
                     $commande->save();
                     event(new CommandeValidee($commande));
