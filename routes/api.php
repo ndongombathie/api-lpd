@@ -105,14 +105,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('clients/{client}/paiements-tranches', [ClientController::class, 'paiementsTranches']);
     Route::get('clients/{client}/paiements', [ClientController::class, 'paiementsTranches']);
     Route::get('clients-dette', [ClientController::class, 'clientsDette']);
-
+    Route::get('clients/speciaux/resume-financier', [ClientController::class, 'resumeFinancierClientsSpeciaux']);
+    Route::get('clients/{client}/stats', [ClientController::class, 'statsClient']);
 
 
     // ---------------- COMMANDES ----------------
-    //Route::apiResource('commandes', CommandeController::class);
-    Route::get('commandes/pending', [CommandeController::class, 'pending']);
-    Route::post('commandes/{commande}/valider', [CommandeController::class, 'valider']);
-    Route::post('commandes/{commande}/annuler', [CommandeController::class, 'annuler']);
 
     // ----- LIGNES (commande_lignes) -----
     Route::get('commandes/{commande}/lignes', [CommandeController::class, 'lignes']);
@@ -121,16 +118,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('commandes/lignes/{ligne}', [CommandeController::class, 'deleteLigne']);
 
     // ---------------- PAIEMENTS ----------------
-    Route::get('commandes/{commande}/paiements', [PaiementController::class, 'index']);
+    Route::get(
+    'clients/{client}/encaissements',
+    [PaiementController::class, 'historiqueEncaissementsClient']);
     //Route::post('commandes/{commande}/paiements', [PaiementController::class, 'store']);
     Route::put('paiements/{paiement}', [PaiementController::class, 'update']);
     Route::delete('paiements/{paiement}', [PaiementController::class, 'destroy']);
-    #paiement par tranche
-    Route::post('commandes/{commande}/paiements-tranches', [PaiementController::class, 'payementParTranche']);
-    #la liste des paiement associer a une commande
-    Route::get('commandes/{commande}/paiements', [PaiementController::class, 'listePaiements']);
-
-
 
     // ---------------- HISTORIQUES ----------------
     Route::get('historique-ventes', [HistoriqueVenteController::class, 'index']);
@@ -166,6 +159,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ---------------- TRANSFERTS ----------------
     Route::get('transfers/boutique/{boutique_id}', [TransfertEnAttenteController::class, 'produitsByBoutique']);
+    Route::get('transfers-en-attente', [TransfertEnAttenteController::class, 'getTransferEnAttente']);
     Route::get('transfers-annuler', [TransfertEnAttenteController::class, 'getTransferAnnuler']);
     Route::get('nombre-transfers-annuler', [TransfertEnAttenteController::class, 'nombreTransfertAnnuler']);
     Route::get('liste-transfers-annuler',[TransfertEnAttenteController::class,'transfertAnnuler']);
@@ -238,9 +232,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('stocks/transfer/annuler', [StockController::class, 'annulerTransfer']);
 
     Route::post('stocks/reapprovisionner', [StockController::class, 'reapprovisionner']);
-
+    // 🔵 Liste des commandes d’un client spécial avec reste à payer
+    Route::get(
+        'commandes/client-special/{clientId}/avec-reste',
+        [CommandeController::class, 'commandesAvecResteClientSpecial']
+    );
     Route::apiResource('commandes', CommandeController::class);
+<<<<<<< HEAD
     Route::post('premiere-tranche/{commande}',[CommandeController::class,'storeTranche']);
+=======
+    // 🔵 Responsable → envoyer tranche à la caisse
+    Route::post('commandes/{commande}/envoyer-tranche', [CommandeController::class, 'envoyerTranche']);
+>>>>>>> 760e6e8f72e06310fa3983294bd41866018ac839
     # les commandes payee aujourduih
     Route::get('commandes-payees-aujourdhui', [CommandeController::class, 'commandesPayeesAujourdhui']);
     Route::get('commandes-attente', [CommandeController::class, 'getCommandesEnAttente']);
@@ -256,6 +259,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('total-commandes-payees', [CommandeController::class, 'totalCommandesPayees']);
     # o	Commandes en attente caisse
     Route::get('commandes-en-attente-caisse', [CommandeController::class, 'commandesEnAttenteCaisse']);
+    Route::get('stats-commandes-speciales', [CommandeController::class, 'statsCommandesSpeciales']);
     #la liste de toutes les commandes et  pour un caissier donnees
     Route::get('commandes-par-caissier', [CommandeController::class, 'allCommandesByCaissier']);
 

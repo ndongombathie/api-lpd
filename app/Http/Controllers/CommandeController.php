@@ -3,293 +3,320 @@
 namespace App\Http\Controllers;
 
 use App\Models\Commande;
-use App\Models\DetailCommande;
-use App\Models\Produit;
-use App\Events\CommandeValidee;
-use App\Events\CommandeAnnulee;
 use App\Models\Paiement;
+use App\Models\Facture;
+use App\Models\DetailCommande;
+use App\Models\StockBoutique;
+use App\Models\MouvementStock;
+use App\Events\PaiementCree;
+use App\Events\FactureCree;
+use App\Events\StockRupture;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Models\TransfertEnAttente;
+use App\Models\HistoriqueVente;
 use Illuminate\Support\Facades\Log;
 
-class CommandeController extends Controller
+
+use App\Models\Decaissement;
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
+
+class PaiementController extends Controller
 {
-    public function index(Request $request)
+    protected $historique;
+    public function __construct(HistoriqueVenteController $historique) {
+      $this->historique=$historique;
+    }
+
+    public function index(string $commandeId)
     {
         try {
-            $query = Commande::with('details.produit', 'client', 'vendeur')
-               ->orderBy('created_at', 'desc')
-               ->where('vendeur_id', Auth::user()->id);
-
-            if ($request->filled('date')) {
-                $query->whereDate('date', $request->date);
-            }
-            if (!$request->filled('date')) {
-                $query->whereDate('date', now()->toDateString());
-            }
-
-            if ($request->filled('status')) {
-                $query->where('statut', $request->status);
-            }
-
-            if ($request->filled('type')) {
-                $query->where('type_vente', $request->type);
-            }
-
-            return response()->json($query->paginate(10));
-        } catch (\Throwable $th) {
-            return response()->json([
-                'message' => 'Erreur lors de la récupération des commandes',
-                'error' => $th->getMessage(),
-            ], 500);
+            $commande = Commande::findOrFail($commandeId);
+            return Paiement::where('commande_id', $commande->id)->orderBy('date')->get();
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
-    public function getCommandesEnAttente(Request $request){
+
+
+
+    public function rapportJournalier(Request $request)
+    {
+        $date = $request->input('date') ?? date('Y-m-d');
+
         try {
-            $perPage = min(max((int) $request->input('per_page', 15), 1), 100);
-            $page = max((int) $request->input('page', 1), 1);
-            $search = $request->input('search', '');
+            // Paiements grouped by cashier (using caissier_id)
+            $paiements = DB::table('paiements')
+                ->join('users', 'paiements.caissier_id', '=', 'users.id')
+                ->select(
+                    'users.id as caissier_id',
+                    'users.nom',
+                    'users.prenom',
+                    DB::raw('COUNT(paiements.id) as nombre_paiement'),
+                    DB::raw('SUM(paiements.montant) as valeur_total_paiement')
+                )
+                //->whereDate('paiements.date', $date)
+                ->groupBy('users.id', 'users.nom', 'users.prenom')
+                ->get();
 
-            $query = Commande::query()
-                ->where('statut', 'attente')
-                # dans le with je veux le dernier paiement de chaque commande
-                ->with(['details.produit', 'client', 'vendeur', 'paiements' => function($q){
-                    $q->orderByDesc('date')
-                        ->limit(1);
-                }])
-                ->latest();
+            // Decaissements grouped by caissier
+            $decaissements = DB::table('decaissements')
+                ->select(
+                    'caissier_id',
+                    DB::raw('SUM(montant) as total_decaissement')
+                )
+                ->whereDate('date', $date)
+                ->whereNotNull('caissier_id')
+                ->groupBy('caissier_id')
+                ->get()
+                ->keyBy('caissier_id');
 
-            // Recherche par N° ticket, ID, vendeur ou client
-            if (strlen(trim($search)) >= 2) {
-                $searchTerm = '%' . trim($search) . '%';
+            // Get all unique caissier IDs involved
+            $caissierIds = $paiements->pluck('caissier_id')->merge($decaissements->keys())->unique();
 
-                $query->where(function ($q) use ($searchTerm) {
-                    $q->where('id', 'like', $searchTerm)
-                      ->orWhereHas('vendeur', function ($v) use ($searchTerm) {
-                          $v->where('prenom', 'like', $searchTerm)
-                            ->orWhere('nom', 'like', $searchTerm);
-                      })
-                      ->orWhereHas('client', function ($c) use ($searchTerm) {
-                          $c->where('prenom', 'like', $searchTerm)
-                            ->orWhere('nom', 'like', $searchTerm);
-                      });
-                })->orWhere('numero', 'like', $searchTerm);
-            }
+            $rapport = [];
+            foreach ($caissierIds as $id) {
+                $p = $paiements->firstWhere('caissier_id', $id);
+                $d = $decaissements->get($id);
 
-            $totalAmount = (int) (clone $query)->sum('total');
-            $paginator = $query->paginate($perPage, ['*'], 'page', $page);
-
-            return response()->json([
-                'data' => $paginator->items(),
-                'current_page' => $paginator->currentPage(),
-                'last_page' => $paginator->lastPage(),
-                'per_page' => $paginator->perPage(),
-                'total' => $paginator->total(),
-                'total_amount' => $totalAmount,
-            ]);
-        } catch (\Throwable $th) {
-            return response()->json([
-                'message' => 'Erreur lors de la récupération des commandes en attente',
-                'error' => $th->getMessage(),
-            ], 500);
-        }
-    }
-
-    #la liste de toutes les commandes et  pour un caissier donnees
-    public function allCommandesByCaissier(Request $request){
-            try {
-                $query=Commande::query()
-                #ajouter les relation details, client, vendeur, paiements
-                ->with(['details.produit', 'client', 'vendeur', 'paiements'])
-                ->where('caissier_id', Auth::user()->id)
-                ->latest();
-                #filter par client et numero de commande
-                if ($request->filled('search')) {
-                    $query->where(function ($q) use ($request) {
-                        $q->where('client.nom', 'like', '%'.$request->search.'%')
-                          ->orWhere('client.prenom', 'like', '%'.$request->search.'%')
-                          ->orWhere('vendeur.nom', 'like', '%'.$request->search.'%')
-                          ->orWhere('vendeur.prenom', 'like', '%'.$request->search.'%')
-                          ;
-                    });
+                if ($p) {
+                    $nom = $p->nom;
+                    $prenom = $p->prenom;
+                } else {
+                    $user = DB::table('users')->where('id', $id)->select('nom', 'prenom')->first();
+                    $nom = $user ? $user->nom : 'Inconnu';
+                    $prenom = $user ? $user->prenom : '';
                 }
-            } catch (\Throwable $th) {
-                //throw $th;
-            }
-    }
 
-
-    #appliquer des filtre par date
-    public function getCommandesValidees(Request $request){
-        try {
-            if(Auth::user()->role=="comptable"){
-                $commandes = Commande::query()
-                ->whereIn('statut', ['payee', 'partiellement_payee'])
-                ->with(['details','client','vendeur', 'paiements' => function($q) {
-                    $q->orderBy('date', 'desc'); // Trier les paiements par date décroissante
-                }])->latest();
-
-                if ($request->filled('type')) {
-                $commandes->where('type_vente', $request->input('type_vente'));
-            }
-            }else
-            {
-                $commandes = Commande::query()
-                ->whereIn('statut', ['payee', 'partiellement_payee'])
-                ->where('caissier_id', Auth::user()->id)
-                ->with(['details','client','vendeur', 'paiements' => function($q) {
-                    $q->orderBy('date', 'desc'); // Trier les paiements par date décroissante
-                }])->latest();
+                $rapport[] = [
+                    'caissier_nom' => $nom . ' ' . $prenom,
+                    'date_journalier' => $date,
+                    'fond_de_caisse' => 0, // Placeholder as requested
+                    'nombre_paiement' => $p ? $p->nombre_paiement : 0,
+                    'valeur_total_paiement' => $p ? $p->valeur_total_paiement : 0,
+                    'total_decaissement' => $d ? $d->total_decaissement : 0,
+                    'caisse_final'=> $p->valeur_total_paiement - ($d->total_decaissement + 0),
+                ];
             }
 
-            #filtrer entre deux dates date_debut et date_fin
-            if ($request->filled('date_debut') && $request->filled('date_fin')) {
-                $commandes->whereBetween('date', [$request->date_debut, $request->date_fin]);
-            }
-
-            #filtrer par une date donnee
-            if ($request->filled('date_debut') || $request->filled('date_fin')) {
-                $commandes->whereDate('date', $request->date_debut ?? $request->date_fin);
-            }
-
-            return response()->json($commandes->paginate(10));
-        } catch (\Throwable $th) {
-            return response()->json([
-                'message' => 'Erreur lors de la récupération des commandes validées',
-                'error' => $th->getMessage(),
-            ], 500);
+            return response()->json($rapport);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
-
-
-    public function getCommandesAnnulees(){
-        try {
-            return response()->json(Commande::query()
-                ->where('statut', 'annulee')
-                ->where('created_at','>=',now()->subMonth())
-                ->where('caissier_id', Auth::user()->id)
-                ->with(['details.produit', 'client', 'vendeur'])
-                ->latest()
-                ->paginate(10));
-        } catch (\Throwable $th) {
-            return response()->json([
-                'message' => 'Erreur lors de la récupération des commandes annulées',
-                'error' => $th->getMessage(),
-            ], 500);
-        }
-    }
-
-    /*
+    /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(Request $request, string $commandeId)
     {
+        # 1️⃣ Validation basique
+        $data = $request->validate([
+            'montant' => 'required|numeric|min:0.01',
+            'type_paiement' => 'nullable|string',
+        ]);
 
-        try {
+        $commande = Commande::findOrFail($commandeId);
+        $commande->loadMissing('client');
 
-            $validated = $request->validate([
-                'client_id' => 'nullable|uuid|exists:clients,id',
-                'type_vente' => 'required|in:detail,gros',
-                'tva_appliquee' => 'required|boolean',
-                'items' => 'required|array|min:1',
-                'items.*.produit_id' => 'required|uuid|exists:produits,id',
-                'items.*.quantite' => 'required|integer|min:1',
-                'items.*.prix_unitaire' => 'nullable|numeric',
-            ]);
+        $isClientSpecial = optional($commande->client)->type_client === 'special';
 
-        } catch (\Throwable $th) {
+        if (!in_array($commande->statut, ['attente','partiellement_payee'])) {
             return response()->json([
-                'message' => 'Erreur lors de la validation des données',
-                'error' => $th->getMessage(),
+                'message' => 'Cette commande ne peut plus recevoir de paiement',
             ], 400);
         }
 
-        try {
-                $user = $request->user();
-                $tva = $validated['tva_appliquee'] ? 0.18 : 0;
+        # 🔥 TOUTE LA LOGIQUE CRITIQUE DANS TRANSACTION
+        return DB::transaction(function () use ($data, $commande, $isClientSpecial) {
 
-                    $commande = Commande::create([
-                        'client_id' => $validated['client_id'] ?? null,
-                        'vendeur_id' => $user->id,
-                        'tva_appliquee' => $validated['tva_appliquee'],
-                        'type_vente' => $validated['type_vente'],
-                        'statut' => 'attente',
-                        'total' => 0,
-                        'date' => now(),
-                    ]);
-                    $lastNumero = Commande::lockForUpdate()->max('numero');
-                    $next = $lastNumero
-                        ? ((int) substr($lastNumero, 4)) + 1
-                        : 1;
+            # 🔒 2️⃣ Lock commande
+            $commande = Commande::where('id', $commande->id)
+                ->lockForUpdate()
+                ->first();
 
-                    $commande->numero = 'CMD-' . str_pad($next, 6, '0', STR_PAD_LEFT);
+            if (!$commande) {
+                throw new \Exception("Commande introuvable.");
+            }
 
-                    $commande->save();
+            # 🔄 3️⃣ Recalcul total payé APRÈS lock
+            $totalDejaPaye = Paiement::where('commande_id', $commande->id)
+                ->lockForUpdate()
+                ->sum('montant');
 
-                    $totalHt = 0;
-                    foreach ($validated['items'] as $item) {
-                        $produit = Produit::findOrFail($item['produit_id']);
-                        $prix = $item['prix_unitaire'] ?? ($validated['type_vente'] === 'gros' && $produit->prix_gros ? $produit->prix_gros : $produit->prix_vente);
-                        $ligneTotal = $prix * $item['quantite'];
-                        $totalHt += $ligneTotal;
+            $resteAvant = max(0, $commande->total - $totalDejaPaye);
 
-                        DetailCommande::create([
-                            'commande_id' => $commande->id,
-                            'produit_id' => $produit->id,
-                            'quantite' => $item['quantite'],
-                            'prix_unitaire' => $prix,
-                        ]);
+            # ✅ 4️⃣ Validation montant sécurisée
+            if ($isClientSpecial) {
+
+                if ($commande->montant_a_encaisser === null) {
+                    throw new \Exception("Aucune tranche envoyée à la caisse.");
+                }
+
+                if ((float)$data['montant'] !== (float)$commande->montant_a_encaisser) {
+                    throw new \Exception("Le montant doit être égal à la tranche envoyée.");
+                }
+
+            } else {
+
+                if ((float)$data['montant'] !== (float)$resteAvant) {
+                    throw new \Exception("Le client doit payer le montant restant exact.");
+                }
+            }
+
+            # 5️⃣ Création paiement
+            $paiement = Paiement::create([
+                'commande_id' => $commande->id,
+                'montant' => $data['montant'],
+                'type_paiement' => $data['type_paiement'] ?? null,
+                'date' => now(),
+                'caissier_id' => Auth::user()->id ?? $commande->vendeur_id,
+            ]);
+
+            # 🔥 6️⃣ PREMIER PAIEMENT → DÉCRÉMENTATION STOCK
+            if ($totalDejaPaye == 0) {
+
+                $commande->loadMissing('details');
+
+                foreach ($commande->details as $detail) {
+
+                    $transfert = TransfertEnAttente::where('produit_id', $detail->produit_id)
+                        ->where('status', 'valide')
+                        ->lockForUpdate()
+                        ->first();
+
+                    if (!$transfert) {
+                        throw new \Exception("Transfert valide introuvable.");
                     }
 
-                    $montantTva = $totalHt * $tva;
-                    $commande->update(['total' => intval($totalHt + $montantTva)]);
+                    $produit = $transfert->produit;
 
-                    if(Auth::user()->role==='rseponsable')
-                         $commande->premiere_tranche = 0;
-                    else
-                        $commande->premiere_tranche = intval($totalHt + $montantTva);
-                    
-                    $commande->load('details', 'vendeur','client');
-                    $commande->save();
-                    event(new CommandeValidee($commande));
-                    return response()->json($commande);
+                    if (!$produit) {
+                        throw new \Exception("Produit introuvable.");
+                    }
 
-       }catch (\Throwable $th) {
-            return response()->json([
-                'message' => 'Erreur lors de la création de la commande',
-                'error' => $th->getMessage(),
-            ], 500);
-        }
-    }
+                    # 🔧 Calcul unités
+                    if ($detail->mode_vente === 'gros') {
+                        $unitesASortir = $detail->quantite * $produit->unite_carton;
+                    } else {
+                        $unitesASortir = $detail->quantite;
+                    }
 
-     public function storeTranche(string $commandeId, Request $request)
-    {
+                    if ($transfert->quantite < $unitesASortir) {
+                        throw new \Exception("Stock boutique insuffisant.");
+                    }
 
-        try {
-                $commande = Commande::findOrFail($commandeId);
-                $somme= Paiement::where('commande_id', $commandeId)->sum('montant');
+                    # 🔻 Décrémentation
+                    $transfert->quantite -= $unitesASortir;
 
-                if($somme >= $commande->total){
-                    $commande->statut = 'payee';
-                    $commande->premiere_tranche = 0;
-                }else{
-                    $commande->statut = 'attente';
-                    $commande->premiere_tranche = $request->input('montant');
+                    # 🔁 Recalcul cartons
+                    $transfert->nombre_carton = intdiv(
+                        $transfert->quantite,
+                        $produit->unite_carton
+                    );
+
+                    $transfert->save();
+
+                    # 🚨 Rupture
+                    if ($transfert->quantite <= 0) {
+                        event(new StockRupture($transfert->produit));
+                    }
+
+                    # ⚠️ Sous seuil
+                    if ($transfert->quantite <= $transfert->seuil) {
+                        Log::warning("Produit sous seuil : ".$produit->nom);
+                    }
                 }
-                $commande->save();
-                $commande->load('details', 'vendeur','client');
-                event(new CommandeValidee($commande));
-                return response()->json($commande);
-       }catch (\Throwable $th) {
+            }
+
+            # 7️⃣ Recalcul reste après paiement
+            $totalDejaPayeApres = Paiement::where('commande_id', $commande->id)->sum('montant');
+            $resteApres = max(0, $commande->total - $totalDejaPayeApres);
+
+            $paiement->update([
+                'reste_du' => $resteApres
+            ]);
+
+            # 8️⃣ Mise à jour statut
+            $client = $commande->client;
+
+            if ($resteApres == 0) {
+                $commande->update(['statut' => 'payee']);
+                $client->update([
+                    'statut' => 'paye',
+                    'solde' => 0,
+                    'dette' => 0,
+                    'total_paye' => $totalDejaPayeApres,
+                ]);
+            } else {
+                $commande->update(['statut' => 'partiellement_payee']);
+                $client->update([
+                    'statut' => 'en_dette',
+                    'solde' => $resteApres,
+                    'dette' => $resteApres,
+                    'total_paye' => $totalDejaPayeApres,
+                ]);
+            }
+
+            $commande->update([
+                'montant_a_encaisser' => null,
+                'caissier_id' => Auth::user()->id ?? $commande->vendeur_id
+            ]);
+
+            # 9️⃣ Facture
+            $facture = Facture::firstOrCreate(
+                ['commande_id' => $commande->id],
+                [
+                    'total' => $commande->total,
+                    'mode_paiement' => $paiement->type_paiement,
+                    'date' => now(),
+                ]
+            );
+
+            try {
+                event(new PaiementCree($paiement));
+                event(new FactureCree($facture));
+            } catch (\Exception $e) {
+                Log::warning('Erreur events: '.$e->getMessage());
+            }
+
+            return $paiement;
+        });
+    }
+
+    #la liste des paiement associer a une commande
+    public function listePaiements(string $commandeId){
+        $commande = Commande::findOrFail($commandeId);
+        $paiements = Paiement::where('commande_id', $commande->id);
+
+        return response()->json($paiements->paginate(10));
+    }
+
+    #•	Reste total à encaisser.
+    public function resteTotalEncaisser(){
+        try {
+
+            $montantTotal = Commande::where('statut', '!=', 'annulee')
+                ->sum('total');
+
+            $totalPaiements = Paiement::whereHas('commande', function ($q) {
+                $q->whereNotIn('statut', ['annulee', 'attente']);
+            })->sum('montant');
+
+            $reste = $montantTotal - $totalPaiements;
+
+            return response()->json($reste);
+
+        } catch (\Throwable $th) {
             return response()->json([
-                'message' => 'Erreur lors de la création de la commande',
+                'message' => 'Erreur reste total',
                 'error' => $th->getMessage(),
             ], 500);
         }
     }
+
 
 
     /**
@@ -297,14 +324,7 @@ class CommandeController extends Controller
      */
     public function show(string $id)
     {
-        try {
-            return response()->json(Commande::with(['details','client','vendeur'])->findOrFail($id));
-        } catch (\Throwable $th) {
-            return response()->json([
-                'message' => 'Erreur lors de la récupération de la commande',
-                'error' => $th->getMessage(),
-            ], 500);
-        }
+        return Paiement::findOrFail($id);
     }
 
     /**
@@ -312,55 +332,7 @@ class CommandeController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        try {
-            $commande = Commande::findOrFail($id);
-            $data = $request->validate([
-                'statut' => 'sometimes|in:brouillon,validee,payee,annulee',
-            ]);
-
-            $commande->update($data);
-
-            return $commande->load('details');
-        } catch (\Throwable $th) {
-            return response()->json([
-                'message' => 'Erreur lors de la mise à jour de la commande',
-                'error' => $th->getMessage(),
-            ], 500);
-        }
-    }
-
-    #la liste des commsndes effectuer par un vendeur donnee
-    public function commandesParVendeur(string $id, Request $request)
-    {
-        try {
-            $commandes = Commande::with(['details','client','vendeur'])->where('vendeur_id', $id);
-            #filtrer par statut
-            if ($request->filled('statut')) {
-                $statut = $request->input('statut');
-                $commandes->where('statut', $statut);
-            }
-            #par type de vente
-            if ($request->filled('type_vente')) {
-                $typeVente = $request->input('type_vente');
-                $commandes->where('type_vente', $typeVente);
-            }
-            #par nom,prenom ,email du client
-            if ($request->filled('search')) {
-                $search = $request->input('search');
-                $commandes->whereHas('client', function ($q) use ($search) {
-                    $q->where('nom', 'like', "%{$search}%")
-                      ->orWhere('prenom', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%");
-                });
-            }
-
-            return response()->json($commandes->paginate(10));
-        } catch (\Throwable $th) {
-            return response()->json([
-                'message' => 'Erreur lors de la récupération des commandes',
-                'error' => $th->getMessage(),
-            ], 500);
-        }
+        abort(405);
     }
 
     /**
@@ -368,208 +340,95 @@ class CommandeController extends Controller
      */
     public function destroy(string $id)
     {
+        abort(405);
+    }
+
+    #la somme total des paiements
+    public function sommeTotalPaiements(){
         try {
-            $commande = Commande::findOrFail($id);
-            if($commande->statut !== 'attente'){
-                return response()->json([
-                    'message' => 'Seules les commandes en attente peuvent être annulées',
-                ], 400);
-                abort(400);
-            }
-            $commande->delete();
-            return response()->noContent();
+            $totalPaiements = Paiement::whereHas('commande', function ($q) {
+                $q->whereNotIn('statut', ['annulee', 'attente']);
+            })->sum('montant');
+
+            return response()->json($totalPaiements);
+
         } catch (\Throwable $th) {
             return response()->json([
-                'message' => 'Erreur lors de la suppression de la commande',
+                'message' => 'Erreur total paiements',
                 'error' => $th->getMessage(),
             ], 500);
         }
     }
-
-    public function valider(string $id)
-    {
-        try {
-            $commande = Commande::findOrFail($id);
-            $commande->update(['statut' => 'validee']);
-            $commande->load('details', 'vendeur','client');
-            event(new CommandeValidee($commande));
-            return $commande;
-        } catch (\Throwable $th) {
-            return response()->json([
-                'message' => 'Erreur lors de la validation de la commande',
-                'error' => $th->getMessage(),
-            ], 500);
-        }
-    }
-
-    public function annuler(string $id)
-    {
-        $commande = Commande::findOrFail($id);
-        if($commande->statut !== 'attente'){
-            return response()->json([
-                'message' => 'Seules les commandes en attente peuvent être annulées',
-            ], 400);
-            abort(400);
-        }
-        $commande->update(['statut' => 'annulee','caissier_id'=>Auth::user()->id]);
-        $commande->load('details', 'vendeur', 'client');
-
-        // Diffuser l'événement (sans bloquer si Reverb n'est pas disponible)
-        try {
-            event(new CommandeAnnulee($commande));
-        } catch (\Exception $e) {
-            // Log l'erreur mais ne bloque pas l'opération
-            Log::warning('Erreur lors de la diffusion de l\'annulation: ' . $e->getMessage());
-        }
-        return $commande;
-        try {
-            $commande = Commande::findOrFail($id);
-            $commande->update(['statut' => 'annulee']);
-            $commande->update(['total' => 0]);
-            $commande->load('details', 'vendeur','client');
-            event(new CommandeAnnulee($commande));
-            return $commande;
-        } catch (\Throwable $th) {
-            return response()->json([
-                'message' => 'Erreur lors de l\'annulation de la commande',
-                'error' => $th->getMessage(),
-            ], 500);
-        }
-    }
-
-    # les commandes payee aujourduih
-    public function commandesPayeesAujourdhui(){
-        try {
-            $commandes = Commande::where('statut', 'payee')
-            ->whereDate('created_at', date('Y-m-d'))
-            ->count();
-            return response()->json($commandes);
-        } catch (\Throwable $th) {
-            return response()->json([
-                'message' => 'Erreur lors de la récupération des commandes payées aujourd\'hui',
-                'error' => $th->getMessage(),
-            ], 500);
-        }
-    }
-
-    #•Montant total des commandes (clients normaux + spéciaux).
-    public function montantTotalCommandes(){
-        try {
-            $montantTotal = Commande::where('statut', '!=', 'annulee')
-                ->sum('total');
-
-            return response()->json($montantTotal);
-
-        } catch (\Throwable $th) {
-            return response()->json([
-                'message' => 'Erreur montant total commandes',
-                'error' => $th->getMessage(),
-            ], 500);
-        }
-    }
-    #Total commandes payées
-    public function totalCommandesPayees(){
-        try {
-            $totalCommandesPayees = Commande::where('statut', 'payee')
-            ->count();
-            return response()->json($totalCommandesPayees);
-        } catch (\Throwable $th) {
-            return response()->json([
-                'message' => 'Erreur lors de la récupération du total des commandes payées',
-                'error' => $th->getMessage(),
-            ], 500);
-        }
-    }
-
-    # o	Commandes en attente caisse
-    public function commandesEnAttenteCaisse(){
-        try {
-            $commandes = Commande::where('statut', 'attente')
-            ->count();
-            return response()->json($commandes);
-        } catch (\Throwable $th) {
-            return response()->json([
-                'message' => 'Erreur lors de la récupération des commandes en attente de caisse',
-                'error' => $th->getMessage(),
-            ], 500);
-        }
-    }
-    public function statsCommandesSpeciales(Request $request)
+    public function historiqueEncaissementsClient(Request $request, string $clientId)
     {
         try {
 
-            $query = Commande::query()
-                ->whereHas('client', function ($q) {
-                    $q->where('type_client', 'special');
-                });
+            $query = Paiement::with([
+                'commande:id,numero,total,client_id',
+                'caissier:id,nom,prenom'
+            ])
+            ->whereHas('commande', function ($q) use ($clientId) {
+                $q->where('client_id', $clientId)
+                ->whereNotIn('statut', ['annulee']);
+            })
+            ->orderByDesc('date');
 
-            // ===============================
-            // FILTRES IDENTIQUES AU FRONT
-            // ===============================
-
-            if ($request->filled('client_id')) {
-                $query->where('client_id', $request->client_id);
+            // 🔎 Filtre par date début
+            if ($request->filled('date_debut')) {
+                $query->whereDate('date', '>=', $request->date_debut);
             }
 
-            if ($request->filled('statut')) {
-                $query->where('statut', $request->statut);
+            // 🔎 Filtre par date fin
+            if ($request->filled('date_fin')) {
+                $query->whereDate('date', '<=', $request->date_fin);
             }
 
-            if ($request->filled('start_date')) {
-                $query->whereDate('created_at', '>=', $request->start_date);
-            }
-
-            if ($request->filled('end_date')) {
-                $query->whereDate('created_at', '<=', $request->end_date);
-            }
-
+            // 🔎 Filtre recherche numéro commande
             if ($request->filled('search')) {
                 $search = $request->search;
-                $query->where(function ($q) use ($search) {
-                    $q->where('numero', 'like', "%{$search}%")
-                    ->orWhereHas('client', function ($sub) use ($search) {
-                        $sub->where('nom', 'like', "%{$search}%");
-                    });
+
+                $query->whereHas('commande', function ($q) use ($search) {
+                    $q->where('numero', 'like', "%{$search}%");
                 });
             }
 
-            // ===============================
-            // ANNULÉES (compteur séparé)
-            // ===============================
+            $paiements = $query->get()->map(function ($paiement) {
 
-            $annuleesQuery = clone $query;
-            $annulees = $annuleesQuery
-                ->where('statut', 'annulee')
-                ->count();
-            $statsQuery = clone $query;
+                $totalCommande = $paiement->commande->total ?? 0;
 
-            // Exclure annulées sauf si filtre annulée
-            if (!$request->filled('statut') || $request->statut !== 'annulee') {
-                $statsQuery->where('statut', '!=', 'annulee');
-            }
+                // recalcul reste propre
+                $totalPaye = Paiement::where('commande_id', $paiement->commande_id)
+                    ->where('date', '<=', $paiement->date)
+                    ->sum('montant');
 
-            $nb = $statsQuery->count();
-            $totalTTC = $statsQuery->sum('total');
+                $reste = max(0, $totalCommande - $totalPaye);
 
-            $commandeIds = $statsQuery->pluck('id');
+                return [
+                    'id' => $paiement->id,
+                    'montant' => $paiement->montant,
+                    'type_paiement' => $paiement->type_paiement,
+                    'date' => $paiement->date,
 
-            $totalPaye = DB::table('paiements')
-                ->whereIn('commande_id', $commandeIds)
-                ->sum('montant');
+                    'commande' => [
+                        'id' => $paiement->commande->id ?? null,
+                        'numero' => $paiement->commande->numero ?? null,
+                        'total' => $totalCommande,
+                        'reste' => $reste,
+                    ],
 
-            $dette = $totalTTC - $totalPaye;
+                    'caissier' => [
+                        'id' => $paiement->caissier->id ?? null,
+                        'nom' => $paiement->caissier->nom ?? null,
+                        'prenom' => $paiement->caissier->prenom ?? null,
+                    ]
+                ];
+            });
 
-            return response()->json([
-                'nb' => $nb,
-                'annulees' => $annulees,
-                'totalTTC' => $totalTTC,
-                'totalPaye' => $totalPaye,
-                'dette' => $dette,
-            ]);
+            return response()->json($paiements);
 
         } catch (\Throwable $th) {
             return response()->json([
-                'message' => 'Erreur stats commandes spéciales',
+                'message' => 'Erreur récupération historique encaissements',
                 'error' => $th->getMessage(),
             ], 500);
         }

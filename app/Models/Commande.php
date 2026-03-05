@@ -17,7 +17,15 @@ class Commande extends Model
     protected $keyType = 'string';
     
     protected $fillable = [
-        'client_id','vendeur_id','total','statut','type_vente','date','caissier_id','tva_appliquee'
+        'client_id',
+        'vendeur_id',
+        'total',
+        'statut',
+        'type_vente',
+        'date',
+        'caissier_id',
+        'tva_appliquee',
+        'montant_a_encaisser' // 🔥 AJOUTER ÇA
     ];
 
     // =========================
@@ -28,13 +36,6 @@ class Commande extends Model
         return $this->hasMany(DetailCommande::class);
     }
 
-    // =========================
-    // 🟣 SYSTÈME RESPONSABLE
-    // =========================
-    public function lignesSpeciales(): HasMany
-    {
-        return $this->hasMany(CommandeLigne::class);
-    }
 
     // =========================
     // 🔗 COMMUN
@@ -88,25 +89,27 @@ class Commande extends Model
      */
     public function recalcStatut()
     {
-        // une commande annulée ne change jamais de statut
         if ($this->statut === 'annulee') {
             return;
         }
 
         $totalPaye = $this->paiements()->sum('montant');
 
-        if ($totalPaye == 0) {
-            $this->statut = 'en_attente_caisse';
+        if ($totalPaye <= 0) {
+            $this->statut = 'attente';
         }
         elseif ($totalPaye < $this->total) {
             $this->statut = 'partiellement_payee';
         }
         else {
-            // paiement EXACT
-            $this->statut = 'soldee';
+            $this->statut = 'payee';
         }
 
         $this->save();
+    }
+    public function caissier(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'caissier_id');
     }
 
 }
