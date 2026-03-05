@@ -24,8 +24,10 @@ class CommandeController extends Controller
                 'vendeur',
                 'paiements'
             ])
-                        ->orderBy('created_at', 'desc')
-               ->where('vendeur_id', Auth::user()->id);
+                ->orderBy('created_at', 'desc');
+                if ($request->filled('client_id')) {
+                        $query->where('client_id', $request->client_id);
+                    }
 
             // 🔎 Filtre statut
             if ($request->filled('statut')) {
@@ -81,7 +83,8 @@ return response()->json($paginator);
             $search = $request->input('search', '');
 
             $query = Commande::query()
-                ->where('statut', 'attente')
+                ->whereNotNull('montant_a_encaisser')
+                ->where('montant_a_encaisser', '>', 0)
                 ->with(['details.produit', 'client', 'vendeur', 'paiements'])
                 ->latest();
 
@@ -214,12 +217,13 @@ return response()->json($paginator);
 
             $validated = $request->validate([
                 'client_id' => 'nullable|uuid|exists:clients,id',
-                'type_vente' => 'required|in:detail,gros',
+                'type_vente' => 'nullable|in:detail,gros,mixte',
                 'tva_appliquee' => 'required|boolean',
                 'items' => 'required|array|min:1',
-                'items.*.transfert_id' => 'required|uuid|exists:transfert_en_attentes,id',
+                'items.*.produit_id' => 'required|uuid|exists:produits,id',
                 'items.*.quantite' => 'required|integer|min:1',
                 'items.*.prix_unitaire' => 'nullable|numeric',
+                'items.*.mode_vente' => 'required|in:gros,detail', // 🔥 AJOUTER
             ]);
 
         } catch (\Throwable $th) {
@@ -235,12 +239,23 @@ return response()->json($paginator);
 
                 $user = $request->user();
                 $tva = $validated['tva_appliquee'] ? 0.18 : 0;
+                // 🔥 Détection automatique du type de vente
+                $modes = collect($validated['items'])
+                    ->pluck('mode_vente')
+                    ->unique()
+                    ->values();
+
+                if ($modes->count() === 1) {
+                    $typeVente = $modes->first(); // "gros" ou "detail"
+                } else {
+                    $typeVente = 'mixte';
+                }
 
                 $commande = Commande::create([
                     'client_id' => $validated['client_id'] ?? null,
                     'vendeur_id' => $user->id,
                     'tva_appliquee' => $validated['tva_appliquee'],
-                    'type_vente' => $validated['type_vente'],
+                    'type_vente' => $typeVente,
                     'statut' => 'attente',
                     'total' => 0,
                     'date' => now(),
@@ -256,18 +271,31 @@ return response()->json($paginator);
 
                 foreach ($validated['items'] as $item) {
 
-                    $transfert = TransfertEnAttente::where('id', $item['transfert_id'])
-                        ->where('status', 'valide')
-                        ->lockForUpdate()
-                        ->firstOrFail();
+                $transfert = TransfertEnAttente::where('produit_id', $item['produit_id'])
+                    ->where('status', 'valide')
+                    ->where('quantite', '>', 0)
+                    ->orderByDesc('updated_at')
+                    ->lockForUpdate()
+                    ->firstOrFail();
 
-                    if ($item['quantite'] > $transfert->quantite) {
-                        throw new \Exception('Stock insuffisant en boutique.');
-                    }
+                # 🔧 Conversion en unités réelles
+                if ($item['mode_vente'] === 'gros') {
+                    $unitesDemandees = $item['quantite'] * $transfert->produit->unite_carton;
+                } else {
+                    $unitesDemandees = $item['quantite'];
+                }
 
-                    $prix = $validated['type_vente'] === 'gros'
-                        ? $transfert->prix_vente_gros
-                        : $transfert->prix_vente_detail;
+                if ($unitesDemandees > $transfert->quantite) {
+                    throw new \Exception('Stock insuffisant en boutique.');
+                }
+
+                    $prix = isset($item['prix_unitaire']) && $item['prix_unitaire'] > 0
+                        ? $item['prix_unitaire']
+                        : (
+                            $item['mode_vente'] === 'gros'
+                                ? $transfert->prix_vente_gros
+                                : $transfert->prix_vente_detail
+                        );
 
                     $ligneTotal = $prix * $item['quantite'];
                     $totalHt += $ligneTotal;
@@ -277,14 +305,37 @@ return response()->json($paginator);
                         'produit_id' => $transfert->produit_id,
                         'quantite' => $item['quantite'],
                         'prix_unitaire' => $prix,
+                        'mode_vente' => $item['mode_vente'], // 🔥 important
                     ]);
 
-                    $transfert->decrement('quantite', $item['quantite']);
+                    
                 }
 
-                $montantTva = $totalHt * $tva;
-                $commande->update(['total' => intval($totalHt + $montantTva)]);
+                $montantTotal = intval($totalHt + $tva);
 
+$client = $commande->client;
+
+                if ($client && $client->type_client === 'special') {
+
+                    // Client spécial → paiement par tranche
+                    $commande->update([
+                        'total_ht' => intval($totalHt),
+                        'total_tva' => intval($tva),
+                        'total' => $montantTotal,
+                        'montant_a_encaisser' => null
+                    ]);
+
+                } else {
+
+                    // Client normal → paiement direct
+                    $commande->update([
+                        'total_ht' => intval($totalHt),
+                        'total_tva' => intval($tva),
+                        'total' => $montantTotal,
+                        'montant_a_encaisser' => $montantTotal
+                    ]);
+
+                }
                 $commande->load('details', 'vendeur', 'client');
 
                 event(new CommandeValidee($commande));
@@ -524,7 +575,7 @@ return response()->json($paginator);
                 ->whereHas('client', function ($q) {
                     $q->where('type_client', 'special');
                 })
-                ->where('vendeur_id', Auth::user()->id);
+                ;
 
             // ===============================
             // FILTRES IDENTIQUES AU TABLEAU
@@ -652,5 +703,39 @@ return response()->json($paginator);
             'reste_avant_paiement' => $reste,
             'message' => 'Tranche envoyée à la caisse.'
         ]);
+    }
+    public function commandesAvecResteClientSpecial(string $clientId)
+    {
+        try {
+
+            $commandes = Commande::with(['paiements'])
+                ->where('client_id', $clientId)
+                ->whereHas('client', function ($q) {
+                    $q->where('type_client', 'special');
+                })
+                ->whereIn('statut', ['attente', 'partiellement_payee'])
+                ->get()
+                ->map(function ($commande) {
+
+                    $totalPaye = $commande->paiements->sum('montant');
+
+                    $commande->montant_paye = $totalPaye;
+                    $commande->reste_a_payer = max(0, $commande->total - $totalPaye);
+
+                    return $commande;
+                })
+                ->filter(function ($commande) {
+                    return $commande->reste_a_payer > 0;
+                })
+                ->values();
+
+            return response()->json($commandes);
+
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Erreur récupération commandes avec reste',
+                'error' => $th->getMessage(),
+            ], 500);
+        }
     }
 }

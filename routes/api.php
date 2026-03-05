@@ -80,7 +80,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('clients/{client}/paiements-tranches', [ClientController::class, 'paiementsTranches']);
     Route::get('clients/{client}/paiements', [ClientController::class, 'paiementsTranches']);
     Route::get('clients-dette', [ClientController::class, 'clientsDette']);
-
+    Route::get('clients/speciaux/resume-financier', [ClientController::class, 'resumeFinancierClientsSpeciaux']);
+    Route::get('clients/{client}/stats', [ClientController::class, 'statsClient']);
 
 
     // ---------------- COMMANDES ----------------
@@ -92,7 +93,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('commandes/lignes/{ligne}', [CommandeController::class, 'deleteLigne']);
 
     // ---------------- PAIEMENTS ----------------
-
+    Route::get(
+    'clients/{client}/encaissements',
+    [PaiementController::class, 'historiqueEncaissementsClient']);
     //Route::post('commandes/{commande}/paiements', [PaiementController::class, 'store']);
     Route::put('paiements/{paiement}', [PaiementController::class, 'update']);
     Route::delete('paiements/{paiement}', [PaiementController::class, 'destroy']);
@@ -204,7 +207,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('stocks/transfer/annuler', [StockController::class, 'annulerTransfer']);
 
     Route::post('stocks/reapprovisionner', [StockController::class, 'reapprovisionner']);
-
+    // 🔵 Liste des commandes d’un client spécial avec reste à payer
+    Route::get(
+        'commandes/client-special/{clientId}/avec-reste',
+        [CommandeController::class, 'commandesAvecResteClientSpecial']
+    );
     Route::apiResource('commandes', CommandeController::class);
     // 🔵 Responsable → envoyer tranche à la caisse
     Route::post('commandes/{commande}/envoyer-tranche', [CommandeController::class, 'envoyerTranche']);

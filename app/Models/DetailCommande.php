@@ -15,7 +15,11 @@ class DetailCommande extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'commande_id','produit_id','quantite','prix_unitaire'
+        'commande_id',
+        'produit_id',
+        'quantite',          // quantité logique (cartons ou unités selon type)
+        'prix_unitaire',
+        'mode_vente'         // 🔥 AJOUTER
     ];
 
     public function produit(): BelongsTo

@@ -36,13 +36,6 @@ class Commande extends Model
         return $this->hasMany(DetailCommande::class);
     }
 
-    // =========================
-    // 🟣 SYSTÈME RESPONSABLE
-    // =========================
-    public function lignesSpeciales(): HasMany
-    {
-        return $this->hasMany(CommandeLigne::class);
-    }
 
     // =========================
     // 🔗 COMMUN
