@@ -10,11 +10,11 @@ use App\Http\Controllers\CategorieController;
 use App\Http\Controllers\ProduitController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\FournisseurController;
-use App\Http\Controllers\CommandeController;
 use App\Http\Controllers\PaiementController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\HistoriqueVenteController;
+use App\Http\Controllers\CommandeController;
 use App\Http\Controllers\TransfertEnAttenteController;
 use App\Http\Controllers\DecaissementController;
 use App\Http\Controllers\CaissierDashboardController;
@@ -233,19 +233,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('stocks/reapprovisionner', [StockController::class, 'reapprovisionner']);
     // 🔵 Liste des commandes d’un client spécial avec reste à payer
-    Route::get(
-        'commandes/client-special/{clientId}/avec-reste',
-        [CommandeController::class, 'commandesAvecResteClientSpecial']
-    );
+    Route::get('commandes/client-special/{clientId}/avec-reste', [CommandeController::class, 'commandesAvecResteClientSpecial']);
     Route::apiResource('commandes', CommandeController::class);
-<<<<<<< HEAD
-    Route::post('premiere-tranche/{commande}',[CommandeController::class,'storeTranche']);
-=======
     // 🔵 Responsable → envoyer tranche à la caisse
     Route::post('commandes/{commande}/envoyer-tranche', [CommandeController::class, 'envoyerTranche']);
->>>>>>> 760e6e8f72e06310fa3983294bd41866018ac839
     # les commandes payee aujourduih
-    Route::get('commandes-payees-aujourdhui', [CommandeController::class, 'commandesPayeesAujourdhui']);
+    Route::get('commandes-payees-aujourdhui', [\App\Http\Controllers\CommandeController::class, 'commandesPayeesAujourdhui']);
     Route::get('commandes-attente', [CommandeController::class, 'getCommandesEnAttente']);
     Route::get('commandes-payees', [CommandeController::class, 'getCommandesValidees']);
     Route::get('commandes-annulees', [CommandeController::class, 'getCommandesAnnulees']);
