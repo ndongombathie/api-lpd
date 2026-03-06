@@ -64,7 +64,7 @@ class ClientController extends Controller
             'nom' => 'required|string',
             'prenom' => 'required|string',
             'entreprise' => 'nullable|string',
-            'adresse' => 'required|string',
+            'adresse' => 'nullable|string',
             'numero_cni' => 'nullable|digits:13',
             'contact' => 'nullable|string',
             'solde' => 'nullable|numeric',
@@ -363,12 +363,12 @@ class ClientController extends Controller
             ->selectRaw('COALESCE(SUM(commandes.total),0) as totalTTC')
             ->selectRaw('COALESCE(SUM(paiements.montant),0) as totalPaye')
             ->selectRaw('
-                        COALESCE(SUM(commandes.total),0) 
-                        - COALESCE(SUM(paiements.montant),0) 
+                        COALESCE(SUM(commandes.total),0)
+                        - COALESCE(SUM(paiements.montant),0)
                         as dette
                     ')
             ->selectRaw('COUNT(DISTINCT commandes.id) as commandes_count')
-            ->selectRaw('COUNT(DISTINCT CASE 
+            ->selectRaw('COUNT(DISTINCT CASE
                         WHEN commandes.total > (
                             SELECT COALESCE(SUM(p2.montant),0)
                             FROM paiements p2

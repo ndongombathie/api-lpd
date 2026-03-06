@@ -102,6 +102,7 @@ class TransfertEnAttenteController extends Controller
     public function produitsDisponibles(Request $request)
     {
         try {
+        
             $transfers = TransfertEnAttente::with(['produit.categorie'])->where('status', 'valide')
             ->where('quantite','>',0)
             ->latest('updated_at');

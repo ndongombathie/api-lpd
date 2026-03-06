@@ -24,7 +24,7 @@ class CommandeController extends Controller
                 'vendeur',
                 'paiements'
             ])->latest();
-            
+
                 if ($request->filled('client')) {
                     $clientSearch = '%' . $request->client . '%';
                     $query->whereHas('client', function ($q) use ($clientSearch) {
