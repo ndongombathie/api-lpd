@@ -172,7 +172,7 @@ class StockController extends Controller
             // Supprimer le transfert
             $src->transfert_en_attente_id = null;
             $src->save();
-            $transfer->delete();
+           // $transfer->delete();
             return response()->json(['message' => 'Transfert annulé']);
         } catch (\Exception $e) {
             return response()->json(['message' => $e->getMessage()], 422);
