@@ -78,8 +78,6 @@ return response()->json($paginator);
 
     public function getCommandesEnAttente(Request $request){
         try {
-            $perPage = min(max((int) $request->input('per_page', 15), 1), 100);
-            $page = max((int) $request->input('page', 1), 1);
             $search = $request->input('search', '');
 
             $query = Commande::query()
@@ -105,7 +103,7 @@ return response()->json($paginator);
             }
 
             $totalAmount = (int) (clone $query)->sum('total');
-            $paginator = $query->paginate($perPage, ['*'], 'page', $page);
+            $paginator = $query->paginate(10);
 
             return response()->json([
                 'data' => $paginator->items(),
@@ -174,7 +172,7 @@ return response()->json($paginator);
             if ($request->filled('date_debut') && $request->filled('date_fin')) {
                 $commandes->whereBetween('date', [$request->date_debut, $request->date_fin]);
             }
-            
+
             else if($request->filled('date_debut')){
                 $commandes->whereDate('date', $request->date_debut);
             }

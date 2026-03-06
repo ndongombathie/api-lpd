@@ -62,8 +62,7 @@ class HistoriqueVenteController extends Controller
                     'transfert_en_attentes.quantite as stock_initial',
                     DB::raw('SUM(historique_ventes.quantite) as quantite_vendue')
                 )
-               // ->whereDate('historique_ventes.created_at', $date)
-                ->groupBy('transfers.produit_id', 'transfers.quantite');
+                ->groupBy('transfert_en_attentes.produit_id', 'transfert_en_attentes.quantite');
 
 
             if($request->filled('date_debut')) {
@@ -78,7 +77,7 @@ class HistoriqueVenteController extends Controller
 
             $produitsVendus->getCollection()->transform(function ($produit) {
                 $produit->ecart = $produit->stock_initial - $produit->quantite_vendue;
-                $produit->produit=Produit::query()->with('entreees_sorties')->where('id',$produit->produit_id)->get()->first();
+                $produit->produit = Produit::with('entreees_sorties_boutique')->find($produit->produit_id);
                 $produit->total_vendu=$produit->quantite_vendue*$produit->produit->prix_unite_carton;
                 $produit->total_resant=($produit->stock_initial-$produit->quantite_vendue)*$produit->produit->prix_unite_carton > 0 ? ($produit->stock_initial-$produit->quantite_vendue)*$produit->produit->prix_unite_carton  : 0;
                 return $produit;
@@ -96,8 +95,9 @@ class HistoriqueVenteController extends Controller
     public function enregistrerInventaireBoutique(Request $request)
     {
         try {
-                $inventaire = $this->inventaireBoutique($request)['produits'];
-                $total = $inventaire->reduce(function ($carry, $item) {
+                $paginator = $this->inventaireBoutique($request)['produits'];
+                $collection = $paginator->getCollection();
+                $total = $collection->reduce(function ($carry, $item) {
 
                 $mouvement = $item->produit->entreees_sorties_boutique->first();
 
@@ -195,7 +195,7 @@ class HistoriqueVenteController extends Controller
                 ->select('vendeur_id', DB::raw('COUNT(quantite) as total_ventes')
                 ,DB::raw('SUM(montant) as total_encaisses'))
                 ->groupBy('vendeur_id');
-                
+
              # appliquer des filtre par nom ,prenom ,email
             if ($request->filled('search')) {
                 $search = $request->input('search');
