@@ -23,11 +23,15 @@ class CommandeController extends Controller
                 'client',
                 'vendeur',
                 'paiements'
-            ])
-                ->orderBy('created_at', 'desc');
-                if ($request->filled('client_id')) {
-                        $query->where('client_id', $request->client_id);
-                    }
+            ])->latest();
+            
+                if ($request->filled('client')) {
+                    $clientSearch = '%' . $request->client . '%';
+                    $query->whereHas('client', function ($q) use ($clientSearch) {
+                        $q->where('nom', 'like', $clientSearch)
+                          ->orWhere('prenom', 'like', $clientSearch);
+                    });
+                }
                 if ($request->filled('type_client')) {
                     $typeClient = $request->type_client;
 
@@ -322,7 +326,7 @@ return response()->json($paginator);
 
                 $montantTotal = intval($totalHt + $tva);
 
-$client = $commande->client;
+                $client = $commande->client;
 
                 if ($client && $client->type_client === 'special') {
 

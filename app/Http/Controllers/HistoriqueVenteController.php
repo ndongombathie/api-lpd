@@ -17,22 +17,17 @@ class HistoriqueVenteController extends Controller
     public function index(Request $request)
     {
         try {
-            // Ordonner par ordre croissant par heure d'arrivée (created_at)
-            $historiqueVentes = HistoriqueVente::with(['vendeur', 'produit'])
-                ->orderBy('created_at', 'asc')
-                ->paginate(10);
-            $query = HistoriqueVente::query()->latest();
-            // Filter by role if provided
+            $query = HistoriqueVente::with(['vendeur', 'produit'])
+                ->orderBy('created_at', 'asc');
+
             if ($request->filled('vendeur_id')) {
                 $query->where('vendeur_id', $request->input('vendeur_id'));
             }
 
-            // Filter by boutique_id if provided
             if ($request->filled('produit_id')) {
                 $query->where('produit_id', $request->input('produit_id'));
             }
 
-            // Filter by search term if provided
             if ($request->filled('search')) {
                 $search = $request->input('search');
                 $query->where(function ($q) use ($search) {
@@ -41,7 +36,8 @@ class HistoriqueVenteController extends Controller
                       ->orWhere('prix_unitaire', 'like', "%{$search}%");
                 });
             }
-            $historiqueVentes = $query->with(['vendeur', 'produit'])->paginate(10);
+
+            $historiqueVentes = $query->paginate(10);
             return response()->json($historiqueVentes);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
@@ -75,11 +71,18 @@ class HistoriqueVenteController extends Controller
 
             $produitsVendus = $query->paginate(10);
 
-            $produitsVendus->getCollection()->transform(function ($produit) {
+            $ids = $produitsVendus->getCollection()->pluck('produit_id')->unique()->values();
+            $produitsMap = Produit::with('entreees_sorties_boutique')
+                ->whereIn('id', $ids)
+                ->get()
+                ->keyBy('id');
+
+            $produitsVendus->getCollection()->transform(function ($produit) use ($produitsMap) {
                 $produit->ecart = $produit->stock_initial - $produit->quantite_vendue;
-                $produit->produit = Produit::with('entreees_sorties_boutique')->find($produit->produit_id);
-                $produit->total_vendu=$produit->quantite_vendue*$produit->produit->prix_unite_carton;
-                $produit->total_resant=($produit->stock_initial-$produit->quantite_vendue)*$produit->produit->prix_unite_carton > 0 ? ($produit->stock_initial-$produit->quantite_vendue)*$produit->produit->prix_unite_carton  : 0;
+                $produit->produit = $produitsMap->get($produit->produit_id);
+                $produit->total_vendu = $produit->quantite_vendue * $produit->produit->prix_unite_carton;
+                $resteBrut = ($produit->stock_initial - $produit->quantite_vendue) * $produit->produit->prix_unite_carton;
+                $produit->total_resant = $resteBrut > 0 ? $resteBrut : 0;
                 return $produit;
             });
 
