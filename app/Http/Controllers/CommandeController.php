@@ -28,7 +28,13 @@ class CommandeController extends Controller
                 if ($request->filled('client_id')) {
                         $query->where('client_id', $request->client_id);
                     }
+                if ($request->filled('type_client')) {
+                    $typeClient = $request->type_client;
 
+                    $query->whereHas('client', function ($q) use ($typeClient) {
+                        $q->where('type_client', $typeClient);
+                    });
+                }
             // 🔎 Filtre statut
             if ($request->filled('statut')) {
                 $query->where('statut', $request->statut);
