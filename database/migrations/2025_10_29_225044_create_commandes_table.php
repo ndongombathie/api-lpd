@@ -18,7 +18,7 @@ return new class extends Migration
             $table->integer('total')->default(0);
             $table->enum('statut',
             ['attente', 'valide', 'payee', 'annulee','partiellement_payee'])->default('attente');
-            $table->enum('type_vente', ['detail', 'gros'])->default('detail');
+            $table->enum('type_vente', ['detail', 'gros','mixte'])->default('detail');
             $table->timestamp('date')->useCurrent();
             $table->timestamps();
             $table->foreign('client_id')->references('id')->on('clients')->cascadeOnDelete();

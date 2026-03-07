@@ -102,6 +102,7 @@ class TransfertEnAttenteController extends Controller
     public function produitsDisponibles(Request $request)
     {
         try {
+
             $transfers = TransfertEnAttente::with(['produit.categorie'])->where('status', 'valide')
             ->where('quantite','>',0)
             ->latest('updated_at');
@@ -304,7 +305,7 @@ class TransfertEnAttenteController extends Controller
     #liste des transfert annulers
     public function transfertAnnuler(){
         try {
-            return response()->json(TransfertEnAttente::where('status','annuler')->paginate(10));
+            return response()->json(TransfertEnAttente::with('produit')->where('status', 'annuler')->paginate(10));
         } catch (\Throwable $th) {
             return response()->json(['message' => $th->getMessage()], 500);
         }
