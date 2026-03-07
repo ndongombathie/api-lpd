@@ -254,7 +254,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('commandes-en-attente-caisse', [CommandeController::class, 'commandesEnAttenteCaisse']);
     Route::get('stats-commandes-speciales', [CommandeController::class, 'statsCommandesSpeciales']);
     #la liste de toutes les commandes et  pour un caissier donnees
-    Route::get('commandes-par-caissier', [CommandeController::class, 'allCommandesByCaissier']);
+    Route::get('commandes-par-caissier/{id}', [CommandeController::class, 'allCommandesByCaissier']);
 
 
 
