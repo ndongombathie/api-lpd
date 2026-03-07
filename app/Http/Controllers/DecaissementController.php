@@ -23,23 +23,17 @@ class DecaissementController extends Controller
             $query = Decaissement::query()->with(['user', 'caissier'])
                 ->where('caissier_id', Auth::user()->id)
                 ->latest('updated_at');
+                
             // Filter by role if provided
             if ($request->filled('motif')) {
                 $query->where('motif', $request->input('motif'));
             }
 
             // Filter by boutique_id if provided
-            if ($request->filled('cassier_id')) {
-                $query->where('cassier_id', $request->input('cassier_id'));
+            if ($request->filled('caissier_id')) {
+                $query->where('caissier_id', $request->input('caissier_id'));
             }
 
-            if ($request->filled('date')) {
-                $query->whereDate('date', $request->date);
-                
-            }
-            if (!$request->filled('date')) {
-                $query->whereDate('date', now()->toDateString());
-            }
 
             // Filter by search term if provided
             if ($request->filled('search')) {
@@ -171,10 +165,10 @@ class DecaissementController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreDecaissementRequest $request)
     {
         try {
-            dd($request->all());
+  
             $data=$request->validated();
             $data['user_id'] = Auth::user()->id;
             $decaissement = Decaissement::create($data);
@@ -244,5 +238,114 @@ class DecaissementController extends Controller
         }
     }
 
+    public function exportAll(Request $request)
+    {
+        try {
+            $query = Decaissement::with(['user', 'caissier'])
+                ->latest('created_at');
+
+            // Filtre statut
+            if ($request->filled('statut')) {
+                $query->where('statut', $request->statut);
+            }
+
+            // Filtre période
+            if ($request->filled('start_date')) {
+                $query->whereDate('date', '>=', $request->start_date);
+            }
+
+            if ($request->filled('end_date')) {
+                $query->whereDate('date', '<=', $request->end_date);
+            }
+
+            // Recherche
+            if ($request->filled('search')) {
+                $search = $request->search;
+
+                $query->where(function ($q) use ($search) {
+                    $q->where('motif', 'like', "%{$search}%")
+                    ->orWhere('methode_paiement', 'like', "%{$search}%")
+                    ->orWhere('statut', 'like', "%{$search}%");
+                });
+            }
+
+            return response()->json($query->get());
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Erreur export décaissements',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function stats(Request $request)
+    {
+        $query = Decaissement::query();
+
+        // mêmes filtres que index()
+        if ($request->filled('statut')) {
+            $query->where('statut', $request->statut);
+        }
+
+        if ($request->filled('start_date')) {
+            $query->whereDate('date', '>=', $request->start_date);
+        }
+
+        if ($request->filled('end_date')) {
+            $query->whereDate('date', '<=', $request->end_date);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('motif', 'like', "%{$search}%")
+                ->orWhere('methode_paiement', 'like', "%{$search}%")
+                ->orWhere('statut', 'like', "%{$search}%");
+            });
+        }
+
+        return response()->json([
+            'total' => $query->count(),
+            'montant_total' => (clone $query)->sum('montant'),
+            'valides' => (clone $query)->where('statut', 'valide')->count(),
+            'montant_valides' => (clone $query)->where('statut', 'valide')->sum('montant'),
+            'attente' => (clone $query)->where('statut', 'en_attente')->count(),
+            'montant_attente' => (clone $query)->where('statut', 'en_attente')->sum('montant'),
+            'annules' => (clone $query)->where('statut', 'refuse')->count(),
+            'montant_annules' => (clone $query)->where('statut', 'refuse')->sum('montant'),
+        ]);
+    }
+    public function FiltresSearchResponsable(Request $request)
+    {
+        $query = Decaissement::with(['user', 'caissier'])
+            ->latest('updated_at');
+
+        // ✅ Filtre statut
+        if ($request->filled('statut')) {
+            $query->where('statut', $request->statut);
+        }
+
+        // ✅ Filtre période
+        if ($request->filled('start_date')) {
+            $query->whereDate('date', '>=', $request->start_date);
+        }
+
+        if ($request->filled('end_date')) {
+            $query->whereDate('date', '<=', $request->end_date);
+        }
+
+        // ✅ Recherche
+        if ($request->search) {
+            $search = $request->search;
+
+            $query->whereHas('caissier', function ($q) use ($search) {
+                $q->where('prenom', 'like', "%{$search}%")
+                ->orWhere('nom', 'like', "%{$search}%");
+            });
+        }
+
+        return response()->json($query->paginate(15));
+    }
 
 }

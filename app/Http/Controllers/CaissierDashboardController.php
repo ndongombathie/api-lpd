@@ -104,9 +104,9 @@ class CaissierDashboardController extends Controller
             '18h-20h' => 0,
         ];
 
-        $paiements = Paiement::whereDate('date', $dateStr)->get(['montant', 'date'])
-        ->where('caissier_id', Auth::user()->id)
-        ;
+        $paiements = Paiement::whereDate('date', $dateStr)
+            ->where('caissier_id', Auth::user()->id)
+            ->get(['montant', 'date']);
 
         foreach ($paiements as $p) {
             $dt = Carbon::parse($p->date);
