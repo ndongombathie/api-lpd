@@ -19,14 +19,14 @@ class StoreDecaissementRequest extends FormRequest
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
-    public function rules(): array
-    {
-        return [
-            'motif' => 'required|string|max:255',
-            'caissier_id' => 'required|uuid|exists:users,id',
-            'date' => 'required|date',
-            'montant' => 'required|numeric|min:0',
-            'methode_paiement' => 'required|string|max:255',
-        ];
-    }
+public function rules(): array
+{
+    return [
+        'motif' => 'required|string',
+        'date' => 'required|date',
+        'montant' => 'required|numeric|min:1',
+        'caissier_id' => 'required|exists:users,id',
+        'methode_paiement' => 'nullable|string',
+    ];
+}
 }

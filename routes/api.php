@@ -186,6 +186,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // ---------------- DECAISSEMENTS ----------------
 
     Route::get('decaissements/export', [DecaissementController::class, 'exportAll']);
+    Route::get('decaissements/stats', [DecaissementController::class, 'stats']);
+    Route::get('responsable/decaissements', [DecaissementController::class, 'FiltresSearchResponsable']);
+    Route::post('responsable/decaissements', [DecaissementController::class, 'storeResponsable']);
 
     # Gestion des historiques de vente
     Route::get('historique-ventes', [HistoriqueVenteController::class, 'index']);
