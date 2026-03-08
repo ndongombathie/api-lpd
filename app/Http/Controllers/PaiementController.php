@@ -228,6 +228,15 @@ class PaiementController extends Controller
                     if ($transfert->quantite <= $transfert->seuil) {
                         Log::warning("Produit sous seuil : ".$produit->nom);
                     }
+
+                    HistoriqueVente::create([
+                    'vendeur_id' => $commande->vendeur_id,
+                    'produit_id' => $detail->produit_id,
+                    'quantite' => $detail->quantite,
+                    'prix_unitaire' => $detail->prix_unitaire ?? 0,
+                    'montant' => ($detail->prix_unitaire ?? 0) * $detail->quantite,
+                    'date' => now()
+                    ]);
                 }
             }
 
