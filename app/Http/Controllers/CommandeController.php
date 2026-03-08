@@ -93,6 +93,7 @@ return response()->json($paginator);
             $query = Commande::query()
                 ->whereNotNull('montant_a_encaisser')
                 ->where('montant_a_encaisser', '>', 0)
+                ->whereIn('statut', ['attente', 'partiellement_payee'])
                 ->with(['details.produit', 'client', 'vendeur', 'paiements'])
                 ->latest();
 

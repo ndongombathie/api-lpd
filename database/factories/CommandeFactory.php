@@ -26,6 +26,7 @@ class CommandeFactory extends Factory
             'vendeur_id' => fn () => User::inRandomOrder()->value('id') ?? User::factory(),
             'total' => $this->faker->numberBetween(1000, 300000),
             'statut' => $this->faker->randomElement($statuts),
+            'montant_a_encaisser' => $this->faker->numberBetween(0, 300000),
             'type_vente' => $this->faker->randomElement($types),
             'date' => $this->faker->dateTimeBetween('-1 months', 'now'),
         ];

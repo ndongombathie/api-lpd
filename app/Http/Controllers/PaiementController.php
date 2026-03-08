@@ -155,13 +155,14 @@ class PaiementController extends Controller
                     throw new \Exception("Aucune tranche envoyée à la caisse.");
                 }
 
-                if ((float)$data['montant'] !== (float)$commande->montant_a_encaisser) {
+                if ($data['montant'] !== $commande->montant_a_encaisser) {
                     throw new \Exception("Le montant doit être égal à la tranche envoyée.");
                 }
 
             } else {
+                dd($data['montant'], $resteAvant);
 
-                if ((float)$data['montant'] !== (float)$resteAvant) {
+                if ($data['montant'] !== $resteAvant) {
                     throw new \Exception("Le client doit payer le montant restant exact.");
                 }
             }

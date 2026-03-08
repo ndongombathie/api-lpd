@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('commandes', function (Blueprint $table) {
-            $table->decimal('montant_a_encaisser', 15, 2)
+            $table->bigInteger('montant_a_encaisser')
                   ->nullable()
                   ->after('total');
         });
