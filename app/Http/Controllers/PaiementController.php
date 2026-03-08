@@ -160,7 +160,6 @@ class PaiementController extends Controller
                 }
 
             } else {
-                dd($data['montant'], $resteAvant);
 
                 if ($data['montant'] !== $resteAvant) {
                     throw new \Exception("Le client doit payer le montant restant exact.");
