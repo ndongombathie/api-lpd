@@ -181,8 +181,8 @@ class PaiementController extends Controller
                 $commande->loadMissing('details');
 
                 foreach ($commande->details as $detail) {
-
-                    $transfert = TransfertEnAttente::where('produit_id', $detail->produit_id)
+                    $stockBoutique = StockBoutique::where('produit_id', $detail->produit_id)->first();
+                    $transfert = TransfertEnAttente::where('id', $stockBoutique->transfert_en_attente_id)
                         ->where('status', 'valide')
                         ->lockForUpdate()
                         ->first();
