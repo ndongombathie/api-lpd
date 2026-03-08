@@ -19,7 +19,7 @@ class HistoriqueVenteFactory extends Factory
     public function definition(): array
     {
         return [
-            'vendeur_id' => User::inRandomOrder()->first()->id,
+            'vendeur_id' => User::where('role', 'vendeur')->inRandomOrder()->first()->id,
             'produit_id' => Produit::inRandomOrder()->first()->id,
             'quantite' => $this->faker->numberBetween(1, 100),
             'prix_unitaire' => $this->faker->numberBetween(10, 1000),
