@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class CaissierCaisseJournalFactory extends Factory
 {
-    
+
     /**
      * Define the model's default state.
      *
@@ -24,7 +24,7 @@ class CaissierCaisseJournalFactory extends Factory
             'fond_ouverture' => $this->faker->numberBetween(0, 1000000),
             'total_encaissements' => $this->faker->numberBetween(0, 1000000),
             'nombre_paiements' => $this->faker->numberBetween(0, 1000000),
-            'caissier_id' => User::factory()->create()->id,
+            'caissier_id' => User::where('role', 'caissier')->inRandomOrder()->first()->id,
             'total_decaissements' => $this->faker->numberBetween(0, 1000000),
             'solde_theorique' => $this->faker->numberBetween(0, 1000000),
             'solde_reel' => $this->faker->numberBetween(0, 1000000),
