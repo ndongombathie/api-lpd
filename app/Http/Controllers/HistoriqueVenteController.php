@@ -197,6 +197,7 @@ class HistoriqueVenteController extends Controller
             $totalVentes = HistoriqueVente::with('vendeur')
                 ->select('vendeur_id', DB::raw('COUNT(quantite) as total_ventes')
                 ,DB::raw('SUM(montant) as total_encaisses'))
+                ->where('role', 'vendeur')
                 ->groupBy('vendeur_id');
 
              # appliquer des filtre par nom ,prenom ,email
