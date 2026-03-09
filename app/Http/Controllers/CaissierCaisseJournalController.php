@@ -47,50 +47,31 @@ class CaissierCaisseJournalController extends Controller
              ]);
     }
 
-public function all(Request $request)
-{
-    try {
+    #toutes les caisserjounal et filter par date mettre la date par defaut a la date d'aujourd'hui
+    public function all(Request $request)
+    {
+        try {
+            $query = CaissierCaisseJournal::query()->with('caissier')->orderByDesc('date');
+            if ($request->filled('date')) {
+                $query->where('date', $request->date);
+            }
 
-        $query = CaissierCaisseJournal::query()
-            ->with('caissier')
-            ->orderByDesc('date');
+            # filtrer par nom et mail des caissier en utilisant search
+            if ($request->filled('search')) {
+                $query->where(function ($q) use ($request) {
+                    $q->where('caissier.nom', 'like', '%'.$request->search.'%')
+                        ->orWhere('caissier.email', 'like', '%'.$request->search.'%');
+                });
+            }
 
-        // ✅ Filtres période
-        if ($request->filled('date_debut')) {
-            $query->where('date', '>=', $request->date_debut);
+            $journals = $query->paginate(10);
+
+        return response()->json($journals);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
         }
-
-        if ($request->filled('date_fin')) {
-            $query->where('date', '<=', $request->date_fin);
-        }
-
-        // ✅ Clone pour stats AVANT pagination
-        $statsQuery = clone $query;
-
-        $totalEncaissements = (int) $statsQuery->sum('total_encaissements');
-        $totalDecaissements = (int) $statsQuery->sum('total_decaissements');
-        $soldeNet = $totalEncaissements - $totalDecaissements;
-        $totalCaissiers = (int) $statsQuery->count();
-
-        // ✅ Pagination
-        $journals = $query->paginate(10);
-
-        return response()->json([
-            'journals' => $journals,
-            'stats' => [
-                'encaissements' => $totalEncaissements,
-                'decaissements' => $totalDecaissements,
-                'solde_net' => $soldeNet,
-                'caissiers_count' => $totalCaissiers
-            ]
-        ]);
-
-    } catch (\Exception $e) {
-        return response()->json([
-            'error' => $e->getMessage()
-        ], 500);
     }
-}
+
 
 
     public function show(string $date)

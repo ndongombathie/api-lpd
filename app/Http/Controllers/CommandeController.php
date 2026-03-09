@@ -201,6 +201,12 @@ public function allCommandesByCaissier(Request $request, string $id)
 
                 if ($request->filled('type_vente')) {
                 $commandes->where('type_vente', $request->input('type_vente'));
+                #filtrer par type_client
+                if ($request->filled('type_client')) {
+                    $commandes->whereHas('client', function($q) use ($request) {
+                        $q->where('type_client', $request->input('type_client'));
+                    });
+                }
             }
             }else
             {
