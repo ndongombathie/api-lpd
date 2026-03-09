@@ -18,7 +18,7 @@ class CaissierCaisseJournalController extends Controller
      */
     public function index(Request $request)
     {
-        $query = CaissierCaisseJournal::query()->orderByDesc('date');
+        $query = CaissierCaisseJournal::query()->with('caissier')->orderByDesc('date');
 
         if ($request->filled('date_debut')) {
             $query->where('date', '>=', $request->date_debut);
@@ -40,8 +40,6 @@ class CaissierCaisseJournalController extends Controller
     {
         try {
             $query = CaissierCaisseJournal::query()->with('caissier')->orderByDesc('date');
-
-
             if ($request->filled('date')) {
                 $query->where('date', $request->date);
             }
@@ -53,8 +51,6 @@ class CaissierCaisseJournalController extends Controller
                         ->orWhere('caissier.email', 'like', '%'.$request->search.'%');
                 });
             }
-
-
 
             $journals = $query->paginate(10);
 
