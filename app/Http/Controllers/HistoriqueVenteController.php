@@ -191,29 +191,26 @@ class HistoriqueVenteController extends Controller
     }
 
     #Nombre total de ventes par vendeur et Total encaissé par vendeur
-   public function totalVentesParVendeur(Request $request)
+    public function totalVentesParVendeur(Request $request)
     {
         try {
 
+            $totalVentes = HistoriqueVente::with('vendeur')
+                ->select(
+                    'vendeur_id',
+                    DB::raw('COUNT(quantite) as total_ventes'),
+                    DB::raw('SUM(montant) as total_encaisses')
+                );
+
+            // ✅ Appliquer filtre seulement si dates envoyées
             if ($request->filled('date_debut') && $request->filled('date_fin')) {
-                $totalVentes = HistoriqueVente::with('vendeur')
-                    ->select(
-                        'vendeur_id',
-                        DB::raw('COUNT(quantite) as total_ventes'),
-                        DB::raw('SUM(montant) as total_encaisses')
-                    )
-                    ->whereBetween('date', [$request->date_debut, $request->date_fin])
-                    ->groupBy('vendeur_id');
-            } else {
-                $totalVentes = HistoriqueVente::with('vendeur')
-                    ->select(
-                        'vendeur_id',
-                        DB::raw('COUNT(quantite) as total_ventes'),
-                        DB::raw('SUM(montant) as total_encaisses')
-                    )
-                    ->whereDate('date', date('Y-m-d'))
-                    ->groupBy('vendeur_id');
+                $totalVentes->whereBetween('date', [
+                    $request->date_debut,
+                    $request->date_fin
+                ]);
             }
+
+            $totalVentes->groupBy('vendeur_id');
 
             // filtre recherche
             if ($request->filled('search')) {
@@ -226,7 +223,6 @@ class HistoriqueVenteController extends Controller
                 });
             }
 
-            // clone pour calcul total
             $queryTotal = clone $totalVentes;
 
             return response()->json([
@@ -239,7 +235,7 @@ class HistoriqueVenteController extends Controller
                 'message' => $e->getMessage()
             ], 500);
         }
-    }   
+    }
 
 
 
