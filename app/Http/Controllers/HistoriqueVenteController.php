@@ -207,7 +207,7 @@ class HistoriqueVenteController extends Controller
                     ->select('vendeur_id', DB::raw('COUNT(quantite) as total_ventes')
                     ,DB::raw('SUM(montant) as total_encaisses'))
                     # date par defaut a la date d'aujourd'hui
-                   // ->whereDate('date', date('Y-m-d'))
+                    ->whereDate('date', date('Y-m-d'))
                     ->groupBy('vendeur_id');
             }
 
@@ -224,6 +224,7 @@ class HistoriqueVenteController extends Controller
             }
             return response()->json([
                 'total_ventes' => $totalVentes->paginate(10),
+                'somme_total_encaisses' => $totalVentes->sum('total_encaisses'),
             ]);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
