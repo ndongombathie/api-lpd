@@ -224,7 +224,7 @@ class HistoriqueVenteController extends Controller
             }
             return response()->json([
                 'total_ventes' => $totalVentes->paginate(10),
-                'somme_total_encaisses' => $totalVentes->sum('montant'),
+                'somme_total_encaisses' => $totalVentes->total_encaisses,
             ]);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
