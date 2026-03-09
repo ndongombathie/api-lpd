@@ -9,6 +9,7 @@ use App\Http\Requests\UpdateDecaissementRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
+use App\Models\Paiement;
 
 class DecaissementController extends Controller
 {
@@ -23,7 +24,7 @@ class DecaissementController extends Controller
             $query = Decaissement::query()->with(['user', 'caissier'])
                 ->where('caissier_id', Auth::user()->id)
                 ->latest('updated_at');
-                
+
             // Filter by role if provided
             if ($request->filled('motif')) {
                 $query->where('motif', $request->input('motif'));
@@ -168,9 +169,17 @@ class DecaissementController extends Controller
     public function store(StoreDecaissementRequest $request)
     {
         try {
-  
+
             $data=$request->validated();
             $data['user_id'] = Auth::user()->id;
+
+            $paiement = Paiement::where('caissier_id', $data['caissier_id'])
+            ->whereDate('date', date('Y-m-d'))->sum('montant');
+
+            if($data['montant'] > $paiement){
+                return response()->json(['error' => 'Décaissement imposible.'], 400);
+            }
+
             $decaissement = Decaissement::create($data);
             return response()->json($decaissement, 201);
         } catch (\Exception $e) {
@@ -199,6 +208,13 @@ class DecaissementController extends Controller
                 // Utiliser l'heure exacte actuelle pour la validation
                 'date' => now(),
             ];
+
+            $paiement = Paiement::where('caissier_id', Auth::user()->id)
+            ->whereDate('date', date('Y-m-d'))->sum('montant');
+
+            if($decaissement->montant > $paiement){
+                return response()->json(['error' => 'Décaissement imposible.'], 400);
+            }
 
             // Optionnel: permettre au caissier de choisir le compte/méthode utilisée
             if ($request->filled('methode_paiement')) {
