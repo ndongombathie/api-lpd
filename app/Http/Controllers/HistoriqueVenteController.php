@@ -211,7 +211,6 @@ class HistoriqueVenteController extends Controller
                         DB::raw('COUNT(quantite) as total_ventes'),
                         DB::raw('SUM(montant) as total_encaisses')
                     )
-                    ->whereDate('date', date('Y-m-d'))
                     ->groupBy('vendeur_id');
             }
 
@@ -239,7 +238,7 @@ class HistoriqueVenteController extends Controller
                 'message' => $e->getMessage()
             ], 500);
         }
-    }   
+    }
 
 
 
