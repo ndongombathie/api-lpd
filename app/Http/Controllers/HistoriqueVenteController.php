@@ -191,45 +191,55 @@ class HistoriqueVenteController extends Controller
     }
 
     #Nombre total de ventes par vendeur et Total encaissé par vendeur
-    public function totalVentesParVendeur(Request $request)
+   public function totalVentesParVendeur(Request $request)
     {
         try {
-            #filter entre date_debut et date_fin
+
             if ($request->filled('date_debut') && $request->filled('date_fin')) {
                 $totalVentes = HistoriqueVente::with('vendeur')
-                    ->select('vendeur_id', DB::raw('COUNT(quantite) as total_ventes')
-                    ,DB::raw('SUM(montant) as total_encaisses'))
+                    ->select(
+                        'vendeur_id',
+                        DB::raw('COUNT(quantite) as total_ventes'),
+                        DB::raw('SUM(montant) as total_encaisses')
+                    )
                     ->whereBetween('date', [$request->date_debut, $request->date_fin])
                     ->groupBy('vendeur_id');
-            }
-            else{
+            } else {
                 $totalVentes = HistoriqueVente::with('vendeur')
-                    ->select('vendeur_id', DB::raw('COUNT(quantite) as total_ventes')
-                    ,DB::raw('SUM(montant) as total_encaisses'))
-                    # date par defaut a la date d'aujourd'hui
+                    ->select(
+                        'vendeur_id',
+                        DB::raw('COUNT(quantite) as total_ventes'),
+                        DB::raw('SUM(montant) as total_encaisses')
+                    )
                     ->whereDate('date', date('Y-m-d'))
                     ->groupBy('vendeur_id');
             }
 
-             # appliquer des filtre par nom ,prenom ,email
+            // filtre recherche
             if ($request->filled('search')) {
                 $search = $request->input('search');
-                $totalVentes->where(function ($q) use ($search) {
-                    $q->whereHas('vendeur', function ($q) use ($search) {
-                        $q->where('nom', 'like', "%{$search}%")
-                          ->orWhere('prenom', 'like', "%{$search}%")
-                          ->orWhere('email', 'like', "%{$search}%");
-                    });
+
+                $totalVentes->whereHas('vendeur', function ($q) use ($search) {
+                    $q->where('nom', 'like', "%{$search}%")
+                    ->orWhere('prenom', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
                 });
             }
+
+            // clone pour calcul total
+            $queryTotal = clone $totalVentes;
+
             return response()->json([
                 'total_ventes' => $totalVentes->paginate(10),
-                'somme_total_encaisses' => $totalVentes->total_encaisses,
+                'somme_total_encaisses' => $queryTotal->get()->sum('total_encaisses')
             ]);
+
         } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
+            return response()->json([
+                'message' => $e->getMessage()
+            ], 500);
         }
-    }
+    }   
 
 
 
