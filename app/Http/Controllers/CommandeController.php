@@ -133,28 +133,61 @@ return response()->json($paginator);
     }
 
     #la liste de toutes les commandes et  pour un caissier donnees
-    public function allCommandesByCaissier(Request $request, string $id){
-            try {
-                $query=Commande::query()
-                #ajouter les relation details, client, vendeur, paiements
-                ->with(['details.produit', 'client', 'vendeur', 'paiements'])
-                ->where('caissier_id', $id)
-                ->latest();
-                #filter par client et numero de commande
-                if ($request->filled('search')) {
-                    $query->where(function ($q) use ($request) {
-                        $q->where('client.nom', 'like', '%'.$request->search.'%')
-                          ->orWhere('client.prenom', 'like', '%'.$request->search.'%')
-                          ->orWhere('vendeur.nom', 'like', '%'.$request->search.'%')
-                          ->orWhere('vendeur.prenom', 'like', '%'.$request->search.'%')
-                          ;
-                    });
-                }
-            } catch (\Throwable $th) {
-                //throw $th;
-            }
+public function allCommandesByCaissier(Request $request, string $id)
+{
+    $commandes = Commande::with(['details.produit', 'client', 'vendeur', 'paiements'])
+        ->where('caissier_id', $id)
+        ->whereIn('statut', ['payee', 'partiellement_payee', 'annulee'])
+        ->get();
+
+    $decaissements = \App\Models\Decaissement::with('caissier')
+        ->where('caissier_id', $id)
+        ->get();
+
+    $historique = collect();
+
+    // 🔵 COMMANDES
+    foreach ($commandes as $cmd) {
+
+        $historique->push([
+            'id' => $cmd->id,
+            'type' => $cmd->statut === 'annulee' ? 'annulation' : 'encaissement',
+            'statut' => $cmd->statut,
+            'reference' => $cmd->numero,
+            'total' => $cmd->total,
+            'client' => $cmd->client,
+            'vendeur_nom' => $cmd->vendeur?->prenom . ' ' . $cmd->vendeur?->nom,
+            'mode_paiement' => $cmd->paiements->first()?->methode_paiement,
+            'numero_ticket' => $cmd->numero,
+            'description' => null,
+            'categorie' => null,
+            'created_at' => $cmd->updated_at ?? $cmd->created_at,
+        ]);
     }
 
+    // 🔴 DÉCAISSEMENTS
+    foreach ($decaissements as $dec) {
+
+        $historique->push([
+            'id' => $dec->id,
+            'type' => 'decaissement',
+            'statut' => $dec->statut,
+            'reference' => $dec->libelle,
+            'total' => $dec->montant,
+            'client' => null,
+            'vendeur_nom' => null,
+            'mode_paiement' => $dec->methode_paiement,
+            'numero_ticket' => null,
+            'description' => $dec->motif,
+            'categorie' => 'Général',
+            'created_at' => $dec->created_at,
+        ]);
+    }
+
+    return response()->json(
+        $historique->sortByDesc('created_at')->values()
+    );
+}
 
     #appliquer des filtre par date
     public function getCommandesValidees(Request $request){
