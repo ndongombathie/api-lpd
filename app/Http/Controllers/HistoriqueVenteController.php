@@ -199,7 +199,7 @@ class HistoriqueVenteController extends Controller
                 $totalVentes = HistoriqueVente::with('vendeur')
                     ->select('vendeur_id', DB::raw('COUNT(quantite) as total_ventes')
                     ,DB::raw('SUM(montant) as total_encaisses'))
-                    ->whereBetween('created_at', [$request->date_debut, $request->date_fin])
+                    ->whereBetween('date', [$request->date_debut, $request->date_fin])
                     ->groupBy('vendeur_id');
             }
             else{
@@ -207,7 +207,7 @@ class HistoriqueVenteController extends Controller
                     ->select('vendeur_id', DB::raw('COUNT(quantite) as total_ventes')
                     ,DB::raw('SUM(montant) as total_encaisses'))
                     # date par defaut a la date d'aujourd'hui
-                    ->whereDate('created_at', date('Y-m-d'))
+                   // ->whereDate('date', date('Y-m-d'))
                     ->groupBy('vendeur_id');
             }
 

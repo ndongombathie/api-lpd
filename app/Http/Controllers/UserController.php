@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\UserCredentialsMail;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Commande;
-use App\Models\HistoriqueVente;
 
 class UserController extends Controller
 {
@@ -54,14 +53,8 @@ class UserController extends Controller
     public function vendeursCount()
     {
         try {
-            #filter par date_debut et date_fin
             return response()->json([
-                # le nombre de vendeurs qui ont effectuer des ventes dans HistoriqueVente
-                'vendeurs_count' => User::where('role', 'vendeur')
-                ->whereHas('historiques_ventes', function ($query) {
-                    $query->whereNotNull('vendeur_id');
-                })->count(),
-                'total_ventes' => HistoriqueVente::sum('montant')
+                'vendeurs_count' => User::where('role', 'vendeur')->count(),
             ]);
         } catch (\Throwable $th) {
             return response()->json([
