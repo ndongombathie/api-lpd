@@ -77,13 +77,13 @@ class CommandeController extends Controller
                 return $commande;
             });
 
-return response()->json($paginator);
-        } catch (\Throwable $th) {
-            return response()->json([
-                'message' => 'Erreur lors de la récupération des commandes',
-                'error' => $th->getMessage(),
-            ], 500);
-        }
+            return response()->json($paginator);
+            } catch (\Throwable $th) {
+                return response()->json([
+                    'message' => 'Erreur lors de la récupération des commandes',
+                    'error' => $th->getMessage(),
+                ], 500);
+            }
     }
 
     public function getCommandesEnAttente(Request $request){

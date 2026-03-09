@@ -194,10 +194,20 @@ class HistoriqueVenteController extends Controller
     public function totalVentesParVendeur(Request $request)
     {
         try {
-            $totalVentes = HistoriqueVente::with('vendeur')
-                ->select('vendeur_id', DB::raw('COUNT(quantite) as total_ventes')
-                ,DB::raw('SUM(montant) as total_encaisses'))
-                ->groupBy('vendeur_id');
+            #filter entre date_debut et date_fin
+            if ($request->filled('date_debut') && $request->filled('date_fin')) {
+                $totalVentes = HistoriqueVente::with('vendeur')
+                    ->select('vendeur_id', DB::raw('COUNT(quantite) as total_ventes')
+                    ,DB::raw('SUM(montant) as total_encaisses'))
+                    ->whereBetween('created_at', [$request->date_debut, $request->date_fin])
+                    ->groupBy('vendeur_id');
+            }
+            else{
+                $totalVentes = HistoriqueVente::with('vendeur')
+                    ->select('vendeur_id', DB::raw('COUNT(quantite) as total_ventes')
+                    ,DB::raw('SUM(montant) as total_encaisses'))
+                    ->groupBy('vendeur_id');
+            }
 
              # appliquer des filtre par nom ,prenom ,email
             if ($request->filled('search')) {
