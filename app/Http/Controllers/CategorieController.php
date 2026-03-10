@@ -21,7 +21,7 @@ class CategorieController extends Controller
                 $q->where('nom', 'like', "%{$search}%");
             });
 
-        return response()->json($query->paginate(10));
+        return response()->json($query->paginate(8));
     }
 
     public function nombreCategorie()
