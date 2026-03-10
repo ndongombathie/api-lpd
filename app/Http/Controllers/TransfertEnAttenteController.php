@@ -160,7 +160,9 @@ class TransfertEnAttenteController extends Controller
     public function getProductByCode($code)
     {
         try {
-                $transfer = TransfertEnAttente::where('status', 'valide')->whereHas('produit', function($q) use ($code) {
+                $transfer = TransfertEnAttente::where('status', 'valide')
+                ->where('quantite','>',0)
+                ->whereHas('produit', function($q) use ($code) {
                     $q->where('code', $code);
                 })->get()->first();
                 return response()->json($transfer);
