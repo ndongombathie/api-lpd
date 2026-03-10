@@ -215,7 +215,7 @@ public function allCommandesByCaissier(Request $request, string $id)
                 ->where('caissier_id', Auth::user()->id)
                 ->with(['details','client','vendeur', 'paiements' => function($q) {
                     $q->orderBy('date', 'desc'); // Trier les paiements par date décroissante
-                }])->latest();
+                }])->latest('created_at');
             }
 
             #filtrer entre deux dates date_debut et date_fin
@@ -250,7 +250,7 @@ public function allCommandesByCaissier(Request $request, string $id)
                 ->where('created_at','>=',now()->subMonth())
                 ->where('caissier_id', Auth::user()->id)
                 ->with(['details.produit', 'client', 'vendeur'])
-                ->latest()
+                ->latest('created_at')
                 ->paginate(10));
         } catch (\Throwable $th) {
             return response()->json([
