@@ -15,7 +15,7 @@ class Commande extends Model
 
     public $incrementing = false;
     protected $keyType = 'string';
-    
+
     protected $fillable = [
         'client_id',
         'vendeur_id',
@@ -110,6 +110,11 @@ class Commande extends Model
     public function caissier(): BelongsTo
     {
         return $this->belongsTo(User::class, 'caissier_id');
+    }
+
+    public function dernierPaiement()
+    {
+        return $this->hasOne(Paiement::class)->latestOfMany();
     }
 
 }

@@ -94,7 +94,7 @@ class CommandeController extends Controller
                 ->whereNotNull('montant_a_encaisser')
                 ->where('montant_a_encaisser', '>', 0)
                 ->whereIn('statut', ['attente', 'partiellement_payee'])
-                ->with(['details.produit', 'client', 'vendeur', 'paiements'])
+                ->with(['details.produit', 'client', 'vendeur', 'dernierPaiement'])
                 ->latest();
 
             // Recherche par N° ticket, ID, vendeur ou client

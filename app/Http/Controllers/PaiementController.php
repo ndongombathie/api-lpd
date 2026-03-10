@@ -172,6 +172,7 @@ class PaiementController extends Controller
                 'montant' => $data['montant'],
                 'type_paiement' => $data['type_paiement'] ?? null,
                 'date' => now(),
+                'somme_payees' => $totalDejaPaye + $data['montant'],
                 'caissier_id' => Auth::user()->id ?? $commande->vendeur_id,
             ]);
 
