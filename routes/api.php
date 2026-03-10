@@ -181,7 +181,7 @@ Route::middleware('auth:sanctum')->group(function () {
     #dramé
     Route::get('produits-controle-boutique', [TransfertEnAttenteController::class, 'produitsControleBoutique']);
     Route::get('produits-controle-depots', [TransfertEnAttenteController::class, 'produitsControleDepots']);
-
+    Route::get('produits-disponibles-boutique/code-barre/{code}', [TransfertEnAttenteController::class, 'getProductByCode']);
 
     // ---------------- DECAISSEMENTS ----------------
 

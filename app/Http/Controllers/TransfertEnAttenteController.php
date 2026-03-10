@@ -156,15 +156,14 @@ class TransfertEnAttenteController extends Controller
         }
     }
 
-    public function showMouvementStockProduit($id)
+    #get un product buy code in transfert en attente
+    public function getProductByCode($code)
     {
         try {
-            //dd($id);
-            $transfer = TransfertEnAttente::where('status', 'valide')->where('produit_id', $id)->get()->first();
-            $transfer->produit->etat_stock = $transfer->quantite < $transfer->seuil ? true : false;
-            $transfer->produit->entree_sortie = EntreeSortieBoutique::where('produit_id', $transfer->produit_id)->get()->first();
-
-            return response()->json($transfer);
+                $transfer = TransfertEnAttente::where('status', 'valide')->whereHas('produit', function($q) use ($code) {
+                    $q->where('code', $code);
+                })->get()->first();
+                return response()->json($transfer);
         } catch (\Throwable $th) {
             return response()->json(['error' => $th->getMessage()], 500);
         }
