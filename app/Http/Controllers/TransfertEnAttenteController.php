@@ -175,19 +175,24 @@ class TransfertEnAttenteController extends Controller
     public function produitsControleDepots(Request $request)
     {
         try {
-            $produits = Produit::with(['entreees_sorties','fournisseur'])->latest('created_at');
-            #filtrer par nom et code du produit
-            if($request->filled('search')){
+            $produits = Produit::with(['entreees_sorties', 'fournisseur'])
+                        ->latest('created_at');
+            // Filtrer par nom ou code
+            if ($request->filled('search')) {
                 $search = $request->input('search');
                 $produits->where(function ($q) use ($search) {
                     $q->where('nom', 'like', "%{$search}%")
-                        ->orWhere('code', 'like', "%{$search}%");
+                    ->orWhere('code', 'like', "%{$search}%");
                 });
             }
+            // Récupérer les produits
+            $produits = $produits->get();
+            // Ajouter l'état du stock
             $produits->each(function($produit) {
-                $produit->etat_stock = $produit->quantite < $produit->stock_seuil ? true : false;
+                $produit->etat_stock = $produit->quantite < $produit->stock_seuil;
             });
             return response()->json($produits);
+
         } catch (\Throwable $th) {
             return response()->json(['error' => $th->getMessage()], 500);
         }
