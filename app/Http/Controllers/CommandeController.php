@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Carbon;
 
 class CommandeController extends Controller
 {
@@ -94,8 +95,10 @@ class CommandeController extends Controller
                 ->whereNotNull('montant_a_encaisser')
                 ->where('montant_a_encaisser', '>', 0)
                 ->whereIn('statut', ['attente', 'partiellement_payee'])
-                ->with(['details.produit', 'client', 'vendeur', 'dernierPaiement'])
-                ->latest();
+                ->with(['details.produit', 'client', 'vendeur', 'paiements' => function($q) {
+                    $q->orderBy('date', 'desc');
+                }])
+                ->latest('created_at');
 
             // Recherche par N° ticket, ID, vendeur ou client
             if (strlen(trim($search)) >= 2) {
@@ -135,13 +138,16 @@ class CommandeController extends Controller
     #la liste de toutes les commandes et  pour un caissier donnees
 public function allCommandesByCaissier(Request $request, string $id)
 {
+   
     $commandes = Commande::with(['details.produit', 'client', 'vendeur', 'paiements'])
+        ->whereDate('created_at', Carbon::parse($request->input('date'))->format('Y-m-d'))
         ->where('caissier_id', $id)
         ->whereIn('statut', ['payee', 'partiellement_payee', 'annulee'])
         ->get();
 
     $decaissements = \App\Models\Decaissement::with('caissier')
         ->where('caissier_id', $id)
+        ->whereDate('created_at', Carbon::parse($request->input('date'))->format('Y-m-d'))
         ->get();
 
     $historique = collect();
