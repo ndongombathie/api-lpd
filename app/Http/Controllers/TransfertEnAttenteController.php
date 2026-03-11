@@ -160,7 +160,7 @@ class TransfertEnAttenteController extends Controller
     public function getProductByCode($code)
     {
         try {
-                $transfer = TransfertEnAttente::with('produit')
+                $transfer = TransfertEnAttente::with('produit.categorie')
                 ->where('status', 'valide')
                 ->where('quantite','>',0)
                 ->whereHas('produit', function($q) use ($code) {
@@ -172,10 +172,18 @@ class TransfertEnAttenteController extends Controller
         }
     }
 
-    public function produitsControleDepots()
+    public function produitsControleDepots(Request $request)
     {
         try {
-            $produits = Produit::with(['entreees_sorties','fournisseur'])->paginate(10);
+            $produits = Produit::with(['entreees_sorties','fournisseur'])->latest('created_at');
+            #filtrer par nom et code du produit
+            if($request->filled('search')){
+                $search = $request->input('search');
+                $produits->where(function ($q) use ($search) {
+                    $q->where('nom', 'like', "%{$search}%")
+                        ->orWhere('code', 'like', "%{$search}%");
+                });
+            }
             $produits->each(function($produit) {
                 $produit->etat_stock = $produit->quantite < $produit->stock_seuil ? true : false;
             });
