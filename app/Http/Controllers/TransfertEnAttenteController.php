@@ -185,13 +185,11 @@ class TransfertEnAttenteController extends Controller
                     ->orWhere('code', 'like', "%{$search}%");
                 });
             }
-            // Récupérer les produits
-            $produits = $produits->get();
             // Ajouter l'état du stock
             $produits->each(function($produit) {
                 $produit->etat_stock = $produit->quantite < $produit->stock_seuil;
             });
-            return response()->json($produits);
+            return response()->json($produits->paginate(10));
 
         } catch (\Throwable $th) {
             return response()->json(['error' => $th->getMessage()], 500);
