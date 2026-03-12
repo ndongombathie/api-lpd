@@ -110,7 +110,7 @@ class UserController extends Controller
 
             $plainPassword = $data['nom']."124";
             $data['password']=bcrypt($plainPassword);
-            $data['boutique_id']=Auth::user()->id;
+            $data['boutique_id']=Auth::user()->boutique_id;
             $user = User::create($data);
 
             // Envoyer les identifiants par email

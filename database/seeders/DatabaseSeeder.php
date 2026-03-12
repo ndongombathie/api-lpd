@@ -33,7 +33,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $boutiques = Boutique::factory()->count(2)->create();
+        $boutiques = Boutique::factory()->count(1)->create();
 
         $premiereBoutique = $boutiques->first();
 
@@ -119,7 +119,7 @@ class DatabaseSeeder extends Seeder
                 $commande->statut = 'payee';
             } elseif ($total > 0) {
                 $commande->statut = 'valide';
-            } 
+            }
 
             $commande->save();
         });
