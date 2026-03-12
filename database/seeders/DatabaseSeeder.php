@@ -39,9 +39,9 @@ class DatabaseSeeder extends Seeder
 
         // Admin par défaut
         User::factory()->create([
-            'nom' => 'Admin',
-            'prenom' => 'Global',
-            'email' => 'ndongo@example.com',
+            'nom' => 'Comptable',
+            'prenom' => 'LPD',
+            'email' => 'comptable@lpd.com',
             'role' => 'comptable',
             'boutique_id' => optional($premiereBoutique)->id,
             'adresse' => 'Siège',
@@ -52,10 +52,10 @@ class DatabaseSeeder extends Seeder
 
         // Caissier de test (interface caissier)
         User::factory()->create([
-            'nom' => 'Caissier',
+            'nom' => 'Responsable',
             'prenom' => 'LPD',
-            'email' => 'caissier@lpd.com',
-            'role' => 'caissier',
+            'email' => 'responsable@lpd.com',
+            'role' => 'responsable',
             'boutique_id' => optional($premiereBoutique)->id,
             'adresse' => 'Caisse',
             'telephone' => '+237600000001',
@@ -63,7 +63,7 @@ class DatabaseSeeder extends Seeder
             'password' => 'password',
         ]);
 
-        // Données de base
+        /* // Données de base
         Categorie::factory()->count(100)->create();
         Produit::factory()->count(100)->create();
         Client::factory()->count(200)->create();
@@ -119,12 +119,12 @@ class DatabaseSeeder extends Seeder
                 $commande->statut = 'payee';
             } elseif ($total > 0) {
                 $commande->statut = 'valide';
-            } */
+            } 
 
             $commande->save();
         });
 
-        // Mouvements de stock
+        /* // Mouvements de stock
         MouvementStock::factory()->count(100)->create();
 
         // Décaisements
@@ -134,7 +134,7 @@ class DatabaseSeeder extends Seeder
         EntreeSortie::factory()->count(100)->create();
         EntreeSortieBoutique::factory()->count(100)->create();
         Inventaire::factory()->count(100)->create();
-        CaissierCaisseJournal::factory()->count(100)->create();
+        CaissierCaisseJournal::factory()->count(100)->create(); */
 
     }
 
