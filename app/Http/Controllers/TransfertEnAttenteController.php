@@ -277,7 +277,7 @@ class TransfertEnAttenteController extends Controller
             $transfer->prix_seuil_detail = $request->prix_seuil_detail;
             $transfer->prix_seuil_gros = $request->prix_seuil_gros;
             $transfer->save();
-           event(new TransfertValidee($transfer, Auth::user()->boutique_id));
+            event(new TransfertValidee($transfer, Auth::user()->boutique_id));
             return response()->json($transfer);
       } catch (\Throwable $th) {
         return response()->json(['error' => $th->getMessage()], 500);
@@ -323,6 +323,33 @@ class TransfertEnAttenteController extends Controller
             return response()->json(['message' => $th->getMessage()], 500);
         }
     }
+
+    #nombre de transfert valide
+    public function nombreTransfertValide(){
+        try {
+            return response()->json(TransfertEnAttente::where('status','valide')->count());
+        } catch (\Throwable $th) {
+            return response()->json(['message' => $th->getMessage()], 500);
+        }
+    }
+    #nombre de transfert en attente
+    public function nombreTransfertEnAttente(){
+        try {
+            return response()->json(TransfertEnAttente::where('status','en_attente')->count());
+        } catch (\Throwable $th) {
+            return response()->json(['message' => $th->getMessage()], 500);
+        }
+    }
+    #nombre total entree y compris les validee et attente
+    public function nombreTransfertTotal(){
+        try {
+            return response()->json(TransfertEnAttente::count());
+        } catch (\Throwable $th) {
+            return response()->json(['message' => $th->getMessage()], 500);
+        }
+    }
+
+
 
 
 
