@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('detail_commandes', function (Blueprint $table) {
-            //
+            $table->foreignUuid('transfert_en_attente_id')->nullable()->constrained('transfert_en_attentes')->onDelete('cascade');
         });
     }
 
@@ -22,7 +22,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('detail_commandes', function (Blueprint $table) {
-            //
+            $table->dropForeign(['transfert_en_attente_id']);
+            $table->dropColumn('transfert_en_attente_id');
         });
     }
 };
