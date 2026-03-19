@@ -18,6 +18,7 @@ class TransfertEnAttente extends Model
         'quantite',
         'nombre_carton',
         'seuil',
+        'quantite_initial',
         'status',
         'prix_unite_carton',
         'prix_vente_detail',

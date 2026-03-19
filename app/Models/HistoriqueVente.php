@@ -18,6 +18,7 @@ class HistoriqueVente extends Model
         'vendeur_id',
         'produit_id',
         'quantite',
+        'transfert_en_attente_id',
         'prix_unitaire',
         'montant',
         'date',
