@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\Produit;
 use App\Models\User;
+use App\Models\TransfertEnAttente;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -20,6 +21,7 @@ class HistoriqueVenteFactory extends Factory
     {
         return [
             'vendeur_id' => User::where('role', 'vendeur')->inRandomOrder()->first()->id,
+            'transfert_en_attente_id' => TransfertEnAttente::inRandomOrder()->first()->id,
             'produit_id' => Produit::inRandomOrder()->first()->id,
             'quantite' => $this->faker->numberBetween(1, 100),
             'prix_unitaire' => $this->faker->numberBetween(10, 1000),

@@ -218,7 +218,7 @@ public function allCommandesByCaissier(Request $request, string $id)
             }else
             {
                 $commandes = Commande::query()
-                ->where('statut', 'payee')
+                ->whereIn('statut', ['payee', 'partiellement_payee'])
                 ->where('caissier_id', Auth::user()->id)
                 ->with(['details','client','vendeur', 'paiements' => function($q) {
                     $q->orderBy('date', 'desc'); // Trier les paiements par date décroissante

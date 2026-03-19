@@ -63,7 +63,7 @@ class DatabaseSeeder extends Seeder
             'password' => 'password',
         ]);
 
-        /* // Données de base
+        // Données de base
         Categorie::factory()->count(100)->create();
         Produit::factory()->count(100)->create();
         Client::factory()->count(200)->create();
@@ -115,7 +115,7 @@ class DatabaseSeeder extends Seeder
             }
 
             // Statut basé sur paiements
-            /* if ($reste <= 0 && $total > 0) {
+            if ($reste <= 0 && $total > 0) {
                 $commande->statut = 'payee';
             } elseif ($total > 0) {
                 $commande->statut = 'valide';
@@ -124,7 +124,7 @@ class DatabaseSeeder extends Seeder
             $commande->save();
         });
 
-        /* // Mouvements de stock
+        // Mouvements de stock
         MouvementStock::factory()->count(100)->create();
 
         // Décaisements
@@ -134,7 +134,7 @@ class DatabaseSeeder extends Seeder
         EntreeSortie::factory()->count(100)->create();
         EntreeSortieBoutique::factory()->count(100)->create();
         Inventaire::factory()->count(100)->create();
-        CaissierCaisseJournal::factory()->count(100)->create(); */
+        CaissierCaisseJournal::factory()->count(100)->create();
 
     }
 
