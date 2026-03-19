@@ -52,13 +52,13 @@ class HistoriqueVenteController extends Controller
             //dd($request);
             // Récupérer les produits vendus à la date donnée avec la quantité totale vendue
             $query = DB::table('historique_ventes')
-                ->join('transfert_en_attentes', 'historique_ventes.produit_id', '=', 'transfert_en_attentes.produit_id')
+                ->join('transfert_en_attentes', 'historique_ventes.transfert_en_attente_id', '=', 'transfert_en_attentes.id')
                 ->select(
                     'transfert_en_attentes.produit_id',
-                    'transfert_en_attentes.quantite as stock_initial',
+                    'transfert_en_attentes.quantite_initial as stock_initial',
                     DB::raw('SUM(historique_ventes.quantite) as quantite_vendue')
                 )
-                ->groupBy('transfert_en_attentes.produit_id', 'transfert_en_attentes.quantite');
+                ->groupBy('transfert_en_attentes.produit_id', 'transfert_en_attentes.quantite_initial');
 
 
             if($request->filled('date_debut')) {

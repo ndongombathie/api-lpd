@@ -70,6 +70,7 @@ class StockController extends Controller
                         'produit_id'  => $produitId,
                         'quantite' => $qte*$produit->unite_carton, // provide a default value for the NOT NULL column
                         'nombre_carton' => $qte,
+                        'quantite_initial' => $qte*$produit->unite_carton,
                     ]);
 
                 $this->EntreeSortiesBoutique($produitId,$qte);
