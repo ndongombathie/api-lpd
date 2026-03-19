@@ -7,6 +7,7 @@ use App\Models\DetailCommande;
 use App\Models\Produit;
 use App\Events\CommandeValidee;
 use App\Events\CommandeAnnulee;
+use App\Models\StockBoutique;
 use App\Models\TransfertEnAttente;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -138,7 +139,7 @@ class CommandeController extends Controller
     #la liste de toutes les commandes et  pour un caissier donnees
 public function allCommandesByCaissier(Request $request, string $id)
 {
-   
+
     $commandes = Commande::with(['details.produit', 'client', 'vendeur', 'paiements'])
         ->whereDate('created_at', Carbon::parse($request->input('date'))->format('Y-m-d'))
         ->where('caissier_id', $id)
@@ -279,7 +280,7 @@ public function allCommandesByCaissier(Request $request, string $id)
                 'type_vente' => 'nullable|in:detail,gros,mixte',
                 'tva_appliquee' => 'required|boolean',
                 'items' => 'required|array|min:1',
-                'items.*.produit_id' => 'required|uuid|exists:produits,id',
+                'items.*.id' => 'required|uuid|exists:transfert_en_attentes,id',
                 'items.*.quantite' => 'required|integer|min:1',
                 'items.*.prix_unitaire' => 'nullable|numeric',
                 'items.*.mode_vente' => 'required|in:gros,detail', // 🔥 AJOUTER
@@ -329,8 +330,7 @@ public function allCommandesByCaissier(Request $request, string $id)
                 $totalHt = 0;
 
                 foreach ($validated['items'] as $item) {
-
-                $transfert = TransfertEnAttente::where('produit_id', $item['produit_id'])
+                $transfert = TransfertEnAttente::where('id',$item['id'])
                     ->where('status', 'valide')
                     ->where('quantite', '>', 0)
                     ->orderByDesc('updated_at')
@@ -361,12 +361,12 @@ public function allCommandesByCaissier(Request $request, string $id)
 
                     DetailCommande::create([
                         'commande_id' => $commande->id,
+                        'transfert_en_attente_id' => $transfert->id,
                         'produit_id' => $transfert->produit_id,
                         'quantite' => $item['quantite'],
                         'prix_unitaire' => $prix,
                         'mode_vente' => $item['mode_vente'], // 🔥 important
                     ]);
-
 
                 }
 

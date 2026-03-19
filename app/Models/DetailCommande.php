@@ -16,6 +16,7 @@ class DetailCommande extends Model
 
     protected $fillable = [
         'commande_id',
+        'transfert_en_attente_id',
         'produit_id',
         'quantite',          // quantité logique (cartons ou unités selon type)
         'prix_unitaire',
