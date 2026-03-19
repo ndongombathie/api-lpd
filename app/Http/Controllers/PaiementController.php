@@ -174,7 +174,7 @@ class PaiementController extends Controller
                 'date' => now(),
                 'caissier_id' => Auth::user()->id ?? $commande->vendeur_id,
             ]);
-            
+
             $paiement->somme_payees = $totalDejaPaye + $data['montant'];
             $paiement->save();
 
@@ -184,8 +184,7 @@ class PaiementController extends Controller
                 $commande->loadMissing('details');
 
                 foreach ($commande->details as $detail) {
-                    $stockBoutique = StockBoutique::where('produit_id', $detail->produit_id)->first();
-                    $transfert = TransfertEnAttente::where('id', $stockBoutique->transfert_en_attente_id)
+                    $transfert = TransfertEnAttente::where('id', $detail->transfert_en_attente_id)
                         ->where('status', 'valide')
                         ->lockForUpdate()
                         ->first();
@@ -236,6 +235,7 @@ class PaiementController extends Controller
                     'vendeur_id' => $commande->vendeur_id,
                     'produit_id' => $detail->produit_id,
                     'quantite' => $detail->quantite,
+                    'transfert_en_attente_id' => $detail->transfert_en_attente_id,
                     'prix_unitaire' => $detail->prix_unitaire ?? 0,
                     'montant' => ($detail->prix_unitaire ?? 0) * $detail->quantite,
                     'date' => now()
