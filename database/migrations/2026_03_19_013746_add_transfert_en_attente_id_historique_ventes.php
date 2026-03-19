@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('historique_vente', function (Blueprint $table) {
+        Schema::table('historique_ventes', function (Blueprint $table) {
             $table->foreignUuid('transfert_en_attente_id')->nullable()->constrained('transfert_en_attentes')->onDelete('cascade');
         });
     }
@@ -21,7 +21,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('historique_vente', function (Blueprint $table) {
+        Schema::table('historique_ventes', function (Blueprint $table) {
             $table->dropForeign(['transfert_en_attente_id']);
             $table->dropColumn('transfert_en_attente_id');
         });
