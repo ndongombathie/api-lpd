@@ -294,9 +294,6 @@ public function allCommandesByCaissier(Request $request, string $id)
         }
 
         try {
-
-            return DB::transaction(function () use ($validated, $request) {
-
                 $user = $request->user();
                 $tva = $validated['tva_appliquee'] ? 0.18 : 0;
                 // 🔥 Détection automatique du type de vente
@@ -370,7 +367,8 @@ public function allCommandesByCaissier(Request $request, string $id)
 
                 }
 
-                $montantTotal = intval($totalHt + $tva);
+                $montantTotal = intval($totalHt*$tva);
+
 
                 $client = $commande->client;
 
@@ -400,8 +398,6 @@ public function allCommandesByCaissier(Request $request, string $id)
                 event(new CommandeValidee($commande));
 
                 return response()->json($commande);
-
-            });
 
         } catch (\Throwable $th) {
 
