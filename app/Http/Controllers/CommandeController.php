@@ -295,7 +295,7 @@ public function allCommandesByCaissier(Request $request, string $id)
 
         try {
                 $user = $request->user();
-                $tva = $validated['tva_appliquee'] ? 0.18 : 0;
+                $tva = $validated['tva_appliquee'] ? 0.18 : 1;
                 // 🔥 Détection automatique du type de vente
                 $modes = collect($validated['items'])
                     ->pluck('mode_vente')
