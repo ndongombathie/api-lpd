@@ -24,8 +24,14 @@ services:
     image: mysql:8
     container_name: laravel_db
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: laravel
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-root}
+      MYSQL_DATABASE: ${DB_DATABASE:-laravel}
+      DB_USERNAME: ${DB_USERNAME:-root}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
     networks:
       - laravel
 
@@ -55,3 +61,5 @@ services:
 
 networks:
   laravel:
+volumes:
+  mysql_data:
