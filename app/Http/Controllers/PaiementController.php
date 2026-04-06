@@ -129,9 +129,6 @@ class PaiementController extends Controller
             ], 400);
         }
 
-        # 🔥 TOUTE LA LOGIQUE CRITIQUE DANS TRANSACTION
-        return DB::transaction(function () use ($data, $commande, $isClientSpecial) {
-
             # 🔒 2️⃣ Lock commande
             $commande = Commande::where('id', $commande->id)
                 ->lockForUpdate()
@@ -256,20 +253,19 @@ class PaiementController extends Controller
 
             if ($resteApres == 0) {
                 $commande->update(['statut' => 'payee']);
-                $client->update([
-                    'statut' => 'paye',
-                    'solde' => 0,
-                    'dette' => 0,
-                    'total_paye' => $totalDejaPayeApres,
-                ]);
+               $client->statut = 'paye';
+                $client->solde = $resteApres;
+                $client->dette = $resteApres;
+                $client->total_paye = $totalDejaPayeApres;
+                $client->save();
+                
             } else {
                 $commande->update(['statut' => 'partiellement_payee']);
-                $client->update([
-                    'statut' => 'en_dette',
-                    'solde' => $resteApres,
-                    'dette' => $resteApres,
-                    'total_paye' => $totalDejaPayeApres,
-                ]);
+                $client->statut = 'en_dette';
+                $client->solde = $resteApres;
+                $client->dette = $resteApres;
+                $client->total_paye = $totalDejaPayeApres;
+                $client->save();
             }
 
             $commande->update([
@@ -295,7 +291,6 @@ class PaiementController extends Controller
             }
 
             return $paiement;
-        });
     }
 
     #la liste des paiement associer a une commande
