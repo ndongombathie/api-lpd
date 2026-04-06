@@ -1,11 +1,7 @@
-
-
 services:
   app:
     build: .
     container_name: laravel_app
-    volumes:
-      - ./:/var/www
     networks:
       - laravel
 
@@ -13,10 +9,11 @@ services:
     image: nginx:alpine
     container_name: laravel_web
     ports:
-      - "8000:80"
+      - "80:80"
     volumes:
-      - ./:/var/www
       - ./nginx:/etc/nginx/conf.d
+    depends_on:
+      - app
     networks:
       - laravel
 
@@ -25,11 +22,9 @@ services:
     container_name: laravel_db
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-root}
       MYSQL_DATABASE: ${DB_DATABASE:-laravel}
-      DB_USERNAME: ${DB_USERNAME:-root}
-    ports:
-      - "3306:3306"
+      MYSQL_USER: ${DB_USERNAME:-root}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-root}
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
@@ -38,28 +33,25 @@ services:
   reverb:
     build: .
     container_name: laravel_reverb
-    command: php artisan reverb:start --host=0.0.0.0 --port=8080
+    command: ["sh", "/var/www/script.sh"]
     ports:
       - "8080:8080"
-    volumes:
-      - ./:/var/www
     depends_on:
-      - app
+      - db
     networks:
       - laravel
 
   queue:
     build: .
     container_name: laravel_queue
-    command: php artisan queue:work
-    volumes:
-      - ./:/var/www
+    command: ["sh", "/var/www/script.sh"]
     depends_on:
-      - app
+      - db
     networks:
       - laravel
 
 networks:
   laravel:
+
 volumes:
   mysql_data:
