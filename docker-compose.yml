@@ -2,15 +2,21 @@ services:
   app:
     build: .
     container_name: laravel_app
+    restart: always
+    command: php-fpm -F
+    volumes:
+      - ./:/var/www
     networks:
       - laravel
 
   web:
     image: nginx:alpine
     container_name: laravel_web
+    restart: always
     ports:
       - "80:80"
     volumes:
+      - ./:/var/www
       - ./nginx:/etc/nginx/conf.d
     depends_on:
       - app
@@ -20,23 +26,26 @@ services:
   db:
     image: mysql:8
     container_name: laravel_db
+    restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
-      MYSQL_DATABASE: ${DB_DATABASE:-laravel}
-      MYSQL_USER: ${DB_USERNAME:-root}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-root}
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: laravel
     volumes:
-      - mysql_data:/var/lib/mysql
+      - db_data:/var/lib/mysql
     networks:
       - laravel
 
   reverb:
     build: .
     container_name: laravel_reverb
-    command: ["sh", "/var/www/script.sh"]
+    restart: always
+    command: php artisan reverb:start --host=0.0.0.0 --port=8080
     ports:
       - "8080:8080"
+    volumes:
+      - ./:/var/www
     depends_on:
+      - app
       - db
     networks:
       - laravel
@@ -44,8 +53,12 @@ services:
   queue:
     build: .
     container_name: laravel_queue
-    command: ["sh", "/var/www/script.sh"]
+    restart: always
+    command: php artisan queue:work
+    volumes:
+      - ./:/var/www
     depends_on:
+      - app
       - db
     networks:
       - laravel
@@ -54,4 +67,4 @@ networks:
   laravel:
 
 volumes:
-  mysql_data:
+  db_data:
