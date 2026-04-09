@@ -545,7 +545,7 @@ public function allCommandesByCaissier(Request $request, string $id)
 
         // Diffuser l'événement (sans bloquer si Reverb n'est pas disponible)
         try {
-            event(new CommandeAnnulee($commande));
+            event(new CommandeValidee($commande));
         } catch (\Exception $e) {
             // Log l'erreur mais ne bloque pas l'opération
             Log::warning('Erreur lors de la diffusion de l\'annulation: ' . $e->getMessage());
@@ -556,7 +556,7 @@ public function allCommandesByCaissier(Request $request, string $id)
             $commande->update(['statut' => 'annulee']);
             $commande->update(['total' => 0]);
             $commande->load('details', 'vendeur','client');
-            event(new CommandeAnnulee($commande));
+            event(new CommandeValidee($commande));
             return $commande;
         } catch (\Throwable $th) {
             return response()->json([
