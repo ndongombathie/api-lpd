@@ -2,7 +2,7 @@
 
 namespace App\Events;
 
-use App\Models\StockBoutique;
+use App\Models\TransfertEnAttente;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -12,7 +12,7 @@ class StockBoutiqueMisAJour implements ShouldBroadcastNow
 {
     use Dispatchable, SerializesModels;
 
-    public function __construct(public StockBoutique $stock, public string $boutique_id)
+    public function __construct(public TransfertEnAttente $stock, public string $boutique_id)
     {
         $this->stock->loadMissing(['produit']);
     }
