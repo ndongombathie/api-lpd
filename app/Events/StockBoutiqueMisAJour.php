@@ -12,14 +12,14 @@ class StockBoutiqueMisAJour implements ShouldBroadcastNow
 {
     use Dispatchable, SerializesModels;
 
-    public function __construct(public StockBoutique $stock)
+    public function __construct(public StockBoutique $stock, public string $boutique_id)
     {
         $this->stock->loadMissing(['produit']);
     }
 
     public function broadcastOn(): array
     {
-        return [new PrivateChannel('boutique.' . $this->stock->boutique_id)];
+        return [new PrivateChannel('boutique.' . $this->boutique_id)];
     }
 
     public function broadcastAs(): string
@@ -31,7 +31,7 @@ class StockBoutiqueMisAJour implements ShouldBroadcastNow
     {
         return [
             'stock' => [
-                'boutique_id' => $this->stock->boutique_id,
+                'boutique_id' => $this->boutique_id,
                 'produit_id' => $this->stock->produit_id,
                 'quantite' => $this->stock->quantite,
                 'produit' => [

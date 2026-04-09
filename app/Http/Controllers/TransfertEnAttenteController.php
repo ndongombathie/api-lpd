@@ -278,7 +278,7 @@ class TransfertEnAttenteController extends Controller
             $transfer->prix_seuil_detail = $request->prix_seuil_detail;
             $transfer->prix_seuil_gros = $request->prix_seuil_gros;
             $transfer->save();
-            event(new StockBoutiqueMisAJour($transfer));
+            event(new StockBoutiqueMisAJour($transfer, Auth::user()->boutique_id));
             return response()->json($transfer);
       } catch (\Throwable $th) {
         return response()->json(['error' => $th->getMessage()], 500);
