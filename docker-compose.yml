@@ -1,0 +1,72 @@
+services:
+  app:
+    build: .
+    container_name: lpdmanager_app
+    restart: always
+    command: php-fpm -F
+    volumes:
+      - ./:/var/www
+    networks:
+      - lpdmanager
+
+  web:
+    image: nginx:alpine
+    container_name: lpdmanager_web
+    restart: always
+    ports:
+      - "8082:80"
+    volumes:
+      - ./:/var/www
+      - ./nginx:/etc/nginx/conf.d
+    depends_on:
+      - app
+    networks:
+      - lpdmanager
+
+  db:
+    image: mysql:8
+    container_name: lpdmanager_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: 3eqNTzi7AhmaxBeaF
+      MYSQL_DATABASE: lpdmanager
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - lpdmanager
+
+  reverb:
+    build: .
+    container_name: lpdmanager_reverb
+    restart: always
+    working_dir: /var/www
+    command: php artisan reverb:start --host=0.0.0.0 --port=8080
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./:/var/www
+    depends_on:
+      - app
+      - db
+    networks:
+      - lpdmanager
+
+  queue:
+    build: .
+    container_name: lpdmanager_queue
+    restart: always
+    command: php artisan queue:work
+    volumes:
+      - ./:/var/www
+    depends_on:
+      - app
+      - db
+    networks:
+      - lpdmanager
+
+networks:
+  lpdmanager:
+
+volumes:
+  db_data:
+
