@@ -190,7 +190,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
 
-    // ---------------- DECAISSEMENTS -------------
+    // ---------------- DECAISSEMENTS ----------
 
     Route::get('decaissements/export', [DecaissementController::class, 'exportAll']);
     Route::get('decaissements/stats', [DecaissementController::class, 'stats']);
