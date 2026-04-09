@@ -63,79 +63,42 @@ class DatabaseSeeder extends Seeder
             'password' => 'password',
         ]);
 
-        // Données de base
-        Categorie::factory()->count(100)->create();
-        Produit::factory()->count(100)->create();
-        Client::factory()->count(200)->create();
-        Fournisseur::factory()->count(50)->create();
-        Transfer::factory()->count(2000)->create();
-        TransfertEnAttente::factory()->count(2000)->create();
-
-
-        // Stock initial par boutique
-        $this->call(StockBoutiqueSeeder::class);
-
-        // Quelques vendeurs rattachés aux boutiques
-        $vendeurs = User::factory()->count(5)->create()->each(function (User $u) use ($boutiques) {
-            $u->boutique_id = $boutiques->random()->id;
-            $u->save();
-        });
-
-        // Commandes avec détails et paiements
-        $commandes = Commande::factory()->count(30)->create([
-            'vendeur_id' => fn () => ($vendeurs->isNotEmpty() ? $vendeurs->random()->id : User::inRandomOrder()->value('id')),
+        User::factory()->create([
+            'nom' => 'Caissier',
+            'prenom' => 'LPD',
+            'email' => 'caissier@lpd.com',
+            'role' => 'caissier',
+            'boutique_id' => optional($premiereBoutique)->id,
+            'adresse' => 'Caisse',
+            'telephone' => '+237600000001',
+            'numero_cni' => 'CAISSE01',
+            'password' => 'password',
         ]);
 
-        $commandes->each(function (Commande $commande) {
-            $nbLignes = fake()->numberBetween(1, 5);
-            $total = 0;
-            for ($i = 0; $i < $nbLignes; $i++) {
-                $detail = DetailCommande::factory()->make();
-                $detail->commande_id = $commande->id;
-                $detail->save();
-                $total += $detail->quantite * $detail->prix_unitaire;
-            }
+        User::factory()->create([
+            'nom' => 'Vendeur',
+            'prenom' => 'LPD',
+            'email' => 'vendeur@lpd.com',
+            'role' => 'vendeur',
+            'boutique_id' => optional($premiereBoutique)->id,
+            'adresse' => 'Vendeur',
+            'telephone' => '+237600000001',
+            'numero_cni' => 'CAISSE01',
+            'password' => 'password',
+        ]);
 
-            // Mettre à jour le total
-            $commande->total = $total;
-
-            // Paiements (0 à 2 paiements)
-            $nbPaiements = fake()->numberBetween(0, 2);
-            $reste = $total;
-            for ($j = 0; $j < $nbPaiements; $j++) {
-                $montant = $j + 1 === $nbPaiements
-                    ? fake()->numberBetween(0, $reste)
-                    : fake()->numberBetween(0, (int) floor($reste * 0.7));
-                Paiement::factory()->create([
-                    'commande_id' => $commande->id,
-                    'montant' => $montant,
-                    'reste_du' => max(0, $reste - $montant),
-                ]);
-                $reste -= $montant;
-            }
-
-            // Statut basé sur paiements
-            if ($reste <= 0 && $total > 0) {
-                $commande->statut = 'payee';
-            } elseif ($total > 0) {
-                $commande->statut = 'valide';
-            }
-
-            $commande->save();
-        });
-
-        // Mouvements de stock
-        MouvementStock::factory()->count(100)->create();
-
-        // Décaisements
-        Decaissement::factory()->count(100)->create();
-        HistoriqueVente::factory()->count(100)->create();
-        HistoriqueAction::factory()->count(100)->create();
-        EntreeSortie::factory()->count(100)->create();
-        EntreeSortieBoutique::factory()->count(100)->create();
-        Inventaire::factory()->count(100)->create();
-        CaissierCaisseJournal::factory()->count(100)->create();
-
+        User::factory()->create([
+            'nom' => 'gestionnaire boutique',
+            'prenom' => 'LPD',
+            'email' => 'gestionnaire_boutique@lpd.com',
+            'role' => 'gestionnaire_boutique',
+            'boutique_id' => optional($premiereBoutique)->id,
+            'adresse' => 'Gestionnaire',
+            'telephone' => '+237600000001',
+            'numero_cni' => 'CAISSE01',
+            'password' => 'password',
+        ]);
     }
 
 }
+
