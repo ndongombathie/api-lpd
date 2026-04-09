@@ -84,7 +84,7 @@ class MouvementSockController extends Controller
                 $entrees=EntreeSortie::where('produit_id',$item->id)->get()->first();
                 $item->categorie = $item->categorie_id ? Categorie::find($item->categorie_id)->nom : null;
                 $item->stock_restant = $item->total_entree - $item->total_sortie < 0 ? 0 : $item->total_entree - $item->total_sortie;
-                $prix = $item->prix_achat > 0 ? $item->prix_achat : 0;
+                $prix = $item->prix_unite_carton > 0 ? $item->prix_unite_carton : 0;
                 $item->valeur_sortie = $item->total_sortie * $prix;
                 $item->valeur_estimee = $item->stock_restant * $prix;
                 $item->nombre_app=$entrees?-> nombre_fois ?? 0;
@@ -107,7 +107,7 @@ class MouvementSockController extends Controller
                 $entree = (int) $item->total_entree;
                 $sortie = (int) $item->total_sortie;
                 $stock  = (int) $item->stock_restant;
-                $prix   = (float) $item->prix_achat;
+                $prix   = (float) $item->prix_unite_carton;
 
                 $carry['prix_achat_total'] += $entree * $prix;
                 $carry['prix_valeur_sortie_total'] += $sortie * $prix;
@@ -122,7 +122,7 @@ class MouvementSockController extends Controller
                 ]);
 
                 $total['benefice_total'] =
-                    $total['prix_valeur_sortie_total'] - $total['prix_achat_total'];
+                     $total['prix_achat_total'] - $total['prix_valeur_sortie_total'] ;
 
                 Inventaire::create([
                     'type' => 'Depot',

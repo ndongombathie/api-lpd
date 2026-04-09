@@ -63,6 +63,42 @@ class DatabaseSeeder extends Seeder
             'password' => 'password',
         ]);
 
+        User::factory()->create([
+            'nom' => 'Caissier',
+            'prenom' => 'LPD',
+            'email' => 'caissier@lpd.com',
+            'role' => 'caissier',
+            'boutique_id' => optional($premiereBoutique)->id,
+            'adresse' => 'Caisse',
+            'telephone' => '+237600000001',
+            'numero_cni' => 'CAISSE01',
+            'password' => 'password',
+        ]);
+
+        User::factory()->create([
+            'nom' => 'Vendeur',
+            'prenom' => 'LPD',
+            'email' => 'vendeur@lpd.com',
+            'role' => 'vendeur',
+            'boutique_id' => optional($premiereBoutique)->id,
+            'adresse' => 'Vendeur',
+            'telephone' => '+237600000001',
+            'numero_cni' => 'CAISSE01',
+            'password' => 'password',
+        ]);
+
+        User::factory()->create([
+            'nom' => 'Vendeur',
+            'prenom' => 'LPD',
+            'email' => 'vendeur@lpd.com',
+            'role' => 'vendeur',
+            'boutique_id' => optional($premiereBoutique)->id,
+            'adresse' => 'Vendeur',
+            'telephone' => '+237600000001',
+            'numero_cni' => 'CAISSE01',
+            'password' => 'password',
+        ]);
+
         // Données de base
         Categorie::factory()->count(100)->create();
         Produit::factory()->count(100)->create();
