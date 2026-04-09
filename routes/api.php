@@ -183,14 +183,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('produits-controle-depots', [TransfertEnAttenteController::class, 'produitsControleDepots']);
     Route::get('produits-disponibles-boutique/code-barre/{code}', [TransfertEnAttenteController::class, 'getProductByCode']);
 
-    
+
     Route::get('nombre-transfert-valide', [TransfertEnAttenteController::class, 'nombreTransfertValide']);
     Route::get('nombre-transfert-en-attente', [TransfertEnAttenteController::class, 'nombreTransfertEnAttente']);
     Route::get('nombre-transfert-total', [TransfertEnAttenteController::class, 'nombreTransfertTotal']);
 
 
 
-    // ---------------- DECAISSEMENTS ----------------
+    // ---------------- DECAISSEMENTS -------------
 
     Route::get('decaissements/export', [DecaissementController::class, 'exportAll']);
     Route::get('decaissements/stats', [DecaissementController::class, 'stats']);
