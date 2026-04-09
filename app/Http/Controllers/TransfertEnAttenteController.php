@@ -10,6 +10,7 @@ use App\Models\Transfer;
 use App\Http\Requests\StoreTransfertEnAttenteRequest;
 use App\Http\Requests\UpdateTransfertEnAttenteRequest;
 use App\Events\TransfertValidee;
+use App\Events\StockBoutiqueMisAJour;
 use Illuminate\Support\Facades\Auth;
 
 class TransfertEnAttenteController extends Controller
@@ -277,7 +278,7 @@ class TransfertEnAttenteController extends Controller
             $transfer->prix_seuil_detail = $request->prix_seuil_detail;
             $transfer->prix_seuil_gros = $request->prix_seuil_gros;
             $transfer->save();
-            event(new TransfertValidee($transfer, Auth::user()->boutique_id));
+            event(new StockBoutiqueMisAJour($transfer));
             return response()->json($transfer);
       } catch (\Throwable $th) {
         return response()->json(['error' => $th->getMessage()], 500);

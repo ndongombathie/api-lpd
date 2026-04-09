@@ -194,7 +194,7 @@ class ProduitController extends Controller
             ]);
 
             $data['stock_global'] = $data['unite_carton']*$data['nombre_carton'];
-            $data['prix_total'] = $data['prix_unite_carton']*($data['nombre_carton']*$data['unite_carton']);
+            $data['prix_total'] = $data['prix_unite_carton']*($data['nombre_carton']);
             //dd($data);
             $produit = Produit::create($data);
 
