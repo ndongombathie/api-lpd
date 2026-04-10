@@ -49,45 +49,44 @@ class HistoriqueVenteController extends Controller
     {
 
         try {
-            //dd($request);
             // Récupérer les produits vendus à la date donnée avec la quantité totale vendue
             $stockSub = DB::table('transfert_en_attentes')
-    ->select(
-        'produit_id',
-        DB::raw('SUM(quantite_initial) as stock_initial')
-    )
-    ->groupBy('produit_id');
+                ->select(
+                    'produit_id',
+                    DB::raw('SUM(quantite_initial) as stock_initial')
+                )
+                ->groupBy('produit_id');
 
-$venteSub = DB::table('historique_ventes')
-    ->select(
-        'produit_id',
-        DB::raw('SUM(quantite) as quantite_vendue')
-    )
-    ->when($request->date_debut, function ($q) use ($request) {
-        $q->whereDate('date', '>=', $request->date_debut);
-    })
-    ->when($request->date_fin, function ($q) use ($request) {
-        $q->whereDate('date', '<=', $request->date_fin);
-    })
-    ->groupBy('produit_id');
+            $venteSub = DB::table('historique_ventes')
+                ->select(
+                    'produit_id',
+                    DB::raw('SUM(quantite) as quantite_vendue')
+                )
+                ->when($request->date_debut, function ($q) use ($request) {
+                    $q->whereDate('date', '>=', $request->date_debut);
+                })
+                ->when($request->date_fin, function ($q) use ($request) {
+                    $q->whereDate('date', '<=', $request->date_fin);
+                })
+                ->groupBy('produit_id');
 
-$query = DB::table('produits as p')
-    ->leftJoinSub($stockSub, 'stock', function ($join) {
-        $join->on('stock.produit_id', '=', 'p.id');
-    })
-    ->leftJoinSub($venteSub, 'vente', function ($join) {
-        $join->on('vente.produit_id', '=', 'p.id');
-    })
-    ->select(
-        'p.id as produit_id',
-        DB::raw('COALESCE(stock.stock_initial, 0) as stock_initial'),
-        DB::raw('COALESCE(vente.quantite_vendue, 0) as quantite_vendue'),
-        DB::raw('(COALESCE(stock.stock_initial, 0) - COALESCE(vente.quantite_vendue, 0)) as stock_restant'),
-        DB::raw('(COALESCE(vente.quantite_vendue, 0) * p.prix_unite_carton) as total_vendu'),
-        DB::raw('GREATEST((COALESCE(stock.stock_initial, 0) - COALESCE(vente.quantite_vendue, 0)) * p.prix_unite_carton, 0) as valeur_restante')
-    );
+            $query = DB::table('produits as p')
+                ->leftJoinSub($stockSub, 'stock', function ($join) {
+                    $join->on('stock.produit_id', '=', 'p.id');
+                })
+                ->leftJoinSub($venteSub, 'vente', function ($join) {
+                    $join->on('vente.produit_id', '=', 'p.id');
+                })
+            ->select(
+                'p.id as produit_id',
+                DB::raw('COALESCE(stock.stock_initial, 0) as stock_initial'),
+                DB::raw('COALESCE(vente.quantite_vendue, 0) as quantite_vendue'),
+                DB::raw('(COALESCE(stock.stock_initial, 0) - COALESCE(vente.quantite_vendue, 0)) as stock_restant'),
+                DB::raw('COALESCE(vente.montant, 0) as total_vendu'),
+                DB::raw('GREATEST((COALESCE(stock.stock_initial, 0) - COALESCE(vente.quantite_vendue, 0)) * p.prix_unite_carton, 0) as valeur_restante')
+            );
 
-$produits = $query->paginate(10);
+            $produits = $query->paginate(10);
 
             $ids = $produits->getCollection()->pluck('produit_id')->unique()->values();
             $produitsMap = Produit::with('entreees_sorties_boutique')
