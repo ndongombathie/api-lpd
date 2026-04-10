@@ -58,7 +58,7 @@ class HistoriqueVenteController extends Controller
                     'transfert_en_attentes.quantite_initial as stock_initial',
                     DB::raw('SUM(historique_ventes.quantite) as quantite_vendue')
                 )
-                ->groupBy('transfert_en_attentes.produit_id', 'transfert_en_attentes.quantite_initial');
+                ->groupBy('transfert_en_attentes.produit_id');
 
 
             if($request->filled('date_debut')) {
@@ -104,14 +104,14 @@ class HistoriqueVenteController extends Controller
 
                 $mouvement = $item->produit->entreees_sorties_boutique->first();
 
-                $entree = (int) ($mouvement->quantite_apres ?? 0);
-                $sortie = (int) ($mouvement->quantite_avant ?? 0);
+                $entree = (int) ($item->stock_initial ?? 0);
+                $sortie = (int) ($item->quantite_vendue ?? 0);
                 $stock  = (int) $item->total_resant;
-                $prix   = (float) $item->produit->prix_achat;
+                $prix   = (float) $item->produit->prix_unite_carton;
 
                 $carry['prix_achat_total'] += $entree * $prix;
                 $carry['prix_valeur_sortie_total'] += $sortie * $prix;
-                $carry['valeur_estimee_total'] += $stock * $prix;
+                $carry['valeur_estimee_total'] += $stock;
 
                 return $carry;
 
