@@ -89,13 +89,13 @@ $query = DB::table('produits as p')
 
 $produits = $query->paginate(10);
 
-            $ids = $produitsVendus->getCollection()->pluck('produit_id')->unique()->values();
+            $ids = $produits->getCollection()->pluck('produit_id')->unique()->values();
             $produitsMap = Produit::with('entreees_sorties_boutique')
                 ->whereIn('id', $ids)
                 ->get()
                 ->keyBy('id');
 
-            $produitsVendus->getCollection()->transform(function ($produit) use ($produitsMap) {
+            $produits->getCollection()->transform(function ($produit) use ($produitsMap) {
                 $produit->ecart = $produit->stock_initial - $produit->quantite_vendue;
                 $produit->produit = $produitsMap->get($produit->produit_id);
                 $produit->total_vendu = $produit->quantite_vendue * $produit->produit->prix_unite_carton;
@@ -104,7 +104,7 @@ $produits = $query->paginate(10);
                 return $produit;
             });
 
-            return ['produits' => $produitsVendus];
+            return ['produits' => $produits];
 
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
