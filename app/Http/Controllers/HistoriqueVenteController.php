@@ -98,7 +98,7 @@ class HistoriqueVenteController extends Controller
             $produits->getCollection()->transform(function ($produit) use ($produitsMap) {
                 $produit->ecart = $produit->stock_initial - $produit->quantite_vendue;
                 $produit->produit = $produitsMap->get($produit->produit_id);
-                $produit->total_vendu = $produit->quantite_vendue * $produit->produit->prix_unite_carton;
+                $produit->total_vendu = $produit->montant;
                 $resteBrut = ($produit->stock_initial - $produit->quantite_vendue) * $produit->produit->prix_unite_carton;
                 $produit->total_resant = $resteBrut > 0 ? $resteBrut : 0;
                 return $produit;
