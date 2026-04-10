@@ -58,7 +58,7 @@ class HistoriqueVenteController extends Controller
                     'transfert_en_attentes.quantite_initial as stock_initial',
                     DB::raw('SUM(historique_ventes.quantite) as quantite_vendue')
                 )
-                ->groupBy('transfert_en_attentes.produit_id');
+                ->groupBy('transfert_en_attentes.produit_id', 'transfert_en_attentes.quantite_initial');
 
 
             if($request->filled('date_debut')) {
