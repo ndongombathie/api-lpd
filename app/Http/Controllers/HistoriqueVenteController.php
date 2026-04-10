@@ -139,8 +139,7 @@ $produits = $query->paginate(10);
                     'valeur_estimee_total' => 0,
                 ]);
 
-                $total['benefice_total'] =
-                    $total['prix_valeur_sortie_total'] - $total['prix_achat_total'];
+                $total['benefice_total'] = $total['prix_achat_total'] - $total['prix_valeur_sortie_total'];
 
                 Inventaire::create([
                     'type' => 'Boutique',
