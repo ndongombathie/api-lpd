@@ -134,6 +134,7 @@ class HistoriqueVenteController extends Controller
                     'valeur_estimee_total' => $total['valeur_estimee_total'],
                     'benefice_total' => $total['benefice_total'],
                 ]);
+                dd($total);
 
                 return response()->json($total);
         } catch (\Throwable $th) {
