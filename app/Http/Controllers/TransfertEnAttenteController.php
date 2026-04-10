@@ -122,7 +122,7 @@ class TransfertEnAttenteController extends Controller
                 });
             }
 
-            return response()->json($transfers->paginate(4));
+            return response()->json($transfers->paginate(12));
         } catch (\Throwable $th) {
             return response()->json(['error' => $th->getMessage()], 500);
         }
