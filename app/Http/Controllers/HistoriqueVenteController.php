@@ -60,7 +60,7 @@ class HistoriqueVenteController extends Controller
             $venteSub = DB::table('historique_ventes')
                 ->select(
                     'produit_id',
-                    'montant',
+                    DB::raw('SUM(montant) as montant'),
                     DB::raw('SUM(quantite) as quantite_vendue')
                 )
                 ->when($request->date_debut, function ($q) use ($request) {
