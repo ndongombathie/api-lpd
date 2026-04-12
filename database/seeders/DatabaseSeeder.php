@@ -98,6 +98,18 @@ class DatabaseSeeder extends Seeder
             'numero_cni' => 'CAISSE01',
             'password' => 'password',
         ]);
+
+        User::factory()->create([
+            'nom' => 'gestionnaire depot',
+            'prenom' => 'LPD',
+            'email' => 'gestionnaire_depot@lpd.com',
+            'role' => 'gestionnaire_depot',
+            'boutique_id' => optional($premiereBoutique)->id,
+            'adresse' => 'Gestionnaire',
+            'telephone' => '+237600000001',
+            'numero_cni' => 'CAISSE01',
+            'password' => 'password',
+        ]);
     }
 
 }
