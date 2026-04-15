@@ -19,6 +19,7 @@ class StockBoutiqueMisAJour implements ShouldBroadcastNow
 
     public function broadcastOn(): array
     {
+        \Log::info('Broadcast sur canal: boutique.' . $this->boutique_id);
         return [new PrivateChannel('boutique.' . $this->boutique_id)];
     }
 
