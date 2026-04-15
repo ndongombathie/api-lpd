@@ -3,6 +3,7 @@
 namespace App\Events;
 
 use App\Models\StockBoutique;
+use App\Models\Produit;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -12,14 +13,14 @@ class StockRupture implements ShouldBroadcastNow
 {
     use Dispatchable, SerializesModels;
 
-    public function __construct(public StockBoutique $stock)
+    public function __construct(public Produit $produit, public string $boutique_id)
     {
-        $this->stock->loadMissing(['produit']);
+        $this->produit->loadMissing(['details']);
     }
 
     public function broadcastOn(): array
     {
-        return [new PrivateChannel('boutique.' . $this->stock->boutique_id)];
+        return [new PrivateChannel('boutique.' . $this->boutique_id)];
     }
 
     public function broadcastAs(): string
@@ -30,13 +31,12 @@ class StockRupture implements ShouldBroadcastNow
     public function broadcastWith(): array
     {
         return [
-            'stock' => [
-                'boutique_id' => $this->stock->boutique_id,
-                'produit_id' => $this->stock->produit_id,
-                'quantite' => $this->stock->quantite,
+            'produit' => [
+                'boutique_id' => $this->boutique_id,
+                'quantite' => $this->produit->stock_global,
                 'produit' => [
-                    'nom' => $this->stock->produit->nom ?? null,
-                    'code' => $this->stock->produit->code ?? null,
+                    'nom' => $this->produit->nom ?? null,
+                    'code' => $this->produit->code ?? null,
                 ],
             ],
         ];

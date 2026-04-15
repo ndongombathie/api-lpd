@@ -85,7 +85,7 @@ class StockController extends Controller
 
                 MouvementStock::firstOrCreate([
                     'source' => $sourceLabel,
-                    'destination' => 'boutique:' . Auth::user()->boutique_id,
+                    'destination' => 'Boutique',
                     'produit_id' => $produitId,
                     'quantite' => $qte,
                     'type' => 'sortie',
@@ -100,10 +100,9 @@ class StockController extends Controller
                     'action' => 'Transfert de produit',
                 ]);
 
-                if ($src->quantite <= 0) {
-                    event(new StockRupture($src->fresh()));
-                }
+                event(new StockRupture($produit,Auth::user()->boutique_id));
             }
+
             return response()->json(['message' => 'Transfert effectué']);
         }
         catch (\Exception $e) {
@@ -275,7 +274,6 @@ class StockController extends Controller
                     ]);
 
                     $this->EntreeSorties($validated['produit_id'],$validated['quantite']);
-                    event(new StockBoutiqueMisAJour($dest->fresh()));
                     return response()->json([
                         'message' => 'Réapprovisionnement effectué',
                         'quantite' => $qte,
