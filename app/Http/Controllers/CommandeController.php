@@ -199,54 +199,63 @@ public function allCommandesByCaissier(Request $request, string $id)
     #appliquer des filtre par date
     public function getCommandesValidees(Request $request){
         try {
-            if(Auth::user()->role=="comptable"){
+            if(Auth::user()->role == "comptable"){
                 $commandes = Commande::query()
-                ->where('statut', 'payee')
-                ->with(['details','client','vendeur', 'paiements' => function($q) {
-                    $q->orderBy('date', 'desc'); // Trier les paiements par date décroissante
-                }])->latest();
+                    ->where('statut', 'payee')
+                    ->with([
+                        'details',
+                        'client',
+                        'vendeur',
+                        'paiements' => function($q) {
+                            $q->orderBy('date', 'desc');
+                        }
+                    ])
+                    ->latest('created_at');
 
-                if ($request->filled('type_vente')) {
+            } else {
+                $commandes = Commande::query()
+                    ->whereIn('statut', ['payee', 'partiellement_payee'])
+                    ->where('caissier_id', Auth::user()->id)
+                    ->with([
+                        'details',
+                        'client',
+                        'vendeur',
+                        'paiements' => function($q) {
+                            $q->orderBy('date', 'desc');
+                        }
+                    ])
+                    ->latest('created_at');
+            }
+
+            // 🔹 Filtres indépendants
+            if ($request->filled('type_vente')) {
                 $commandes->where('type_vente', $request->input('type_vente'));
-                #filtrer par type_client
-                if ($request->filled('type_client')) {
-                    $commandes->whereHas('client', function($q) use ($request) {
-                        $q->where('type_client', $request->input('type_client'));
-                    });
-                }
-            }
-            }else
-            {
-                $commandes = Commande::query()
-                ->whereIn('statut', ['payee', 'partiellement_payee'])
-                ->where('caissier_id', Auth::user()->id)
-                ->with(['details','client','vendeur', 'paiements' => function($q) {
-                    $q->orderBy('date', 'desc'); // Trier les paiements par date décroissante
-                }])->latest('created_at');
             }
 
-            #filtrer entre deux dates date_debut et date_fin
+            if ($request->filled('type_client')) {
+                $commandes->whereHas('client', function($q) use ($request) {
+                    $q->where('type_client', $request->input('type_client'));
+                });
+            }
+
+            // 🔹 Filtre dates
             if ($request->filled('date_debut') && $request->filled('date_fin')) {
                 $commandes->whereBetween('date', [$request->date_debut, $request->date_fin]);
+            } elseif ($request->filled('date_debut')) {
+                $commandes->whereDate('date', '>=', $request->date_debut);
+            } elseif ($request->filled('date_fin')) {
+                $commandes->whereDate('date', '<=', $request->date_fin);
             }
-
-            else if($request->filled('date_debut')){
-                $commandes->whereDate('date', $request->date_debut);
-            }
-            else if($request->filled('date_fin')){
-                $commandes->whereDate('date', $request->date_fin);
-            }
-
-
 
             return response()->json($commandes->paginate(10));
+
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la récupération des commandes validées',
                 'error' => $th->getMessage(),
             ], 500);
         }
-    }
+  }
 
 
 
