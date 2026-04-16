@@ -25,7 +25,7 @@ class CommandeController extends Controller
                 'client',
                 'vendeur',
                 'paiements'
-            ])->latest();
+            ])->where('vendeur_id', Auth::user()->id)->latest();
 
                 if ($request->filled('client_id')) {
                     $client_id = $request->client_id;
@@ -33,7 +33,7 @@ class CommandeController extends Controller
                         $q->where('id', $client_id);
                     });
                 }
-                
+
                 if ($request->filled('type_client')) {
                     $typeClient = $request->type_client;
 
