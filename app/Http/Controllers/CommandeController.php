@@ -27,13 +27,13 @@ class CommandeController extends Controller
                 'paiements'
             ])->latest();
 
-                if ($request->filled('client')) {
-                    $clientSearch = '%' . $request->client . '%';
-                    $query->whereHas('client', function ($q) use ($clientSearch) {
-                        $q->where('nom', 'like', $clientSearch)
-                          ->orWhere('prenom', 'like', $clientSearch);
+                if ($request->filled('client_id')) {
+                    $client_id = $request->client_id;
+                    $query->whereHas('client', function ($q) use ($client_id) {
+                        $q->where('id', $client_id);
                     });
                 }
+                
                 if ($request->filled('type_client')) {
                     $typeClient = $request->type_client;
 
