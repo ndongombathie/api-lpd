@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('user', function (Blueprint $table) {
+        Schema::table('users', function (Blueprint $table) {
             $table->string('telephone_hash')->nullable()->index();
             $table->string('numero_cni_hash')->nullable()->index();
             $table->string('email_hash')->nullable()->index();
@@ -24,7 +24,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('user', function (Blueprint $table) {
+        Schema::table('users', function (Blueprint $table) {
             $table->dropColumn('telephone_hash');
             $table->dropColumn('numero_cni_hash');
             $table->dropColumn('email_hash');
