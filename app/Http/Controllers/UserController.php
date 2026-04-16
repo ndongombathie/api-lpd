@@ -158,9 +158,7 @@ class UserController extends Controller
         try {
             $user = User::findOrFail($id);
             $data = $request->all();
-            $data['numero_cni_hash'] = hash('sha256', $data['numero_cni']);
             $data['telephone_hash'] = hash('sha256', $data['telephone']);
-            $data['email_hash'] = hash('sha256', $data['email']);
             $data['adresse_hash'] = hash('sha256', $data['adresse']);
             $user->update($data);
             return response()->json($user);
