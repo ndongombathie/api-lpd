@@ -201,7 +201,7 @@ public function allCommandesByCaissier(Request $request, string $id)
         try {
             if(Auth::user()->role == "comptable"){
                 $commandes = Commande::query()
-                    ->where('statut', 'payee')
+                    ->whereIn('statut', ['payee', 'partiellement_payee'])
                     ->with([
                         'details',
                         'client',
