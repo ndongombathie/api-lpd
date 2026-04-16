@@ -56,7 +56,8 @@ class ClientController extends Controller
     // ============================================================
     public function store(Request $request)
     {
-        $request->merge([
+        try {
+           $request->merge([
             'telephone' => $this->normalizeTelephone($request->telephone),
         ]);
 
@@ -109,8 +110,15 @@ class ClientController extends Controller
 
         $client = Client::create($data);
         return response()->json($client, 201);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Erreur de la creation du client',
+                'error' => $th->getMessage(),
+            ], 400);
+        }
+
     }
-    
+
 
     // ============================================================
     // AFFICHER
