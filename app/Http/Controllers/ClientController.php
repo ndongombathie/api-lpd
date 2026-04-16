@@ -93,7 +93,6 @@ class ClientController extends Controller
 
         // Définir le type_client selon le rôle
         $data['type_client'] = Auth::user()->role === 'responsable' ? 'special' : 'normal';
-        $data['telephone_hash'] = hash('sha256', $data['telephone']);
         $data['numero_cni_hash'] = hash('sha256', $data['numero_cni']);
         $data['contact_hash'] = hash('sha256', $data['contact']);
         $data['adresse_hash'] = hash('sha256', $data['adresse']);
