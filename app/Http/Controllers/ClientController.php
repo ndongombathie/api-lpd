@@ -93,17 +93,24 @@ class ClientController extends Controller
 
         // Définir le type_client selon le rôle
         $data['type_client'] = Auth::user()->role === 'responsable' ? 'special' : 'normal';
-        $data['numero_cni_hash'] = hash('sha256', $data['numero_cni']);
-        //si contact existe, hash le contact
-        if ($data['contact']) {
-            $data['contact_hash'] = hash('sha256', $data['contact']);
-        }
 
-        $data['adresse_hash'] = hash('sha256', $data['adresse']);
+        if($data['telephone'])
+            $data['telephone_hash'] = hash('sha256', $data['telephone']);
+
+        if($data['numero_cni'])
+            $data['numero_cni_hash'] = hash('sha256', $data['numero_cni']);
+
+        //si contact existe, hash le contact
+        if ($data['contact'])
+            $data['contact_hash'] = hash('sha256', $data['contact']);
+
+        if($data['adresse'])
+            $data['adresse_hash'] = hash('sha256', $data['adresse']);
 
         $client = Client::create($data);
         return response()->json($client, 201);
     }
+    
 
     // ============================================================
     // AFFICHER
@@ -162,7 +169,7 @@ class ClientController extends Controller
         }
 
         $data['numero_cni_hash'] = hash('sha256', $data['numero_cni']);
-        
+
         if($data['contact']){
             //si contact existe, hash le contact
             $data['contact_hash'] = hash('sha256', $data['contact']);
