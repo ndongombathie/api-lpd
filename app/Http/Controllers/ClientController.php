@@ -95,17 +95,17 @@ class ClientController extends Controller
         // Définir le type_client selon le rôle
         $data['type_client'] = Auth::user()->role === 'responsable' ? 'special' : 'normal';
 
-        if($data['telephone'])
+        if(isset($data['telephone']))
             $data['telephone_hash'] = hash('sha256', $data['telephone']);
 
-        if($data['numero_cni'])
+        if(isset($data['numero_cni']))
             $data['numero_cni_hash'] = hash('sha256', $data['numero_cni']);
 
         //si contact existe, hash le contact
-        if ($data['contact'])
+        if (isset($data['contact']))
             $data['contact_hash'] = hash('sha256', $data['contact']);
 
-        if($data['adresse'])
+        if(isset($data['adresse']))
             $data['adresse_hash'] = hash('sha256', $data['adresse']);
 
         $client = Client::create($data);
@@ -175,15 +175,16 @@ class ClientController extends Controller
         if ($isResponsable && $request->filled('type_client')) {
             $client->type_client = $request->type_client;
         }
+        if(isset($data['numero_cni']))
+            $data['numero_cni_hash'] = hash('sha256', $data['numero_cni']);
 
-        $data['numero_cni_hash'] = hash('sha256', $data['numero_cni']);
-
-        if($data['contact']){
+        if(isset($data['contact'])){
             //si contact existe, hash le contact
             $data['contact_hash'] = hash('sha256', $data['contact']);
         }
 
-        $data['adresse_hash'] = hash('sha256', $data['adresse']);
+        if(isset($data['adresse']))
+            $data['adresse_hash'] = hash('sha256', $data['adresse']);
 
         $client->update($data);
 
