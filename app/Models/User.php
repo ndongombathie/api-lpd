@@ -46,6 +46,16 @@ class User extends Authenticatable
         'remember_token',
     ];
 
+    //caster encrypté
+    protected $casts = [
+        'numero_cni' => 'encrypted',
+        'telephone' => 'encrypted',
+        'email' => 'encrypted',
+        'adresse' => 'encrypted',
+    ];
+
+
+
     /**
      * Get the attributes that should be cast.
      *

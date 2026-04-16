@@ -16,7 +16,7 @@ class Client extends Model
 
     protected $fillable = [
         'nom',
-        'entreprise',   // ← AJOUTÉ
+        'entreprise',
         'prenom',
         'adresse',
         'numero_cni',
@@ -26,6 +26,12 @@ class Client extends Model
         'contact',
     ];
 
+    protected $casts = [
+        'numero_cni' => 'encrypted',
+        'telephone' => 'encrypted',
+        'contact' => 'encrypted',
+        'adresse' => 'encrypted',
+    ];
 
     public function commandes(): HasMany
     {
