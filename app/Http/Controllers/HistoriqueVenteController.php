@@ -236,7 +236,7 @@ class HistoriqueVenteController extends Controller
                 $totalVentes->whereHas('vendeur', function ($q) use ($search) {
                     $q->where('nom', 'like', "%{$search}%")
                     ->orWhere('prenom', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('email_hash', hash('sha256', $search));
                 });
             }
 

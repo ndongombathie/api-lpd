@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\UserCredentialsMail;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Commande;
+//la fonction hash sha256
+//use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
@@ -33,7 +35,7 @@ class UserController extends Controller
                 $query->where(function ($q) use ($search) {
                     $q->where('nom', 'like', "%{$search}%")
                     ->orWhere('prenom', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('email_hash', hash('sha256', $search))
                     // 🔹 recherche prénom+nom ou nom+prenom
                     ->orWhereRaw("CONCAT(prenom, ' ', nom) LIKE ?", ["%{$search}%"])
                     ->orWhereRaw("CONCAT(nom, ' ', prenom) LIKE ?", ["%{$search}%"]);
@@ -108,6 +110,11 @@ class UserController extends Controller
                 'email' => 'required|email|unique:users,email',
             ]);
 
+            $data['numero_cni_hash'] = hash('sha256', $data['numero_cni']);
+            $data['telephone_hash'] = hash('sha256', $data['telephone']);
+            $data['email_hash'] = hash('sha256', $data['email']);
+            $data['adresse_hash'] = hash('sha256', $data['adresse']);
+
             $plainPassword = $data['nom']."124";
             $data['password']=bcrypt($plainPassword);
             $data['boutique_id']=Auth::user()->boutique_id;
@@ -150,7 +157,12 @@ class UserController extends Controller
     {
         try {
             $user = User::findOrFail($id);
-            $user->update($request->all());
+            $data = $request->all();
+            $data['numero_cni_hash'] = hash('sha256', $data['numero_cni']);
+            $data['telephone_hash'] = hash('sha256', $data['telephone']);
+            $data['email_hash'] = hash('sha256', $data['email']);
+            $data['adresse_hash'] = hash('sha256', $data['adresse']);
+            $user->update($data);
             return response()->json($user);
         } catch (\Throwable $th) {
             return response()->json([

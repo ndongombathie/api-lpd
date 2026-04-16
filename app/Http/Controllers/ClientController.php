@@ -42,9 +42,9 @@ class ClientController extends Controller
 
             $query->where(function ($q) use ($s) {
                 $q->where('nom', 'like', "%{$s}%")
-                    ->orWhere('telephone', 'like', "%{$s}%")
+                    ->orWhere('telephone_hash', hash('sha256', $s))
                     ->orWhere('entreprise', 'like', "%{$s}%")
-                    ->orWhere('adresse', 'like', "%{$s}%");
+                    ->orWhere('adresse_hash', hash('sha256', $s));
             });
         }
 
@@ -93,6 +93,10 @@ class ClientController extends Controller
 
         // Définir le type_client selon le rôle
         $data['type_client'] = Auth::user()->role === 'responsable' ? 'special' : 'normal';
+        $data['telephone_hash'] = hash('sha256', $data['telephone']);
+        $data['numero_cni_hash'] = hash('sha256', $data['numero_cni']);
+        $data['contact_hash'] = hash('sha256', $data['contact']);
+        $data['adresse_hash'] = hash('sha256', $data['adresse']);
 
         $client = Client::create($data);
         return response()->json($client, 201);
@@ -153,6 +157,10 @@ class ClientController extends Controller
         if ($isResponsable && $request->filled('type_client')) {
             $client->type_client = $request->type_client;
         }
+        $data['telephone_hash'] = hash('sha256', $data['telephone']);
+        $data['numero_cni_hash'] = hash('sha256', $data['numero_cni']);
+        $data['contact_hash'] = hash('sha256', $data['contact']);
+        $data['adresse_hash'] = hash('sha256', $data['adresse']);
 
         $client->update($data);
 
@@ -396,7 +404,7 @@ class ClientController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('clients.nom', 'like', "%{$search}%")
                     ->orWhere('clients.prenom', 'like', "%{$search}%")
-                    ->orWhere('clients.telephone', 'like', "%{$search}%");
+                    ->orWhere('clients.telephone_hash', hash('sha256', $search));
             });
         }
 

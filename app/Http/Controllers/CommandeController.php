@@ -67,6 +67,7 @@ class CommandeController extends Controller
                     });
                 });
             }
+            
             $paginator = $query->paginate(10);
 
             $paginator->getCollection()->transform(function ($commande) {
