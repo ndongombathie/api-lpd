@@ -67,7 +67,7 @@ class CommandeController extends Controller
                     });
                 });
             }
-            
+
             $paginator = $query->paginate(10);
 
             $paginator->getCollection()->transform(function ($commande) {
@@ -343,6 +343,10 @@ public function allCommandesByCaissier(Request $request, string $id)
                     ->orderByDesc('updated_at')
                     ->lockForUpdate()
                     ->firstOrFail();
+
+                if (!$transfert) {
+                    throw new \Exception('stock insuffisant en boutique.'.$transfert->produit->nom);
+                }
 
                 # 🔧 Conversion en unités réelles
                 if ($item['mode_vente'] === 'gros') {
