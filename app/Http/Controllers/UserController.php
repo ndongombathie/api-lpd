@@ -120,7 +120,6 @@ class UserController extends Controller
             $data['numero_cni_hash'] = hash('sha256', $data['numero_cni']);
             $data['email_hash'] = hash('sha256', $data['email']);
             $data['adresse_hash'] = hash('sha256', $data['adresse']);
-
             $data['telephone_hash'] = !empty($data['telephone'])
                 ? hash('sha256', $data['telephone'])
                 : null;
