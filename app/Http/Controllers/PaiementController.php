@@ -112,185 +112,190 @@ class PaiementController extends Controller
      */
     public function store(Request $request, string $commandeId)
     {
-        # 1️⃣ Validation basique
-        $data = $request->validate([
-            'montant' => 'required|numeric|min:0.01',
-            'type_paiement' => 'nullable|string',
-        ]);
 
-        $commande = Commande::findOrFail($commandeId);
-        $commande->loadMissing('client');
+        try {
+            # 1️⃣ Validation basique
+            $data = $request->validate([
+                'montant' => 'required|numeric|min:0.01',
+                'type_paiement' => 'nullable|string',
+            ]);
 
-        $isClientSpecial = optional($commande->client)->type_client === 'special';
+            $commande = Commande::findOrFail($commandeId);
+            $commande->loadMissing('client');
 
-        if (!in_array($commande->statut, ['attente','partiellement_payee'])) {
-            return response()->json([
-                'message' => 'Cette commande ne peut plus recevoir de paiement',
-            ], 400);
+            $isClientSpecial = optional($commande->client)->type_client === 'special';
+
+            if (!in_array($commande->statut, ['attente','partiellement_payee'])) {
+                return response()->json([
+                    'message' => 'Cette commande ne peut plus recevoir de paiement',
+                ], 400);
+            }
+
+                # 🔒 2️⃣ Lock commande
+                $commande = Commande::where('id', $commande->id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$commande) {
+                    throw new \Exception("Commande introuvable.");
+                }
+
+                # 🔄 3️⃣ Recalcul total payé APRÈS lock
+                $totalDejaPaye = Paiement::where('commande_id', $commande->id)
+                    ->lockForUpdate()
+                    ->sum('montant');
+
+                $resteAvant = max(0, $commande->total - $totalDejaPaye);
+
+                # ✅ 4️⃣ Validation montant sécurisée
+                if ($isClientSpecial) {
+
+                    if ($commande->montant_a_encaisser === null) {
+                        throw new \Exception("Aucune tranche envoyée à la caisse.");
+                    }
+
+                    if ($data['montant'] !== $commande->montant_a_encaisser) {
+                        throw new \Exception("Le montant doit être égal à la tranche envoyée.");
+                    }
+
+                } else {
+
+                    if ($data['montant'] !== $resteAvant) {
+                        throw new \Exception("Le client doit payer le montant restant exact.");
+                    }
+                }
+
+                # 5️⃣ Création paiement
+                $paiement = Paiement::create([
+                    'commande_id' => $commande->id,
+                    'montant' => $data['montant'],
+                    'type_paiement' => $data['type_paiement'] ?? null,
+                    'date' => now(),
+                    'caissier_id' => Auth::user()->id ?? $commande->vendeur_id,
+                ]);
+
+                $paiement->somme_payees = $totalDejaPaye + $data['montant'];
+                $paiement->save();
+
+                # 🔥 6️⃣ PREMIER PAIEMENT → DÉCRÉMENTATION STOCK
+                if ($totalDejaPaye == 0) {
+
+                    $commande->loadMissing('details');
+
+                    foreach ($commande->details as $detail) {
+                        $transfert = TransfertEnAttente::where('id', $detail->transfert_en_attente_id)
+                            ->where('status', 'valide')
+                            ->lockForUpdate()
+                            ->first();
+
+                        if (!$transfert) {
+                            throw new \Exception("Transfert valide introuvable.");
+                        }
+
+                        $produit = $transfert->produit;
+
+                        if (!$produit) {
+                            throw new \Exception("Produit introuvable.");
+                        }
+
+                        # 🔧 Calcul unités
+                        if ($detail->mode_vente === 'gros') {
+                            $unitesASortir = $detail->quantite * $produit->unite_carton;
+                        } else {
+                            $unitesASortir = $detail->quantite;
+                        }
+
+                        if ($transfert->quantite < $unitesASortir) {
+                            throw new \Exception("Stock boutique insuffisant.");
+                        }
+
+                        # 🔻 Décrémentation
+                        $transfert->quantite -= $unitesASortir;
+
+                        # 🔁 Recalcul cartons
+                        $transfert->nombre_carton = intdiv(
+                            $transfert->quantite,
+                            $produit->unite_carton
+                        );
+
+                        $transfert->save();
+
+                        # 🚨 Rupture
+                        if ($transfert->quantite <= 0) {
+                            event(new StockRupture($transfert->produit));
+                        }
+
+                        # ⚠️ Sous seuil
+                        if ($transfert->quantite <= $transfert->seuil) {
+                            Log::warning("Produit sous seuil : ".$produit->nom);
+                        }
+
+                        HistoriqueVente::create([
+                        'vendeur_id' => $commande->vendeur_id,
+                        'produit_id' => $detail->produit_id,
+                        'quantite' => $detail->quantite,
+                        'transfert_en_attente_id' => $detail->transfert_en_attente_id,
+                        'prix_unitaire' => $detail->prix_unitaire ?? 0,
+                        'montant' => ($detail->prix_unitaire ?? 0) * $detail->quantite,
+                        'date' => now()
+                        ]);
+                    }
+                }
+
+                # 7️⃣ Recalcul reste après paiement
+                $totalDejaPayeApres = Paiement::where('commande_id', $commande->id)->sum('montant');
+                $resteApres = max(0, $commande->total - $totalDejaPayeApres);
+
+                $paiement->update([
+                    'reste_du' => $resteApres
+                ]);
+
+                # 8️⃣ Mise à jour statut
+                $client = $commande->client;
+
+                if ($resteApres == 0) {
+                    $commande->update(['statut' => 'payee']);
+                $client->statut = 'paye';
+                    $client->solde = $resteApres;
+                    $client->dette = $resteApres;
+                    $client->total_paye = $totalDejaPayeApres;
+                    $client->save();
+
+                } else {
+                    $commande->update(['statut' => 'partiellement_payee']);
+                    $client->statut = 'en_dette';
+                    $client->solde = $resteApres;
+                    $client->dette = $resteApres;
+                    $client->total_paye = $totalDejaPayeApres;
+                    $client->save();
+                }
+
+                $commande->update([
+                    'montant_a_encaisser' => null,
+                    'caissier_id' => Auth::user()->id ?? $commande->vendeur_id
+                ]);
+
+                # 9️⃣ Facture
+                $facture = Facture::firstOrCreate(
+                    ['commande_id' => $commande->id],
+                    [
+                        'total' => $commande->total,
+                        'mode_paiement' => $paiement->type_paiement,
+                        'date' => now(),
+                    ]
+                );
+        } catch (\Throwable $th) {
+            return response()->json(['error' => $th->getMessage()], 500);
         }
 
-            # 🔒 2️⃣ Lock commande
-            $commande = Commande::where('id', $commande->id)
-                ->lockForUpdate()
-                ->first();
+        try {
+            event(new PaiementCree($paiement));
+            event(new FactureCree($facture));
+        } catch (\Exception $e) {
+            Log::warning('Erreur events: '.$e->getMessage());
+        }
 
-            if (!$commande) {
-                throw new \Exception("Commande introuvable.");
-            }
-
-            # 🔄 3️⃣ Recalcul total payé APRÈS lock
-            $totalDejaPaye = Paiement::where('commande_id', $commande->id)
-                ->lockForUpdate()
-                ->sum('montant');
-
-            $resteAvant = max(0, $commande->total - $totalDejaPaye);
-
-            # ✅ 4️⃣ Validation montant sécurisée
-            if ($isClientSpecial) {
-
-                if ($commande->montant_a_encaisser === null) {
-                    throw new \Exception("Aucune tranche envoyée à la caisse.");
-                }
-
-                if ($data['montant'] !== $commande->montant_a_encaisser) {
-                    throw new \Exception("Le montant doit être égal à la tranche envoyée.");
-                }
-
-            } else {
-
-                if ($data['montant'] !== $resteAvant) {
-                    throw new \Exception("Le client doit payer le montant restant exact.");
-                }
-            }
-
-            # 5️⃣ Création paiement
-            $paiement = Paiement::create([
-                'commande_id' => $commande->id,
-                'montant' => $data['montant'],
-                'type_paiement' => $data['type_paiement'] ?? null,
-                'date' => now(),
-                'caissier_id' => Auth::user()->id ?? $commande->vendeur_id,
-            ]);
-
-            $paiement->somme_payees = $totalDejaPaye + $data['montant'];
-            $paiement->save();
-
-            # 🔥 6️⃣ PREMIER PAIEMENT → DÉCRÉMENTATION STOCK
-            if ($totalDejaPaye == 0) {
-
-                $commande->loadMissing('details');
-
-                foreach ($commande->details as $detail) {
-                    $transfert = TransfertEnAttente::where('id', $detail->transfert_en_attente_id)
-                        ->where('status', 'valide')
-                        ->lockForUpdate()
-                        ->first();
-
-                    if (!$transfert) {
-                        throw new \Exception("Transfert valide introuvable.");
-                    }
-
-                    $produit = $transfert->produit;
-
-                    if (!$produit) {
-                        throw new \Exception("Produit introuvable.");
-                    }
-
-                    # 🔧 Calcul unités
-                    if ($detail->mode_vente === 'gros') {
-                        $unitesASortir = $detail->quantite * $produit->unite_carton;
-                    } else {
-                        $unitesASortir = $detail->quantite;
-                    }
-
-                    if ($transfert->quantite < $unitesASortir) {
-                        throw new \Exception("Stock boutique insuffisant.");
-                    }
-
-                    # 🔻 Décrémentation
-                    $transfert->quantite -= $unitesASortir;
-
-                    # 🔁 Recalcul cartons
-                    $transfert->nombre_carton = intdiv(
-                        $transfert->quantite,
-                        $produit->unite_carton
-                    );
-
-                    $transfert->save();
-
-                    # 🚨 Rupture
-                    if ($transfert->quantite <= 0) {
-                        event(new StockRupture($transfert->produit));
-                    }
-
-                    # ⚠️ Sous seuil
-                    if ($transfert->quantite <= $transfert->seuil) {
-                        Log::warning("Produit sous seuil : ".$produit->nom);
-                    }
-
-                    HistoriqueVente::create([
-                    'vendeur_id' => $commande->vendeur_id,
-                    'produit_id' => $detail->produit_id,
-                    'quantite' => $detail->quantite,
-                    'transfert_en_attente_id' => $detail->transfert_en_attente_id,
-                    'prix_unitaire' => $detail->prix_unitaire ?? 0,
-                    'montant' => ($detail->prix_unitaire ?? 0) * $detail->quantite,
-                    'date' => now()
-                    ]);
-                }
-            }
-
-            # 7️⃣ Recalcul reste après paiement
-            $totalDejaPayeApres = Paiement::where('commande_id', $commande->id)->sum('montant');
-            $resteApres = max(0, $commande->total - $totalDejaPayeApres);
-
-            $paiement->update([
-                'reste_du' => $resteApres
-            ]);
-
-            # 8️⃣ Mise à jour statut
-            $client = $commande->client;
-
-            if ($resteApres == 0) {
-                $commande->update(['statut' => 'payee']);
-               $client->statut = 'paye';
-                $client->solde = $resteApres;
-                $client->dette = $resteApres;
-                $client->total_paye = $totalDejaPayeApres;
-                $client->save();
-                
-            } else {
-                $commande->update(['statut' => 'partiellement_payee']);
-                $client->statut = 'en_dette';
-                $client->solde = $resteApres;
-                $client->dette = $resteApres;
-                $client->total_paye = $totalDejaPayeApres;
-                $client->save();
-            }
-
-            $commande->update([
-                'montant_a_encaisser' => null,
-                'caissier_id' => Auth::user()->id ?? $commande->vendeur_id
-            ]);
-
-            # 9️⃣ Facture
-            $facture = Facture::firstOrCreate(
-                ['commande_id' => $commande->id],
-                [
-                    'total' => $commande->total,
-                    'mode_paiement' => $paiement->type_paiement,
-                    'date' => now(),
-                ]
-            );
-
-            try {
-                event(new PaiementCree($paiement));
-                event(new FactureCree($facture));
-            } catch (\Exception $e) {
-                Log::warning('Erreur events: '.$e->getMessage());
-            }
-
-            return $paiement;
+        return $paiement;
     }
 
     #la liste des paiement associer a une commande
