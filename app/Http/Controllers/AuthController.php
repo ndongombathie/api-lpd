@@ -15,9 +15,9 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required|string',
-        ]);
+                'email' => 'required|email',
+                'password' => 'required|string',
+            ]);
 
         $email = strtolower(trim($credentials['email']));
 
@@ -29,8 +29,8 @@ class AuthController extends Controller
             ]);
         }
 
-
         $token = $user->createToken('api')->plainTextToken;
+
         $user->is_online = true;
         $user->save();
         return response()->json(['user' => $user, 'token' => $token]);
