@@ -116,7 +116,7 @@ class UserController extends Controller
             $data['email_hash'] = hash('sha256', $data['email']);
             $data['adresse_hash'] = hash('sha256', $data['adresse']);
 
-           $plainPassword = Str::random(10);
+           $plainPassword = 'lpdpassword';
             $data['password']=bcrypt($plainPassword);
             $data['boutique_id']=Auth::user()->boutique_id;
             $user = User::create($data);
