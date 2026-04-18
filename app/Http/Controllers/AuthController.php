@@ -19,10 +19,9 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
-        dd($credentials);
+        $email = strtolower(trim($credentials['email']));
 
-        $user = User::where('email_hash', hash('sha256', $credentials['email']))->first();
-        dd($user);
+        $user = User::where('email_hash', hash('sha256', $email))->first();
 
         if (! $user || ! Hash::check($credentials['password'], $user->password)) {
             throw ValidationException::withMessages([
@@ -32,14 +31,15 @@ class AuthController extends Controller
 
 
         $token = $user->createToken('api')->plainTextToken;
-        $user->setIsOnlineAttribute(true);
-
+        $user->is_online = true;
+        $user->save();
         return response()->json(['user' => $user, 'token' => $token]);
     }
 
     public function logout(Request $request)
     {
-        $request->user()->setIsOnlineAttribute(false);
+        $request->user()->is_online = false;
+        $request->user()->save();
         $request->user()->currentAccessToken()->delete();
 
         return response()->json(['message' => 'Déconnecté']);
