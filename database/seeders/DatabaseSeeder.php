@@ -41,8 +41,8 @@ class DatabaseSeeder extends Seeder
         User::factory()->create([
             'nom' => 'Comptable',
             'prenom' => 'LPD',
-            'email' => 'comptable@lpd.com',
-            'email_hash' => hash('sha256', 'comptable@lpd.com'),
+            'email' => 'papisdu91@gmail.com',
+            'email_hash' => hash('sha256', 'papisdu91@gmail.com'),
             'role' => 'comptable',
             'boutique_id' => optional($premiereBoutique)->id,
             'adresse' => 'Siège',
@@ -50,11 +50,11 @@ class DatabaseSeeder extends Seeder
             'telephone' => '+237600000000',
             'telephone_hash' => hash('sha256', '+237600000000'),
             'numero_cni' => 'ADMIN0000',
-            'email_hash' => hash('sha256', 'comptable@lpd.com'),
+            'email_hash' => hash('sha256', 'papisdu91@gmail.com'),
             'password' => 'password',
         ]);
 
-        // Caissier de test (interface caissier)
+       /*  // Caissier de test (interface caissier)
         User::factory()->create([
             'nom' => 'Responsable',
             'prenom' => 'LPD',
@@ -133,7 +133,7 @@ class DatabaseSeeder extends Seeder
             'numero_cni' => 'CAISSE01',
             'numero_cni_hash' => hash('sha256', 'CAISSE01'),
             'password' => 'password',
-        ]);
+        ]); */
     }
 
 }
