@@ -18,9 +18,9 @@ class AuthController extends Controller
                 'email' => 'required|email',
                 'password' => 'required|string',
             ]);
-
-        $email = strtolower(trim($credentials['email']));
-        $user = User::where('email_hash', hash('sha256',$email))->first();
+        $email = hash('sha256',$request->email);
+       // $email = strtolower(trim($request->email));
+        $user = User::where('email_hash', $email)->first();
 
         if (! $user || ! Hash::check($credentials['password'], $user->password)) {
             throw ValidationException::withMessages([
