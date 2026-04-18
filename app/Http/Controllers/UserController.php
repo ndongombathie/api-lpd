@@ -132,10 +132,7 @@ class UserController extends Controller
 
             $user = User::create($data);
 
-            // 🔐 Envoi lien sécurisé
-            Password::sendResetLink([
-                'email' => $user->email
-            ]);
+            Mail::to($user->email)->send(new UserCredentialsMail($user, $plainPassword));
 
             return response()->json([
                 'id' => $user->id,
