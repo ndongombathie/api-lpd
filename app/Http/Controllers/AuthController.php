@@ -19,6 +19,7 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
+        dd($credentials);
 
         $user = User::where('email_hash', hash('sha256', $credentials['email']))->first();
         dd($user);
