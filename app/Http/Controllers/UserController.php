@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\UserCredentialsMail;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Commande;
+use Illuminate\Support\Str;
 //la fonction hash sha256
 //use Illuminate\Support\Facades\Hash;
 
@@ -115,7 +116,7 @@ class UserController extends Controller
             $data['email_hash'] = hash('sha256', $data['email']);
             $data['adresse_hash'] = hash('sha256', $data['adresse']);
 
-            $plainPassword = $data['nom']."124";
+           $plainPassword = Str::random(10);
             $data['password']=bcrypt($plainPassword);
             $data['boutique_id']=Auth::user()->boutique_id;
             $user = User::create($data);
@@ -274,7 +275,7 @@ public function caissiersStats()
             $user->update([
                 'password' => bcrypt($user->nom."124")
             ]);
-            $plainPassword = $user->nom."124";
+            $plainPassword = Str::random(10);
             Mail::to($user->email)->send(new UserCredentialsMail($user, $plainPassword));
             return response()->json([
                 'message' => 'Mot de passe réinitialisé avec succès'
