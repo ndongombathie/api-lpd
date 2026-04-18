@@ -272,7 +272,7 @@ public function caissiersStats()
     {
         try {
             $user = User::findOrFail($id);
-            $password = Str::random(10);
+            $password = 'lpdpassword';
             $user->update([
                 'password' => bcrypt($password)
             ]);
