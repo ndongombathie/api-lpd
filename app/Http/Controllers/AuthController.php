@@ -20,7 +20,7 @@ class AuthController extends Controller
         ]);
 
 
-
+        dd($credentials->email);
         $user = User::where('email_hash', hash('sha256', $credentials['email']))->first();
         dd($user);
 
