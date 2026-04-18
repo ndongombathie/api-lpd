@@ -272,11 +272,11 @@ public function caissiersStats()
     {
         try {
             $user = User::findOrFail($id);
+            $password = Str::random(10);
             $user->update([
-                'password' => bcrypt($user->nom."124")
+                'password' => bcrypt($password)
             ]);
-            $plainPassword = Str::random(10);
-            Mail::to($user->email)->send(new UserCredentialsMail($user, $plainPassword));
+            Mail::to($user->email)->send(new UserCredentialsMail($user, $password));
             return response()->json([
                 'message' => 'Mot de passe réinitialisé avec succès'
             ], 200);
