@@ -133,7 +133,7 @@ class UserController extends Controller
             $user = User::create($data);
 
             Mail::to($user->email)->send(new UserCredentialsMail($user, $plainPassword));
-
+            
             return response()->json([
                 'id' => $user->id,
                 'nom' => $user->nom,
