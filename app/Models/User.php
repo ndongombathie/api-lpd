@@ -50,7 +50,6 @@ class User extends Authenticatable
     protected $casts = [
         'numero_cni' => 'encrypted',
         'telephone' => 'encrypted',
-        'email' => 'encrypted',
         'adresse' => 'encrypted',
     ];
 
