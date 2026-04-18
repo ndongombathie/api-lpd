@@ -102,38 +102,48 @@ class UserController extends Controller
     {
         try {
             $data = $request->validate([
-                'nom' => 'required|string',
-                'prenom' => 'required|string',
-                'adresse' => 'required|string',
-                'numero_cni' => 'required|string',
-                'telephone' => 'nullable|string',
+                'nom' => 'required|string|max:100',
+                'prenom' => 'required|string|max:100',
+                'adresse' => 'required|string|max:255',
+                'numero_cni' => 'required|string|max:50',
+                'telephone' => 'nullable|string|max:20',
                 'role' => 'required|string',
                 'email' => 'required|email|unique:users,email',
             ]);
 
+            // 🔐 Normalisation
+            $data['email'] = strtolower(trim($data['email']));
+            $data['numero_cni'] = trim($data['numero_cni']);
+
+            // 🔐 Hash pour recherche
             $data['numero_cni_hash'] = hash('sha256', $data['numero_cni']);
-            $data['telephone_hash'] = hash('sha256', $data['telephone']);
             $data['email_hash'] = hash('sha256', $data['email']);
             $data['adresse_hash'] = hash('sha256', $data['adresse']);
 
-           $plainPassword = 'lpdpassword';
-            $data['password']=bcrypt($plainPassword);
-            $data['boutique_id']=Auth::user()->boutique_id;
+            $data['telephone_hash'] = !empty($data['telephone'])
+                ? hash('sha256', $data['telephone'])
+                : null;
+
+            // 🔑 Mot de passe sécurisé
+            $plainPassword = Str::random(10);
+            $data['password'] = Hash::make($plainPassword);
+
+            $data['boutique_id'] = Auth::user()->boutique_id;
+
             $user = User::create($data);
 
-            // Envoyer les identifiants par email
-            try {
-                Mail::to($user->email)->send(new UserCredentialsMail($user, $plainPassword));
-                logger()->info('Identifiants de connexion envoyés par e-mail à l\'utilisateur ' . $user->email);
-            } catch (\Throwable $mailEx) {
-                // On n'échoue pas la création de l'utilisateur si l'email ne part pas,
-                // mais on retourne l'info dans la réponse
-                return response()->json([
-                    'user' => $user,
-                    'warning' => 'Utilisateur créé, mais e-mail non envoyé: ' . $mailEx->getMessage(),
-                ], 201);
-            }
-            return response()->json($user, 201);
+            // 🔐 Envoi lien sécurisé
+            Password::sendResetLink([
+                'email' => $user->email
+            ]);
+
+            return response()->json([
+                'id' => $user->id,
+                'nom' => $user->nom,
+                'prenom' => $user->prenom,
+                'email' => $user->email,
+            ], 201);
+
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Erreur lors de la création de l\'utilisateur',
@@ -141,7 +151,6 @@ class UserController extends Controller
             ], 500);
         }
     }
-
     public function show(string $id)
     {
         try {
