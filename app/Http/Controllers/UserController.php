@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Commande;
 use Illuminate\Support\Str;
 //la fonction hash sha256
-//use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
