@@ -101,10 +101,6 @@ class UserController extends Controller
     public function store(Request $request)
     {
         try {
-            // 🔐 Normalisation AVANT validation logique
-            $request->merge([
-                'email' => strtolower(trim($request->email)),
-            ]);
 
             $data = $request->validate([
                 'nom' => 'required|string|max:100',
@@ -118,8 +114,9 @@ class UserController extends Controller
 
             // 🔐 Hash
             $data['numero_cni_hash'] = hash('sha256', $data['numero_cni']);
-            $data['email_hash'] = hash('sha256', $data['email']);
-            $data['adresse_hash'] = hash('sha256', $data['adresse']);
+            $data['email'] = strtolower(trim($data['email']));
+            $data['email_hash'] = hash('sha256',$data['email']);
+            $data['adresse_hash'] = hash('sha256',$data['adresse']);
             $data['telephone_hash'] = !empty($data['telephone'])
                 ? hash('sha256', $data['telephone'])
                 : null;
