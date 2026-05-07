@@ -67,7 +67,7 @@ class DatabaseSeeder extends Seeder
             'telephone' => '+237600000001',
             'telephone_hash' => hash('sha256', '+237600000001'),
             'numero_cni' => 'CAISSE01',
-            'email_hash' => hash('sha256', 'responsable@lpd.com'),
+            'email_hash' => hash('sha256', 'responsable@lpd.cotest-localm'),
             'password' => 'password',
         ]);
 
@@ -133,7 +133,7 @@ class DatabaseSeeder extends Seeder
             'numero_cni' => 'CAISSE01',
             'numero_cni_hash' => hash('sha256', 'CAISSE01'),
             'password' => 'password',
-        ]); 
+        ]);
     }
 
 }
