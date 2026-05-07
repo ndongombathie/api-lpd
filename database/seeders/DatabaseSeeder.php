@@ -54,7 +54,7 @@ class DatabaseSeeder extends Seeder
             'password' => 'password',
         ]);
 
-       /*  // Caissier de test (interface caissier)
+       // Caissier de test (interface caissier)
         User::factory()->create([
             'nom' => 'Responsable',
             'prenom' => 'LPD',
@@ -133,7 +133,7 @@ class DatabaseSeeder extends Seeder
             'numero_cni' => 'CAISSE01',
             'numero_cni_hash' => hash('sha256', 'CAISSE01'),
             'password' => 'password',
-        ]); */
+        ]); 
     }
 
 }
