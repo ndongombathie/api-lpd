@@ -30,7 +30,7 @@ class UserFactory extends Factory
             'boutique_id' => fake()->randomElement($boutiques)->id,
             'nom' => fake()->lastName(),
             'prenom' => fake()->firstName(),
-            'adresse' => fake()->address(),
+            'adresse' => "Dakar",
             'numero_cni' => strtoupper(fake()->bothify('CNI########')),
             'telephone' => fake()->phoneNumber(),
             'role' => $roles[array_rand($roles)],

@@ -19,12 +19,12 @@ class ClientFactory extends Factory
         return [
             'nom' => $this->faker->lastName(),
             'prenom' => $this->faker->firstName(),
-            'adresse' => $this->faker->address(),
+            'adresse' => "thies",
             'numero_cni' => strtoupper($this->faker->bothify('CNI########')),
             'telephone' => $this->faker->phoneNumber(),
             'type_client' => $this->faker->randomElement(['normal', 'special']),
             'solde' => $this->faker->randomFloat(2, 0, 100000),
-            'contact' => $this->faker->email(),
+            'contact' => "contact@gmail.com",
         ];
     }
 }
