@@ -13,6 +13,7 @@ use App\Models\EntreeSortieBoutique;
 use App\Models\HistoriqueAction;
 use App\Models\Transfer;
 use App\Models\TransfertEnAttente;
+use App\Models\Fournisseur;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -109,6 +110,68 @@ class StockController extends Controller
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
+    }
+
+     public function store_produit_valider(Request $request)
+    {
+        try {
+            $data = $request->validate([
+                'nom' => 'required|string',
+                'code' => 'required|string|unique:produits,code',
+                'categorie_id' => 'nullable|string',
+                'fournisseur_id' => 'nullable|string',
+                'unite_carton' => 'nullable|integer',
+                'prix_unite_carton' => 'nullable|numeric',
+                'nombre_carton' => 'nullable|integer',
+            ]);
+
+            $data['stock_global'] = $data['unite_carton']*$data['nombre_carton'];
+            $data['prix_total'] = $data['prix_unite_carton']*($data['nombre_carton']);
+
+            $produit = Produit::create($data);
+
+            $fournisseur = Fournisseur::findOrFail($data['fournisseur_id']);
+            $fournisseur->increment('total_achats',$produit->prix_total);
+            $fournisseur->date_dernier_livraison = now();
+            $fournisseur->save();
+
+            StockBoutique::create([
+                'boutique_id' => Auth::user()->boutique_id,
+                'produit_id' => $produit->id,
+                'nombre_carton' => $produit->nombre_carton,
+                'quantite' => $produit->unite_carton*$produit->nombre_carton,
+            ]);
+
+            MouvementStock::firstOrCreate([
+                            'source' => 'depot',
+                            'destination' => 'boutique:' . Auth::user()->boutique_id,
+                            'produit_id' => $produit->id,
+                            'quantite' => $produit->nombre_carton,
+                            'type' => 'Entree',
+                            'motif' => 'Ajout de produit',
+                        ],[
+                            'date' => now(),
+                        ]);
+
+            //create historique action
+            HistoriqueAction::create([
+                'user_id' => Auth::user()->id,
+                'produit_id' => $produit->id,
+                'action' => 'Création de produit',
+            ]);
+
+            $this->EntreeSorties($produit->id,$produit->nombre_carton);
+
+            $request = new Request([
+                'produit_id' => $produit->id,
+                'quantite' => $produit->nombre_carton
+            ]);
+
+            $this->transfer($request);
+        }
+        catch (\Throwable $th) {
+            return response()->json(['message' => $th->getMessage()], 500);
+        }
     }
 
     /**
