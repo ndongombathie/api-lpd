@@ -152,6 +152,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // ---------------- STOCK ----------------
     //Route::get('stocks', [StockController::class, 'index']);
     Route::get('stocks/ruptures', [StockController::class, 'ruptures']);
+    Route::post('stocks/transfer_autres', [StockController::class, 'transfer_autres']);
     Route::post('stocks/transfer', [StockController::class, 'transfer']);
     Route::post('stocks/store_produit_valider', [StockController::class, 'transfer']);
     Route::post('stocks/reapprovisionner', [StockController::class, 'reapprovisionner']);

@@ -37,6 +37,11 @@ class MouvementSockController extends Controller
             if ($request->filled('type')) {
                 $query->where('type', $request->type);
             }
+
+            if ($request->filled('destination')) {
+                $query->where('destination', $request->destination);
+            }
+
             #filtred by produit_id
             if ($request->filled('produit_id')) {
                 $query->where('produit_id', $request->produit_id);

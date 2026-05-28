@@ -82,7 +82,7 @@ class StockController extends Controller
                 $src->transfert_en_attente_id = $transfer->id;
                 $src->save();
 
-                $sourceLabel = 'boutique:' . Auth::user()->boutique_id;
+                $sourceLabel = 'Colobane';
 
                 MouvementStock::firstOrCreate([
                     'source' => $sourceLabel,
@@ -105,6 +105,73 @@ class StockController extends Controller
             }
 
             return response()->json(['message' => 'Transfert effectué']);
+        }
+        catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+    }
+
+
+     public function transfer_autres(Request $request)
+    {
+       try {
+        $validated = $request->validate([
+            'produit_id' => 'required|uuid|exists:produits,id',
+            'destination' => 'required|string',
+            'quantite' => 'required|integer|min:1',
+        ]);
+            $produitId = $validated['produit_id'];
+            $qte = $validated['quantite'];
+            $sourceLabel = 'depot';
+
+            if (!empty(Auth::user()->boutique_id)) {
+
+                $src = StockBoutique::firstOrCreate([
+                    'boutique_id' => Auth::user()->boutique_id,
+                    'produit_id' => $produitId,
+                ]);
+
+                if ($src->nombre_carton < $qte) {
+                    abort(422, 'Stock source insuffisant');
+                }
+
+                $produit = Produit::findOrFail($produitId);
+                $produit->decrement('nombre_carton', $qte);
+                $produit->decrement('stock_global', $qte*$produit->unite_carton);
+                $produit->save();
+
+
+                $this->EntreeSortiesBoutique($produitId,$qte);
+                $this->Sorties($produitId,$qte);
+
+                $src->decrement('quantite', $qte*$produit->unite_carton);
+                $src->decrement('nombre_carton',$qte);
+                $src->transfert_en_attente_id = $transfer->id;
+                $src->save();
+
+                $sourceLabel = 'Colobane';
+
+                MouvementStock::firstOrCreate([
+                    'source' => $sourceLabel,
+                    'destination' => $validated['destination'],
+                    'produit_id' => $produitId,
+                    'quantite' => $qte,
+                    'type' => 'sortie',
+                    'motif' => 'Sortie de produit',
+                ],[
+                     'date' => now(),
+                ]);
+
+                HistoriqueAction::create([
+                    'user_id' => Auth::user()->id,
+                    'produit_id' => $produitId,
+                    'action' => 'Sortie de produit',
+                ]);
+                event(new StockRupture($produit,Auth::user()->boutique_id));
+            }
+
+            return response()->json(['message' => 'sortie effectué']);
         }
         catch (\Exception $e) {
             return response()->json(['message' => $e->getMessage()], 422);
