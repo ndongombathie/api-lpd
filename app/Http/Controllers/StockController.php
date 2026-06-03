@@ -147,7 +147,6 @@ class StockController extends Controller
 
                 $src->decrement('quantite', $qte*$produit->unite_carton);
                 $src->decrement('nombre_carton',$qte);
-                $src->transfert_en_attente_id = $transfer->id;
                 $src->save();
 
                 $sourceLabel = 'Colobane';
