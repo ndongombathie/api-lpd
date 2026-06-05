@@ -194,7 +194,8 @@ class StockController extends Controller
     {
         try {
 
-            $this->produitController->store($request);
+            $produit = $this->produitController->store($request);
+            return $produit;
 
             $request = new Request([
                 'produit_id' => $produit->id,
