@@ -23,10 +23,12 @@ class StockController extends Controller
 {
     //injecter le model transfert_en_attenteController dans le constructeur
     protected $transfertEnAttenteController;
+    protected $produitController;
 
-    public function __construct(TransfertEnAttenteController $transfertEnAttenteController)
+    public function __construct(TransfertEnAttenteController $transfertEnAttenteController,ProduitController $produitController)
     {
         $this->transfertEnAttenteController = $transfertEnAttenteController;
+        $this->produitController = $produitController;
     }
 
     public function index()
@@ -191,52 +193,8 @@ class StockController extends Controller
      public function store_produit_valider(Request $request)
     {
         try {
-            $data = $request->validate([
-                'nom' => 'required|string',
-                'code' => 'required|string|unique:produits,code',
-                'categorie_id' => 'nullable|string',
-                'fournisseur_id' => 'nullable|string',
-                'unite_carton' => 'nullable|integer',
-                'prix_unite_carton' => 'nullable|numeric',
-                'nombre_carton' => 'nullable|integer',
-            ]);
 
-            $data['stock_global'] = $data['unite_carton']*$data['nombre_carton'];
-            $data['prix_total'] = $data['prix_unite_carton']*($data['nombre_carton']);
-
-            $produit = Produit::create($data);
-
-            $fournisseur = Fournisseur::findOrFail($data['fournisseur_id']);
-            $fournisseur->increment('total_achats',$produit->prix_total);
-            $fournisseur->date_dernier_livraison = now();
-            $fournisseur->save();
-
-            StockBoutique::create([
-                'boutique_id' => Auth::user()->boutique_id,
-                'produit_id' => $produit->id,
-                'nombre_carton' => $produit->nombre_carton,
-                'quantite' => $produit->unite_carton*$produit->nombre_carton,
-            ]);
-
-            MouvementStock::firstOrCreate([
-                            'source' => 'depot',
-                            'destination' => 'boutique:' . Auth::user()->boutique_id,
-                            'produit_id' => $produit->id,
-                            'quantite' => $produit->nombre_carton,
-                            'type' => 'Entree',
-                            'motif' => 'Ajout de produit',
-                        ],[
-                            'date' => now(),
-                        ]);
-
-            //create historique action
-            HistoriqueAction::create([
-                'user_id' => Auth::user()->id,
-                'produit_id' => $produit->id,
-                'action' => 'Création de produit',
-            ]);
-
-            $this->EntreeSorties($produit->id,$produit->nombre_carton);
+            $this->produitController->store($request);
 
             $request = new Request([
                 'produit_id' => $produit->id,
@@ -257,7 +215,8 @@ class StockController extends Controller
 
             $request = new Request($data);
             $this->transfertEnAttenteController->valideTransfer($request);
-            return response()->json(['transfer_id' => $transfer->getData()->transfer_id]);
+
+            return response()->json(['message' => 'Produit créé et transféré avec succès']);
         }
         catch (\Throwable $th) {
             return response()->json(['message' => $th->getMessage()], 500);
