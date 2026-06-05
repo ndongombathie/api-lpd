@@ -256,7 +256,7 @@ class StockController extends Controller
             ];
 
             $request = new Request($data);
-            $this->transfertEnAttenteController->validerTransfert($request);
+            $this->transfertEnAttenteController->valideTransfer($request);
             return response()->json(['transfer_id' => $transfer->getData()->transfer_id]);
         }
         catch (\Throwable $th) {
