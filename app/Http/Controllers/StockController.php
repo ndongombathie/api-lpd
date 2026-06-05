@@ -196,8 +196,6 @@ class StockController extends Controller
 
             $produit = $this->produitController->store($request);
 
-
-
             $request = new Request([
                 'produit_id' => $produit->getData()->id,
                 'quantite' => $produit->getData()->nombre_carton, // provide a default value for the NOT NULL column
