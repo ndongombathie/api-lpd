@@ -105,7 +105,7 @@ class UserController extends Controller
             $data = $request->validate([
                 'nom' => 'required|string|max:100',
                 'prenom' => 'required|string|max:100',
-                'adresse' => 'required|string|max:255',
+                'adresse' => 'nullable|string|max:255',
                 'numero_cni' => 'required|string|max:50',
                 'telephone' => 'nullable|string|max:20',
                 'role' => 'required|string',

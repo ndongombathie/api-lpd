@@ -17,9 +17,18 @@ use App\Models\Fournisseur;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\TransfertEnAttenteController;
 
 class StockController extends Controller
 {
+    //injecter le model transfert_en_attenteController dans le constructeur
+    protected $transfertEnAttenteController;
+
+    public function __construct(TransfertEnAttenteController $transfertEnAttenteController)
+    {
+        $this->transfertEnAttenteController = $transfertEnAttenteController;
+    }
+
     public function index()
     {
         try {
@@ -104,8 +113,9 @@ class StockController extends Controller
                 event(new StockRupture($produit,Auth::user()->boutique_id));
             }
 
-            return response()->json(['message' => 'Transfert effectué']);
+            return response()->json(['transfer_id' => $transfer->id]);
         }
+
         catch (\Exception $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }
@@ -233,7 +243,22 @@ class StockController extends Controller
                 'quantite' => $produit->nombre_carton
             ]);
 
-            $this->transfer($request);
+            $transfer = $this->transfer($request);
+
+            $data=[
+                'seuil' => $request->seuil,
+                'prix_vente_detail' => $request->prix_vente_detail,
+                'prix_vente_gros' => $request->prix_vente_gros,
+                'prix_seuil_detail' => $request->prix_seuil_detail,
+                'prix_seuil_gros' => $request->prix_seuil_gros,
+                'id' => $transfer->getData()->transfer_id
+            ];
+
+            $request = new Request($data);
+
+            $this->transfertEnAttenteController->valideTransfer($request);
+
+            return response()->json(['message' => 'transfert validé']);
         }
         catch (\Throwable $th) {
             return response()->json(['message' => $th->getMessage()], 500);

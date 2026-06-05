@@ -23,7 +23,7 @@
     <p class="muted">Par mesure de sécurité, nous vous recommandons de changer ce mot de passe dès votre première connexion.</p>
 
     <p>Merci et bonne journée,</p>
-    <p>L’équipe Support</p>
+    <p>Librairie paterie daradji</p>
 </div>
 </body>
 </html>
