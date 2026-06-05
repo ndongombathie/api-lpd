@@ -246,7 +246,7 @@ class StockController extends Controller
             $transfer = $this->transfer($request);
 
             $data=[
-                'seuil' => $data['seuil'] ?? 0,
+                'seuil' => $data['stock_seuil'] ?? 0,
                 'prix_vente_detail' => $data['prix_vente_detail'] ?? 0,
                 'prix_vente_gros' => $data['prix_vente_gros'] ?? 0,
                 'prix_seuil_detail' => $data['prix_seuil_detail'] ?? 0,
