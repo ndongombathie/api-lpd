@@ -238,23 +238,26 @@ class StockController extends Controller
 
             $this->EntreeSorties($produit->id,$produit->nombre_carton);
 
+            $request = new Request([
+                'produit_id' => $produit->id,
+                'quantite' => $produit->nombre_carton
+            ]);
+
             $transfer = $this->transfer($request);
 
             $data=[
-                'seuil' => $request->seuil,
-                'prix_vente_detail' => $request->prix_vente_detail,
-                'prix_vente_gros' => $request->prix_vente_gros,
-                'prix_seuil_detail' => $request->prix_seuil_detail,
-                'prix_seuil_gros' => $request->prix_seuil_gros,
+                'seuil' => $data['seuil'] ?? 0,
+                'prix_vente_detail' => $data['prix_vente_detail'] ?? 0,
+                'prix_vente_gros' => $data['prix_vente_gros'] ?? 0,
+                'prix_seuil_detail' => $data['prix_seuil_detail'] ?? 0,
+                'prix_seuil_gros' => $data['prix_seuil_gros'] ?? 0,
+                'produit_id' => $produit->id,
                 'id' => $transfer->getData()->transfer_id
             ];
 
             $request = new Request($data);
-            return $request->all();
-
-            $this->transfertEnAttenteController->valideTransfer($request);
-
-            return response()->json(['message' => 'transfert validé']);
+            $this->transfertEnAttenteController->validerTransfert($request);
+            return response()->json(['transfer_id' => $transfer->getData()->transfer_id]);
         }
         catch (\Throwable $th) {
             return response()->json(['message' => $th->getMessage()], 500);
