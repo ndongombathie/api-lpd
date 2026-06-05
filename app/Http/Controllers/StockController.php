@@ -238,11 +238,6 @@ class StockController extends Controller
 
             $this->EntreeSorties($produit->id,$produit->nombre_carton);
 
-            $request = new Request([
-                'produit_id' => $produit->id,
-                'quantite' => $produit->nombre_carton
-            ]);
-
             $transfer = $this->transfer($request);
 
             $data=[
