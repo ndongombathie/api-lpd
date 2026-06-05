@@ -195,11 +195,12 @@ class StockController extends Controller
         try {
 
             $produit = $this->produitController->store($request);
-           
+
+
 
             $request = new Request([
-                'produit_id' => $produit->id,
-                'quantite' => $produit->nombre_carton
+                'produit_id' => $produit->getData()->id,
+                'quantite' => $produit->getData()->nombre_carton, // provide a default value for the NOT NULL column
             ]);
 
             $transfer = $this->transfer($request);
@@ -210,7 +211,7 @@ class StockController extends Controller
                 'prix_vente_gros' => $data['prix_vente_gros'] ?? 0,
                 'prix_seuil_detail' => $data['prix_seuil_detail'] ?? 0,
                 'prix_seuil_gros' => $data['prix_seuil_gros'] ?? 0,
-                'produit_id' => $produit->id,
+                'produit_id' => $produit->getData()->id,
                 'id' => $transfer->getData()->transfer_id
             ];
 
