@@ -255,6 +255,7 @@ class StockController extends Controller
             ];
 
             $request = new Request($data);
+            return $request->all();
 
             $this->transfertEnAttenteController->valideTransfer($request);
 
