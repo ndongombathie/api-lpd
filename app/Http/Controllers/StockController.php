@@ -192,16 +192,27 @@ class StockController extends Controller
 
      public function store_produit_valider(Request $request)
     {
-        try {
 
+        try {
             $produit = $this->produitController->store($request);
+            $produit->status()==500 ? abort(422, $produit->getData()->message) : null;
+            } catch (\Throwable $th) {
+                return response()->json(["message"=>"le code produit est déjà utilisé"], 500);
+            }
+        try {
 
             $request = new Request([
                 'produit_id' => $produit->getData()->id,
                 'quantite' => $produit->getData()->nombre_carton, // provide a default value for the NOT NULL column
             ]);
 
-            $transfer = $this->transfer($request);
+            try {
+                $transfer = $this->transfer($request);
+
+                $transfer->status()==422 ? abort(422, $transfer->getData()->message) : null;
+            } catch (\Throwable $th) {
+                return response()->json(["message"=>"il faut demarrer le server  reverb"], 500);
+            }
 
             $data=[
                 'seuil' => $data['stock_seuil'] ?? 0,
