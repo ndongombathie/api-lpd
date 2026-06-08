@@ -196,6 +196,7 @@ class StockController extends Controller
         try {
             $produit = $this->produitController->store($request);
             $produit->status()==500 ? abort(422, $produit->getData()->message) : null;
+            $data = $request->all();
             } catch (\Throwable $th) {
                 return response()->json(["message"=>"le code produit est déjà utilisé"], 500);
             }
